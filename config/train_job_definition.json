@@ -1,6 +1,6 @@
 {
   "AlgorithmSpecification": {
-    "TrainingImage": "683313688378.dkr.ecr.us-east-1.amazonaws.com/xgboost:latest",
+    "TrainingImage": "811284229777.dkr.ecr.us-east-1.amazonaws.com/xgboost:1.7-1",
     "TrainingInputMode": "File",
     "MetricDefinitions": [
       {
