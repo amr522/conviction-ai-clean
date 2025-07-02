@@ -1,0 +1,10 @@
+{
+  "symbol": "IBM",
+  "auc_score": 0.3828673887587822,
+  "accuracy": 0.44017094017094016,
+  "best_iteration": 2,
+  "train_samples": 935,
+  "test_samples": 234,
+  "features_used": 69,
+  "trained_on": "2025-07-02T02:32:25.925149"
+}

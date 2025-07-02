@@ -1,0 +1,10 @@
+{
+  "symbol": "WMT",
+  "auc_score": 0.578808914870296,
+  "accuracy": 0.5512820512820513,
+  "best_iteration": 8,
+  "train_samples": 935,
+  "test_samples": 234,
+  "features_used": 69,
+  "trained_on": "2025-07-02T02:32:25.071003"
+}

@@ -1,0 +1,10 @@
+{
+  "symbol": "GS",
+  "auc_score": 0.585233918128655,
+  "accuracy": 0.5683760683760684,
+  "best_iteration": 30,
+  "train_samples": 935,
+  "test_samples": 234,
+  "features_used": 69,
+  "trained_on": "2025-07-02T02:32:25.994716"
+}

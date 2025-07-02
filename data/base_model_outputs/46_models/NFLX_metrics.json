@@ -1,0 +1,10 @@
+{
+  "symbol": "NFLX",
+  "auc_score": 0.5548206937095825,
+  "accuracy": 0.5341880341880342,
+  "best_iteration": 6,
+  "train_samples": 935,
+  "test_samples": 234,
+  "features_used": 69,
+  "trained_on": "2025-07-02T02:32:24.530608"
+}

@@ -1,0 +1,10 @@
+{
+  "symbol": "WFC",
+  "auc_score": 0.5218191184045919,
+  "accuracy": 0.5256410256410257,
+  "best_iteration": 28,
+  "train_samples": 935,
+  "test_samples": 234,
+  "features_used": 69,
+  "trained_on": "2025-07-02T02:32:26.164354"
+}

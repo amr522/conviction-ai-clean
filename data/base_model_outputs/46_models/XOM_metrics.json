@@ -1,0 +1,10 @@
+{
+  "symbol": "XOM",
+  "auc_score": 0.5121853044496487,
+  "accuracy": 0.5299145299145299,
+  "best_iteration": 1,
+  "train_samples": 935,
+  "test_samples": 234,
+  "features_used": 69,
+  "trained_on": "2025-07-02T02:32:24.976133"
+}

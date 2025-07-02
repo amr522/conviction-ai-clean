@@ -1,0 +1,10 @@
+{
+  "symbol": "TMO",
+  "auc_score": 0.47883597883597884,
+  "accuracy": 0.5085470085470085,
+  "best_iteration": 9,
+  "train_samples": 935,
+  "test_samples": 234,
+  "features_used": 69,
+  "trained_on": "2025-07-02T02:32:25.303410"
+}

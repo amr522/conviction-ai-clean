@@ -1,0 +1,121 @@
+name: Monthly Model Retraining
+
+on:
+  schedule:
+    # Run on the 1st of every month at midnight UTC
+    - cron: '0 0 1 * *'
+  workflow_dispatch:  # Allow manual triggering
+
+env:
+  AWS_DEFAULT_REGION: us-east-1
+  S3_BUCKET: hpo-bucket-773934887314
+  PYTHON_VERSION: '3.10'
+
+jobs:
+  retrain:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          
+      - name: Cache pip dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+            
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_DEFAULT_REGION }}
+          
+      - name: Verify AWS connection
+        run: |
+          aws sts get-caller-identity
+          aws s3 ls s3://${{ env.S3_BUCKET }}/56_stocks/46_models_hpo/ --summarize
+          
+      - name: Sync latest model artifacts
+        run: |
+          echo "📥 Syncing latest HPO model artifacts..."
+          python generate_report.py \
+            --input-dir models/hpo_best/46_models_hpo \
+            --output-file monthly_retrain_report.md
+            
+      - name: Train updated ensemble
+        run: |
+          echo "🚀 Training updated ensemble model..."
+          python train_simplified_ensemble.py
+          
+      - name: Validate ensemble model
+        run: |
+          echo "✅ Validating ensemble model..."
+          python test_ensemble_verification.py
+          
+      - name: Deploy updated ensemble
+        run: |
+          echo "🚀 Deploying updated ensemble to SageMaker..."
+          python deploy_ensemble.py \
+            --model-path models/regression_ensemble/ensemble_blend.pkl \
+            --endpoint-name conviction-ensemble-46
+            
+      - name: Generate performance report
+        run: |
+          echo "📊 Generating monthly performance report..."
+          python discover_artifacts.py \
+            --input-dir models/hpo_best/46_models_hpo \
+            --output-file monthly_artifacts_$(date +%Y%m).md
+            
+      - name: Commit updated models
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          
+          # Add updated models and reports
+          git add models/regression_ensemble/
+          git add monthly_retrain_report.md
+          git add monthly_artifacts_*.md
+          
+          # Check if there are changes to commit
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "Monthly retrain and deploy - $(date +%Y-%m-%d)
+            
+            - Updated ensemble model with latest HPO artifacts
+            - Deployed to SageMaker endpoint: conviction-ensemble-46
+            - Generated monthly performance reports
+            
+            Automated by GitHub Actions"
+            
+            git push
+          fi
+          
+      - name: Create release tag
+        run: |
+          TAG_NAME="monthly-retrain-$(date +%Y%m)"
+          git tag -a "$TAG_NAME" -m "Monthly model retrain - $(date +%Y-%m-%d)"
+          git push origin "$TAG_NAME"
+          
+      - name: Notify on failure
+        if: failure()
+        run: |
+          echo "❌ Monthly retraining failed!"
+          echo "Check the GitHub Actions logs for details."
+          # In production, you could send notifications to Slack, email, etc.

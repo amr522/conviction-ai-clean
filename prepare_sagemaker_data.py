@@ -138,7 +138,9 @@ def prepare_data(input_file, train_ratio=0.7, val_ratio=0.15, test_ratio=0.15):
     df['target_binary'] = (df[target_col] > 0).astype(int)
     
     # Drop columns that shouldn't be used for training
-    cols_to_drop = ['timestamp', 'date', 'symbol', target_col]
+    cols_to_drop = ['date', 'symbol', target_col]
+    if 'timestamp' in df.columns:
+        cols_to_drop.append('timestamp')
     X = df.drop(columns=cols_to_drop + ['target_binary'])
     y = df['target_binary']
     

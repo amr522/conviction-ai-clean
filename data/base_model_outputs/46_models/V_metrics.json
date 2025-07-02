@@ -1,0 +1,10 @@
+{
+  "symbol": "V",
+  "auc_score": 0.4931286549707602,
+  "accuracy": 0.49145299145299143,
+  "best_iteration": 8,
+  "train_samples": 935,
+  "test_samples": 234,
+  "features_used": 69,
+  "trained_on": "2025-07-02T02:32:24.425419"
+}
