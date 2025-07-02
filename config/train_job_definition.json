@@ -1,6 +1,6 @@
 {
   "AlgorithmSpecification": {
-    "TrainingImage": "246618743249.dkr.ecr.us-east-1.amazonaws.com/xgboost:1.5-1",
+    "TrainingImage": "683313688378.dkr.ecr.us-east-1.amazonaws.com/xgboost:latest",
     "TrainingInputMode": "File",
     "MetricDefinitions": [
       {
@@ -49,7 +49,6 @@
   },
   "StaticHyperParameters": {
     "objective": "binary:logistic",
-    "eval_metric": "auc",
-    "num_round": "100"
+    "eval_metric": "auc"
   }
 }
