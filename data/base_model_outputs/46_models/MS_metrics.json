@@ -1,0 +1,10 @@
+{
+  "symbol": "MS",
+  "auc_score": 0.5831202046035805,
+  "accuracy": 0.5470085470085471,
+  "best_iteration": 12,
+  "train_samples": 935,
+  "test_samples": 234,
+  "features_used": 69,
+  "trained_on": "2025-07-02T02:32:26.047572"
+}

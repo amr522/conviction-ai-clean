@@ -1,0 +1,10 @@
+{
+  "symbol": "CRM",
+  "auc_score": 0.586849996343158,
+  "accuracy": 0.5854700854700855,
+  "best_iteration": 4,
+  "train_samples": 935,
+  "test_samples": 234,
+  "features_used": 69,
+  "trained_on": "2025-07-02T02:32:24.749892"
+}

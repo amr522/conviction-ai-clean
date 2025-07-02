@@ -1,0 +1,10 @@
+{
+  "symbol": "DIS",
+  "auc_score": 0.4817251461988305,
+  "accuracy": 0.48717948717948717,
+  "best_iteration": 16,
+  "train_samples": 935,
+  "test_samples": 234,
+  "features_used": 69,
+  "trained_on": "2025-07-02T02:32:24.587605"
+}

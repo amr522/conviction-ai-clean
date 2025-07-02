@@ -1,0 +1,43 @@
+{
+  "Strategy": "Bayesian",
+  "HyperParameterTuningJobObjective": {
+    "Type": "Maximize",
+    "MetricName": "validation:auc"
+  },
+  "ResourceLimits": {
+    "MaxNumberOfTrainingJobs": 138,
+    "MaxParallelTrainingJobs": 4
+  },
+  "ParameterRanges": {
+    "IntegerParameterRanges": [
+      {
+        "Name": "max_depth",
+        "MinValue": "3",
+        "MaxValue": "9"
+      }
+    ],
+    "ContinuousParameterRanges": [
+      {
+        "Name": "learning_rate",
+        "MinValue": "0.01",
+        "MaxValue": "0.3"
+      },
+      {
+        "Name": "subsample",
+        "MinValue": "0.6",
+        "MaxValue": "1.0"
+      },
+      {
+        "Name": "colsample_bytree",
+        "MinValue": "0.6",
+        "MaxValue": "1.0"
+      }
+    ],
+    "CategoricalParameterRanges": [
+      {
+        "Name": "n_estimators",
+        "Values": ["50", "100", "200", "300"]
+      }
+    ]
+  }
+}

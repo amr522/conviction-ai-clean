@@ -1,0 +1,10 @@
+{
+  "symbol": "MA",
+  "auc_score": 0.49831932773109244,
+  "accuracy": 0.5256410256410257,
+  "best_iteration": 2,
+  "train_samples": 935,
+  "test_samples": 234,
+  "features_used": 69,
+  "trained_on": "2025-07-02T02:32:24.468984"
+}

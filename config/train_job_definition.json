@@ -1,0 +1,55 @@
+{
+  "AlgorithmSpecification": {
+    "TrainingImage": "246618743249.dkr.ecr.us-east-1.amazonaws.com/xgboost:1.5-1",
+    "TrainingInputMode": "File",
+    "MetricDefinitions": [
+      {
+        "Name": "validation:auc",
+        "Regex": "\\[.*\\].*#011validation-auc:(\\S+)"
+      }
+    ]
+  },
+  "RoleArn": "arn:aws:iam::773934887314:role/SageMakerExecutionRole",
+  "InputDataConfig": [
+    {
+      "ChannelName": "training",
+      "DataSource": {
+        "S3DataSource": {
+          "S3DataType": "S3Prefix",
+          "S3Uri": "s3://hpo-bucket-773934887314/56_stocks/46_models/2025-07-02-03-05-02/train.csv",
+          "S3DataDistributionType": "FullyReplicated"
+        }
+      },
+      "ContentType": "text/csv",
+      "CompressionType": "None"
+    },
+    {
+      "ChannelName": "validation",
+      "DataSource": {
+        "S3DataSource": {
+          "S3DataType": "S3Prefix",
+          "S3Uri": "s3://hpo-bucket-773934887314/56_stocks/46_models/2025-07-02-03-05-02/validation.csv",
+          "S3DataDistributionType": "FullyReplicated"
+        }
+      },
+      "ContentType": "text/csv",
+      "CompressionType": "None"
+    }
+  ],
+  "OutputDataConfig": {
+    "S3OutputPath": "s3://hpo-bucket-773934887314/56_stocks/46_models_hpo/"
+  },
+  "ResourceConfig": {
+    "InstanceType": "ml.m5.xlarge",
+    "InstanceCount": 1,
+    "VolumeSizeInGB": 30
+  },
+  "StoppingCondition": {
+    "MaxRuntimeInSeconds": 3600
+  },
+  "StaticHyperParameters": {
+    "objective": "binary:logistic",
+    "eval_metric": "auc",
+    "num_round": "100"
+  }
+}

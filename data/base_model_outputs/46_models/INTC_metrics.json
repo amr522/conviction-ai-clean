@@ -1,0 +1,10 @@
+{
+  "symbol": "INTC",
+  "auc_score": 0.5162235406137845,
+  "accuracy": 0.5128205128205128,
+  "best_iteration": 41,
+  "train_samples": 935,
+  "test_samples": 234,
+  "features_used": 69,
+  "trained_on": "2025-07-02T02:32:24.833462"
+}
