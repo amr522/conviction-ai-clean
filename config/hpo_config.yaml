@@ -1,0 +1,31 @@
+max_parallel_jobs: 4
+max_jobs_per_stock: 3
+xgboost_objective: "binary:logistic"
+xgboost_eval_metric: "auc"
+xgboost_base_args:
+  max_depth: 6
+  learning_rate: 0.1
+  subsample: 0.8
+  colsample_bytree: 0.8
+  n_estimators: 100
+hyperparameter_ranges:
+  max_depth:
+    min: 3
+    max: 9
+    step: 1
+    type: "int"
+  learning_rate:
+    min: 0.01
+    max: 0.3
+    type: "continuous"
+  subsample:
+    min: 0.6
+    max: 1.0
+    type: "continuous"
+  colsample_bytree:
+    min: 0.6
+    max: 1.0
+    type: "continuous"
+  n_estimators:
+    values: [50, 100, 200, 300]
+    type: "categorical"

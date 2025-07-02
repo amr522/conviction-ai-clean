@@ -1,0 +1,24 @@
+crypto_pairs:
+- BTC-USD
+- ETH-USD
+end_date: '2024-12-31'
+flat_access_key: # Fill in with your Polygon access key or set as environment variable
+flat_bucket: flatfiles
+flat_endpoint: https://files.polygon.io
+flat_mode: true
+flat_secret_key: # Fill in with your Polygon secret key or set as environment variable
+forex_pairs:
+- EURUSD
+- USDJPY
+- USDCHF
+- GBPUSD
+macro_indexes:
+- VIX
+- DXY
+polygon_api_key: # Fill in with your Polygon API key or set as environment variable
+s3_bucket: convictionai-data
+s3_prefix: polygon-data/
+start_date: '2021-01-01'
+symbols_file: top_1000_by_volume.txt
+upload_to_s3: false
+use_flat_files: false

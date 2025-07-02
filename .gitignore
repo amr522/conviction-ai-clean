@@ -1,0 +1,51 @@
+# Ignore large data files
+*.csv
+*.parquet
+*.feather
+*.h5
+*.pkl
+
+# Ignore logs except example ones
+*.log
+!example_logs/*.log
+
+# Ignore Python artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Ignore Jupyter Notebook
+.ipynb_checkpoints
+
+# Ignore VS Code settings
+.vscode/
+
+# Ignore Mac OS specific files
+.DS_Store
+
+# Ignore environment
+.env
+.venv
+
+# Ignore large model files
+*.model
+*.bin
+*.joblib
+*.onnx
