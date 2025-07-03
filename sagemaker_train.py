@@ -30,14 +30,20 @@ def parse_args():
     parser.add_argument('--min_samples_split', type=int, default=2)
     parser.add_argument('--min_samples_leaf', type=int, default=1)
     parser.add_argument('--max_features', type=str, default='sqrt')
-    parser.add_argument('--learning_rate', type=float, default=0.1)
     parser.add_argument('--feature_fraction', type=float, default=1.0)
     parser.add_argument('--bagging_fraction', type=float, default=1.0)
+    
+    parser.add_argument('--learning_rate', type=float, default=0.1)
     parser.add_argument('--min_child_samples', type=int, default=20)
     parser.add_argument('--lambda_l1', type=float, default=0.0)
     parser.add_argument('--lambda_l2', type=float, default=0.0)
     
-    return parser.parse_args()
+    args, unknown = parser.parse_known_args()
+    
+    if unknown:
+        logger.info(f"Ignoring unknown hyperparameters: {unknown}")
+    
+    return args
 
 def load_data(data_path):
     """Load training data from CSV"""

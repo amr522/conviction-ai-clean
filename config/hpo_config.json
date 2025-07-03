@@ -11,31 +11,42 @@
   "ParameterRanges": {
     "IntegerParameterRanges": [
       {
+        "Name": "n_estimators",
+        "MinValue": "50",
+        "MaxValue": "300"
+      },
+      {
         "Name": "max_depth",
         "MinValue": "3",
-        "MaxValue": "9"
+        "MaxValue": "15"
+      },
+      {
+        "Name": "min_samples_split",
+        "MinValue": "2",
+        "MaxValue": "10"
+      },
+      {
+        "Name": "min_samples_leaf",
+        "MinValue": "1",
+        "MaxValue": "5"
       }
     ],
     "ContinuousParameterRanges": [
-      {        "Name": "eta",
-        "MinValue": "0.01",
-        "MaxValue": "0.3"
-      },
       {
-        "Name": "subsample",
-        "MinValue": "0.6",
+        "Name": "feature_fraction",
+        "MinValue": "0.1",
         "MaxValue": "1.0"
       },
       {
-        "Name": "colsample_bytree",
-        "MinValue": "0.6",
+        "Name": "bagging_fraction",
+        "MinValue": "0.1",
         "MaxValue": "1.0"
       }
     ],
     "CategoricalParameterRanges": [
       {
-        "Name": "num_round",
-        "Values": ["50", "100", "200", "300"]
+        "Name": "max_features",
+        "Values": ["sqrt", "log2", "auto"]
       }
     ]
   }

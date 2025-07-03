@@ -1,11 +1,11 @@
 {
   "AlgorithmSpecification": {
-    "TrainingImage": "811284229777.dkr.ecr.us-east-1.amazonaws.com/xgboost:1.7-1",
+    "TrainingImage": "683313688378.dkr.ecr.us-east-1.amazonaws.com/sagemaker-scikit-learn:0.23-1-cpu-py3",
     "TrainingInputMode": "File",
     "MetricDefinitions": [
       {
         "Name": "validation:auc",
-        "Regex": "\\[.*\\].*#011validation-auc:(\\S+)"
+        "Regex": "validation:auc=([0-9\\.]+)"
       }
     ]
   },
@@ -16,7 +16,7 @@
       "DataSource": {
         "S3DataSource": {
           "S3DataType": "S3Prefix",
-          "S3Uri": "s3://hpo-bucket-773934887314/56_stocks/46_models/2025-07-02-03-05-02/train.csv",
+          "S3Uri": "s3://hpo-bucket-773934887314/56_stocks/2025-07-03-05-41-43/train.csv",
           "S3DataDistributionType": "FullyReplicated"
         }
       },
@@ -28,7 +28,7 @@
       "DataSource": {
         "S3DataSource": {
           "S3DataType": "S3Prefix",
-          "S3Uri": "s3://hpo-bucket-773934887314/56_stocks/46_models/2025-07-02-03-05-02/validation.csv",
+          "S3Uri": "s3://hpo-bucket-773934887314/56_stocks/2025-07-03-05-41-43/validation.csv",
           "S3DataDistributionType": "FullyReplicated"
         }
       },
@@ -48,7 +48,7 @@
     "MaxRuntimeInSeconds": 3600
   },
   "StaticHyperParameters": {
-    "objective": "binary:logistic",
-    "eval_metric": "auc"
+    "n_estimators": "100",
+    "max_depth": "10"
   }
 }

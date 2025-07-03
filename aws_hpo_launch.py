@@ -36,41 +36,15 @@ S3_DATA_PREFIX = f's3://{BUCKET}/56_stocks/2025-07-03-05-41-43/'
 S3_OUTPUT_PREFIX = f's3://{BUCKET}/models/'
 
 def get_hyperparameter_ranges():
-    """Define hyperparameter ranges for tuning"""
+    """Define hyperparameter ranges for RandomForest tuning"""
     return {
-        # Options-specific parameters
-        'iv_rank_window': IntegerParameter(10, 60),
-        'iv_rank_weight': ContinuousParameter(0.1, 1.0),
-        'term_slope_window': IntegerParameter(5, 30),
-        'term_slope_weight': ContinuousParameter(0.1, 1.0),
-        'oi_window': IntegerParameter(5, 30),
-        'oi_weight': ContinuousParameter(0.1, 1.0),
-        'theta_window': IntegerParameter(5, 30),
-        'theta_weight': ContinuousParameter(0.1, 1.0),
-        
-        # VIX parameters
-        'vix_mom_window': IntegerParameter(5, 20),
-        'vix_regime_thresh': ContinuousParameter(15.0, 35.0),
-        
-        # Event parameters
-        'event_lag': IntegerParameter(1, 5),
-        'event_lead': IntegerParameter(1, 5),
-        
-        # News parameters
-        'news_threshold': ContinuousParameter(0.01, 0.2),
-        'lookback_window': IntegerParameter(1, 10),
-        'reuters_weight': ContinuousParameter(0.5, 2.0),
-        'sa_weight': ContinuousParameter(0.5, 2.0),
-        
-        # Model parameters
-        'num_leaves': IntegerParameter(10, 500),
+        'n_estimators': IntegerParameter(50, 300),
         'max_depth': IntegerParameter(3, 15),
-        'learning_rate': ContinuousParameter(0.001, 0.3, scaling_type='Logarithmic'),
+        'min_samples_split': IntegerParameter(2, 10),
+        'min_samples_leaf': IntegerParameter(1, 5),
+        'max_features': CategoricalParameter(['sqrt', 'log2', 'auto']),
         'feature_fraction': ContinuousParameter(0.1, 1.0),
         'bagging_fraction': ContinuousParameter(0.1, 1.0),
-        'min_child_samples': IntegerParameter(5, 200),
-        'lambda_l1': ContinuousParameter(0.001, 10.0, scaling_type='Logarithmic'),
-        'lambda_l2': ContinuousParameter(0.001, 10.0, scaling_type='Logarithmic'),
     }
 
 def launch_aapl_hpo():
@@ -106,7 +80,7 @@ def launch_aapl_hpo():
         )
         
         # Launch tuning job
-        job_name = f"cf-hpo-aapl-{int(time.time())}"
+        job_name = f"cf-rf-aapl-{int(time.time())}"
         tuner.fit({
             'training': TrainingInput(f'{S3_DATA_PREFIX}train.csv', content_type='text/csv')
         }, job_name=job_name)
@@ -151,7 +125,7 @@ def launch_full_universe_hpo():
         )
         
         # Launch tuning job
-        job_name = f"cf-hpo-full-{int(time.time())}"
+        job_name = f"cf-rf-full-{int(time.time())}"
         tuner.fit({
             'training': TrainingInput(f'{S3_DATA_PREFIX}train.csv', content_type='text/csv')
         }, job_name=job_name)
