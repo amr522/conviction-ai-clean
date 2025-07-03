@@ -83,18 +83,13 @@ def launch_aapl_hpo():
         
         # Set up estimator
         estimator = SKLearn(
-            entry_point='run_base_models.py',
+            entry_point='sagemaker_train.py',
             role=ROLE_ARN,
             instance_count=1,
             instance_type='ml.m5.4xlarge',
             framework_version='0.23-1',
             py_version='py3',
-            hyperparameters={
-                'features_dir': '/opt/ml/input/data/training',
-                'symbols_file': 'config/models_to_train_46.txt',
-                'output_dir': '/opt/ml/model',
-                'use_aws': 'true'
-            },
+            hyperparameters={},
             sagemaker_session=session,
             output_path=S3_OUTPUT_PREFIX
         )
@@ -133,18 +128,13 @@ def launch_full_universe_hpo():
         
         # Set up estimator
         estimator = SKLearn(
-            entry_point='run_base_models.py',
+            entry_point='sagemaker_train.py',
             role=ROLE_ARN,
             instance_count=1,
             instance_type='ml.m5.4xlarge',
             framework_version='0.23-1',
             py_version='py3',
-            hyperparameters={
-                'features_dir': '/opt/ml/input/data/training',
-                'symbols_file': 'config/models_to_train_46.txt',
-                'output_dir': '/opt/ml/model',
-                'use_aws': 'true'
-            },
+            hyperparameters={},
             sagemaker_session=session,
             output_path=S3_OUTPUT_PREFIX
         )
