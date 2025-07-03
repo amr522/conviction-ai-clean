@@ -112,15 +112,18 @@ class OOFGenerator:
                     'name': f'cat_oof_{i}',
                     'model_class': CatBoostClassifier,
                     'params': {
-                        'iterations': 200,
+                        'iterations': 100,
                         'learning_rate': 0.1,
-                        'depth': 6,
+                        'depth': 4,
                         'random_seed': 42 + i,
-                        'verbose': False
+                        'verbose': False,
+                        'task_type': 'CPU',
+                        'thread_count': 2,
+                        'max_ctr_complexity': 1
                     },
                     'use_early_stopping': True,
-                    'early_stopping_rounds': 50
-                } for i in range(1, 4)
+                    'early_stopping_rounds': 20
+                } for i in range(1, 3)
             ]
         }
         return configs
