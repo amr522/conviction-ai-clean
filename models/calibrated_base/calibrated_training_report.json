@@ -1,0 +1,28 @@
+{
+  "trained_models": [
+    "lightgbm_base_01",
+    "lightgbm_base_02",
+    "lightgbm_base_03"
+  ],
+  "model_metrics": {
+    "lightgbm_base_01": {
+      "auc_score": 0.5076622295723419,
+      "model_path": "models/calibrated_base/lightgbm_base_01_calibrated.pkl",
+      "selectors_path": "models/calibrated_base/lightgbm_base_01_selectors.pkl",
+      "calibration_method": "sigmoid"
+    },
+    "lightgbm_base_02": {
+      "auc_score": 0.5076439374192183,
+      "model_path": "models/calibrated_base/lightgbm_base_02_calibrated.pkl",
+      "selectors_path": "models/calibrated_base/lightgbm_base_02_selectors.pkl",
+      "calibration_method": "sigmoid"
+    },
+    "lightgbm_base_03": {
+      "auc_score": 0.5019179738280861,
+      "model_path": "models/calibrated_base/lightgbm_base_03_calibrated.pkl",
+      "selectors_path": "models/calibrated_base/lightgbm_base_03_selectors.pkl",
+      "calibration_method": "sigmoid"
+    }
+  },
+  "training_timestamp": "2025-07-03T03:08:59.938861"
+}

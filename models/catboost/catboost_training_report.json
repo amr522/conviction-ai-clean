@@ -1,0 +1,21 @@
+{
+  "trained_models": [
+    "catboost_hpo_1",
+    "catboost_hpo_2"
+  ],
+  "model_metrics": {
+    "catboost_hpo_1": {
+      "auc_score": 0.5009506030105281,
+      "best_iteration": 13,
+      "model_path": "models/catboost/catboost_hpo_1.pkl",
+      "selectors_path": "models/catboost/catboost_hpo_1_selectors.pkl"
+    },
+    "catboost_hpo_2": {
+      "auc_score": 0.49417710185500446,
+      "best_iteration": 38,
+      "model_path": "models/catboost/catboost_hpo_2.pkl",
+      "selectors_path": "models/catboost/catboost_hpo_2_selectors.pkl"
+    }
+  },
+  "training_timestamp": "2025-07-03T03:09:18.904179"
+}

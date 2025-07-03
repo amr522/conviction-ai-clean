@@ -1,0 +1,262 @@
+{
+  "pipeline_summary": {
+    "total_steps": 4,
+    "successful_steps": 4,
+    "failed_steps": [],
+    "completion_timestamp": "2025-07-03T03:10:56.851435"
+  },
+  "step_results": {
+    "Step 1 - Calibrated Base Models": {
+      "success": true,
+      "result": {
+        "trained_models": [
+          "lightgbm_base_01",
+          "lightgbm_base_02",
+          "lightgbm_base_03"
+        ],
+        "model_metrics": {
+          "lightgbm_base_01": {
+            "auc_score": 0.5076622295723419,
+            "model_path": "models/calibrated_base/lightgbm_base_01_calibrated.pkl",
+            "selectors_path": "models/calibrated_base/lightgbm_base_01_selectors.pkl",
+            "calibration_method": "sigmoid"
+          },
+          "lightgbm_base_02": {
+            "auc_score": 0.5076439374192183,
+            "model_path": "models/calibrated_base/lightgbm_base_02_calibrated.pkl",
+            "selectors_path": "models/calibrated_base/lightgbm_base_02_selectors.pkl",
+            "calibration_method": "sigmoid"
+          },
+          "lightgbm_base_03": {
+            "auc_score": 0.5019179738280861,
+            "model_path": "models/calibrated_base/lightgbm_base_03_calibrated.pkl",
+            "selectors_path": "models/calibrated_base/lightgbm_base_03_selectors.pkl",
+            "calibration_method": "sigmoid"
+          }
+        },
+        "training_timestamp": "2025-07-03T03:08:59.938861"
+      },
+      "timestamp": "2025-07-03T03:08:59.941398"
+    },
+    "Step 2 - XGBoost Models": {
+      "success": true,
+      "result": {
+        "trained_models": [
+          "xgb_hpo_1",
+          "xgb_hpo_2",
+          "xgb_hpo_3"
+        ],
+        "model_metrics": {
+          "xgb_hpo_1": {
+            "auc_score": 0.4949559734203929,
+            "best_iteration": null,
+            "model_path": "models/xgboost/xgb_hpo_1.pkl",
+            "selectors_path": "models/xgboost/xgb_hpo_1_selectors.pkl"
+          },
+          "xgb_hpo_2": {
+            "auc_score": 0.4925901363167281,
+            "best_iteration": null,
+            "model_path": "models/xgboost/xgb_hpo_2.pkl",
+            "selectors_path": "models/xgboost/xgb_hpo_2_selectors.pkl"
+          },
+          "xgb_hpo_3": {
+            "auc_score": 0.5017245724174563,
+            "best_iteration": null,
+            "model_path": "models/xgboost/xgb_hpo_3.pkl",
+            "selectors_path": "models/xgboost/xgb_hpo_3_selectors.pkl"
+          }
+        },
+        "training_timestamp": "2025-07-03T03:09:09.806571"
+      },
+      "timestamp": "2025-07-03T03:09:09.807427"
+    },
+    "Step 3 - CatBoost Models": {
+      "success": true,
+      "result": {
+        "trained_models": [
+          "catboost_hpo_1",
+          "catboost_hpo_2"
+        ],
+        "model_metrics": {
+          "catboost_hpo_1": {
+            "auc_score": 0.5009506030105281,
+            "best_iteration": 13,
+            "model_path": "models/catboost/catboost_hpo_1.pkl",
+            "selectors_path": "models/catboost/catboost_hpo_1_selectors.pkl"
+          },
+          "catboost_hpo_2": {
+            "auc_score": 0.49417710185500446,
+            "best_iteration": 38,
+            "model_path": "models/catboost/catboost_hpo_2.pkl",
+            "selectors_path": "models/catboost/catboost_hpo_2_selectors.pkl"
+          }
+        },
+        "training_timestamp": "2025-07-03T03:09:18.904179"
+      },
+      "timestamp": "2025-07-03T03:09:18.905218"
+    },
+    "Step 6 - TabNet Integration": {
+      "success": true,
+      "result": {
+        "model_metrics": {
+          "auc_score": 0.4994035822687508,
+          "best_epoch": 24,
+          "model_path": "models/tabnet/tabnet_model.zip",
+          "selectors_path": "models/tabnet/tabnet_selectors.pkl",
+          "scaler_path": "models/tabnet/tabnet_scaler.pkl",
+          "feature_importances": [
+            9.360287297383602e-05,
+            0.007581684372023214,
+            0.007290166381224121,
+            0.015178021316119313,
+            0.009019627884265483,
+            0.011459851954989178,
+            0.0024990876673801747,
+            0.004851557365614832,
+            0.0022952264151924447,
+            0.005436689087893847,
+            0.006788626996324775,
+            0.001162548923029496,
+            0.0006601532367292942,
+            0.0017722319648657975,
+            3.851302343662109e-05,
+            0.003957633228343258,
+            0.00849993161797205,
+            0.005094338424383526,
+            0.001805692885159832,
+            0.0224896469296903,
+            0.00488483948206967,
+            0.0007116555487923602,
+            0.011331438184697552,
+            0.005001808309108985,
+            0.0078004506612573766,
+            0.012305883851451377,
+            4.729148622437659e-05,
+            0.00014710636001813904,
+            0.020335787351842535,
+            0.008464613231487379,
+            0.0027856357224944213,
+            0.015692233673945965,
+            0.0003510219020717489,
+            0.009960835820718382,
+            0.00023744005104738594,
+            0.006584067571360559,
+            0.005089903466722069,
+            0.00012572514396420282,
+            0.046211410172667375,
+            0.0055677157604679135,
+            0.00718528971323189,
+            0.03183778606895811,
+            0.004268176626391063,
+            0.011896425340611154,
+            0.018266516725641405,
+            0.008817430699642428,
+            0.02046255458119287,
+            0.007251805288885858,
+            0.006586370719662762,
+            0.004824790686746304,
+            0.019580547805098394,
+            0.0033605871217164203,
+            0.0037959465382919953,
+            0.012051951922638152,
+            0.019228231264953974,
+            0.015540110252916475,
+            0.005104248824589429,
+            2.4097256771055698e-05,
+            0.024634847768381186,
+            0.00655200020967858,
+            0.01237823738988604,
+            0.015304701132504895,
+            0.005337452753450137,
+            0.001787363339419764,
+            0.004116502646527976,
+            0.010862158286986837,
+            0.00026705192874070096,
+            0.010033515259576093,
+            0.00448994012627654,
+            0.0009614511253931763,
+            0.018815200307927295,
+            0.008664888954616468,
+            0.00713553112278237,
+            0.0048402514497004594,
+            0.002039789211449157,
+            0.028021987478461498,
+            0.003176863462400906,
+            0.025986491152889358,
+            0.0008924543093337096,
+            0.008353540171696438,
+            0.0067420150876028595,
+            0.006232641951401027,
+            0.0003178789261190568,
+            0.011072302932805965,
+            0.00815049329207925,
+            0.0013078135654568546,
+            0.013742118241730397,
+            0.0013970544038340656,
+            0.01059869521350716,
+            0.003808713038496713,
+            0.007278365591163549,
+            0.012725401756800103,
+            0.0138811253556062,
+            0.02440882198566805,
+            0.0010085511182419688,
+            0.0010491580622821422,
+            6.625036590429066e-05,
+            3.84339855623536e-05,
+            0.00031885167064730737,
+            0.00024512491102011947,
+            0.00574067294950952,
+            0.005600816314736071,
+            0.026013385835061596,
+            0.012354132444152423,
+            0.0004939411921261969,
+            0.008775520762456886,
+            0.0040808642011569245,
+            0.0013952437966431729,
+            0.0022527463721968904,
+            0.0018263895143842777,
+            0.0013162358210699286,
+            0.0007610764246233656,
+            0.002135436049300189,
+            0.0234532373805614,
+            0.00011977760685840487,
+            0.00016624770457256935,
+            0.0196495078884666,
+            0.0012738379167964405,
+            0.014356221330940151,
+            0.0014899786155586879,
+            0.02541457203478542,
+            0.018023722679699098,
+            0.002364897661810751,
+            0.0005203708576870652,
+            0.0005459333914895675,
+            0.005497144891653091,
+            0.002701058572038322,
+            0.0009404350076949578
+          ]
+        },
+        "training_timestamp": "2025-07-03T03:10:56.850255",
+        "tabnet_params": {
+          "n_d": 32,
+          "n_a": 32,
+          "n_steps": 3,
+          "gamma": 1.3,
+          "lambda_sparse": 0.001,
+          "optimizer_fn": "<class 'torch.optim.adam.Adam'>",
+          "optimizer_params": {
+            "lr": 0.02
+          },
+          "mask_type": "entmax",
+          "scheduler_params": {
+            "step_size": 10,
+            "gamma": 0.9
+          },
+          "scheduler_fn": "<class 'torch.optim.lr_scheduler.StepLR'>",
+          "verbose": 1,
+          "seed": 42
+        }
+      },
+      "timestamp": "2025-07-03T03:10:56.851382"
+    }
+  }
+}

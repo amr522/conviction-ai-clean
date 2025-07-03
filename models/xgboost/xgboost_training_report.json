@@ -1,0 +1,28 @@
+{
+  "trained_models": [
+    "xgb_hpo_1",
+    "xgb_hpo_2",
+    "xgb_hpo_3"
+  ],
+  "model_metrics": {
+    "xgb_hpo_1": {
+      "auc_score": 0.4949559734203929,
+      "best_iteration": null,
+      "model_path": "models/xgboost/xgb_hpo_1.pkl",
+      "selectors_path": "models/xgboost/xgb_hpo_1_selectors.pkl"
+    },
+    "xgb_hpo_2": {
+      "auc_score": 0.4925901363167281,
+      "best_iteration": null,
+      "model_path": "models/xgboost/xgb_hpo_2.pkl",
+      "selectors_path": "models/xgboost/xgb_hpo_2_selectors.pkl"
+    },
+    "xgb_hpo_3": {
+      "auc_score": 0.5017245724174563,
+      "best_iteration": null,
+      "model_path": "models/xgboost/xgb_hpo_3.pkl",
+      "selectors_path": "models/xgboost/xgb_hpo_3_selectors.pkl"
+    }
+  },
+  "training_timestamp": "2025-07-03T03:09:09.806571"
+}
