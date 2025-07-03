@@ -15,7 +15,8 @@ import boto3
 import sagemaker
 from sagemaker.tuner import HyperparameterTuner
 from sagemaker.parameter import IntegerParameter, ContinuousParameter, CategoricalParameter
-from sagemaker.estimator import Estimator
+from sagemaker.sklearn.estimator import SKLearn
+from sagemaker.inputs import TrainingInput
 
 # Configure logging
 logging.basicConfig(
@@ -29,9 +30,9 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # AWS Configuration
-ROLE_ARN = 'arn:aws:iam::YOUR_ACCOUNT:role/SageMakerExecutionRole'
-BUCKET = 'your-hpo-bucket'
-S3_DATA_PREFIX = f's3://{BUCKET}/data/'
+ROLE_ARN = 'arn:aws:iam::773934887314:role/SageMakerExecutionRole'
+BUCKET = 'hpo-bucket-773934887314'
+S3_DATA_PREFIX = f's3://{BUCKET}/56_stocks/2025-07-03-05-41-43/'
 S3_OUTPUT_PREFIX = f's3://{BUCKET}/models/'
 
 def get_hyperparameter_ranges():
@@ -68,8 +69,8 @@ def get_hyperparameter_ranges():
         'feature_fraction': ContinuousParameter(0.1, 1.0),
         'bagging_fraction': ContinuousParameter(0.1, 1.0),
         'min_child_samples': IntegerParameter(5, 200),
-        'lambda_l1': ContinuousParameter(0.0, 10.0, scaling_type='Logarithmic'),
-        'lambda_l2': ContinuousParameter(0.0, 10.0, scaling_type='Logarithmic'),
+        'lambda_l1': ContinuousParameter(0.001, 10.0, scaling_type='Logarithmic'),
+        'lambda_l2': ContinuousParameter(0.001, 10.0, scaling_type='Logarithmic'),
     }
 
 def launch_aapl_hpo():
@@ -81,17 +82,21 @@ def launch_aapl_hpo():
         session = sagemaker.Session()
         
         # Set up estimator
-        estimator = Estimator(
-            entry_point='run_hpo_with_macro.py',
+        estimator = SKLearn(
+            entry_point='run_base_models.py',
             role=ROLE_ARN,
             instance_count=1,
             instance_type='ml.m5.4xlarge',
+            framework_version='0.23-1',
+            py_version='py3',
             hyperparameters={
-                'symbol': 'AAPL',
-                'model': 'lgb',
-                'debug': True
+                'features_dir': '/opt/ml/input/data/training',
+                'symbols_file': 'config/models_to_train_46.txt',
+                'output_dir': '/opt/ml/model',
+                'use_aws': 'true'
             },
-            sagemaker_session=session
+            sagemaker_session=session,
+            output_path=S3_OUTPUT_PREFIX
         )
         
         # Set up tuner
@@ -100,14 +105,15 @@ def launch_aapl_hpo():
             estimator,
             objective_metric_name='validation:auc',
             hyperparameter_ranges=hyperparameter_ranges,
+            metric_definitions=[{'Name': 'validation:auc', 'Regex': 'validation:auc=([0-9\\.]+)'}],
             max_jobs=20,
-            max_parallel_jobs=5
+            max_parallel_jobs=4
         )
         
         # Launch tuning job
-        job_name = f"options-hpo-aapl-{int(time.time())}"
+        job_name = f"cf-hpo-aapl-{int(time.time())}"
         tuner.fit({
-            'training': f'{S3_DATA_PREFIX}AAPL/'
+            'training': TrainingInput(f'{S3_DATA_PREFIX}train.csv', content_type='text/csv')
         }, job_name=job_name)
         
         logger.info(f"Successfully launched AAPL HPO job: {job_name}")
@@ -126,17 +132,21 @@ def launch_full_universe_hpo():
         session = sagemaker.Session()
         
         # Set up estimator
-        estimator = Estimator(
-            entry_point='run_hpo_with_macro.py',
+        estimator = SKLearn(
+            entry_point='run_base_models.py',
             role=ROLE_ARN,
             instance_count=1,
             instance_type='ml.m5.4xlarge',
+            framework_version='0.23-1',
+            py_version='py3',
             hyperparameters={
-                'symbol': 'ALL',  # Special keyword for all filtered symbols
-                'model': 'lgb',
-                'apply_universe_filter': True
+                'features_dir': '/opt/ml/input/data/training',
+                'symbols_file': 'config/models_to_train_46.txt',
+                'output_dir': '/opt/ml/model',
+                'use_aws': 'true'
             },
-            sagemaker_session=session
+            sagemaker_session=session,
+            output_path=S3_OUTPUT_PREFIX
         )
         
         # Set up tuner
@@ -145,14 +155,15 @@ def launch_full_universe_hpo():
             estimator,
             objective_metric_name='validation:auc',
             hyperparameter_ranges=hyperparameter_ranges,
+            metric_definitions=[{'Name': 'validation:auc', 'Regex': 'validation:auc=([0-9\\.]+)'}],
             max_jobs=50,
-            max_parallel_jobs=10
+            max_parallel_jobs=4
         )
         
         # Launch tuning job
-        job_name = f"options-hpo-full-universe-{int(time.time())}"
+        job_name = f"cf-hpo-full-{int(time.time())}"
         tuner.fit({
-            'training': f'{S3_DATA_PREFIX}filtered_universe/'
+            'training': TrainingInput(f'{S3_DATA_PREFIX}train.csv', content_type='text/csv')
         }, job_name=job_name)
         
         logger.info(f"Successfully launched full universe HPO job: {job_name}")

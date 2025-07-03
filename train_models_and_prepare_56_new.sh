@@ -307,9 +307,12 @@ BASE_MODEL_CMD="python run_base_models.py \
      --symbols-file data/processed_features/processed_symbols.txt \
      --output-dir data/base_model_outputs/11_models"
 
-# Add models-file flag if specified
+# Add models-file flag if specified (use symbols-file for run_base_models.py)
 if [ -n "$MODELS_FILE" ]; then
-  BASE_MODEL_CMD="$BASE_MODEL_CMD --models-file $MODELS_FILE"
+  BASE_MODEL_CMD="python run_base_models.py \
+     --features-dir data/processed_features \
+     --symbols-file $MODELS_FILE \
+     --output-dir data/base_model_outputs/11_models"
 fi
 
 # Add AWS flag if needed
