@@ -665,7 +665,10 @@ This README should be updated automatically at the end of each session with:
 **Next Action Required:** Monitor HPO completion, analyze 46-stock results, implement automated validation
 
 ### Latest Session Updates
-- **2025-07-03 20:39 UTC:** ✅ SESSION 4 COMPLETE - HPO pipeline hardened, secrets configured, production ready
+- **2025-07-03 21:34 UTC:** ✅ SESSION 4 ERROR ANALYSIS COMPLETE - Training script issues diagnosed, ready for fixes
+- **2025-07-03 21:05 UTC:** Production HPO job `prod-hpo-1751576357` failed with 8 NonRetryableErrors
+- **2025-07-03 21:02 UTC:** Root cause identified: LightGBM/XGBoost parameter mismatch and container incompatibility
+- **2025-07-03 20:39 UTC:** ✅ HPO pipeline hardened, secrets configured, production infrastructure ready
 - **2025-07-03 20:35 UTC:** GitHub secrets confirmed configured by user in HPO environment
 - **2025-07-03 20:30 UTC:** Comprehensive validation report generated with all tests passing
 - **2025-07-03 20:25 UTC:** Enhanced hygiene tests implemented and validated (CLI precedence, S3 validation, dry-run)
@@ -706,19 +709,46 @@ This README should be updated automatically at the end of each session with:
 - **✅ SageMaker SDK:** Dependencies installed and validated
 - **✅ Production Launch Infrastructure:** Job name length fixed, resource limits addressed (max_parallel_jobs=4)
 - **✅ Production Launch Completed:** SageMaker HPO job successfully created
+- **❌ Training Script Errors Diagnosed:** Root cause analysis completed for 8 NonRetryableErrors
+
+#### Production HPO Job Details
 - **Job Name:** `prod-hpo-1751576357`
 - **Job ARN:** `arn:aws:sagemaker:us-east-1:773934887314:hyper-parameter-tuning-job/prod-hpo-1751576357`
 - **Status:** Failed - No training job succeeded after 5 attempts (8 NonRetryableErrors)
 - **Dataset Used:** `s3://hpo-bucket-773934887314/56_stocks/46_models/2025-07-02-03-05-02/train.csv`
 - **Resource Usage:** ml.m5.4xlarge instances, max 4 parallel jobs, 50 max total jobs
-- **Root Cause:** Training script failures (xgboost_train.py compatibility issues)
 - **Creation Time:** 2025-07-03 21:05:58 UTC
 - **End Time:** 2025-07-03 21:09:09 UTC
 - **Duration:** ~3 minutes
 
-### ✅ Final Deliverables Summary
+#### Training Script Error Analysis
+- **Primary Error:** `ClientError: Require input for parameter num_round, exit code: 1`
+- **Root Cause 1:** Parameter mismatch - HPO configuration uses LightGBM-style parameters (`num_leaves`, `learning_rate`, `feature_fraction`) but training script expects XGBoost parameters (`max_depth`, `eta`, `subsample`, `num_round`)
+- **Root Cause 2:** Container incompatibility - Failed job used `811284229777.dkr.ecr.us-east-1.amazonaws.com/xgboost:1` while successful jobs used `683313688378.dkr.ecr.us-east-1.amazonaws.com/sagemaker-xgboost:1.0-1-cpu-py3`
+- **Root Cause 3:** Missing hyperparameter - `num_round` parameter required by XGBoost training script not included in HPO ranges
+- **Data Format:** Verified correct - CSV with target in first column (0/1), 69 features, 37,641 rows
+- **Successful Job Reference:** `hpo-full-1751555388` and `46-models-final-1751428406` used proper XGBoost configuration
+
+#### Next Session Action Plan
+1. **Fix HPO Configuration:** Replace LightGBM parameters with XGBoost-compatible ranges in `aws_hpo_launch.py`
+2. **Update Container Image:** Change to successful container `683313688378.dkr.ecr.us-east-1.amazonaws.com/sagemaker-xgboost:1.0-1-cpu-py3`
+3. **Add Missing Parameters:** Include `num_round` in hyperparameter ranges
+4. **Test Locally:** Validate training script with sample data before SageMaker deployment
+5. **Relaunch Production HPO:** Deploy corrected configuration with monitoring
+6. **Branch:** Continue on `hardening/data-script-fixes` for training script fixes
+
+### ✅ Session 4 Deliverables Summary
 1. **HPO secrets set:** AWS credentials configured in GitHub HPO environment
 2. **Production HPO job launched:** Real SageMaker job created with valid ARN
 3. **Clean-up verified:** No synthetic/mod files found in data directory
 4. **Infrastructure hardened:** All technical issues resolved, dataset pinning implemented
-5. **Documentation updated:** omar.md contains complete production launch details
+5. **Error diagnosis completed:** Root cause analysis for 8 NonRetryableErrors identified
+6. **Fix plan prepared:** Detailed action plan for training script compatibility issues
+7. **Documentation updated:** omar.md contains complete error analysis and next steps
+
+### 🚀 Ready for Next Session
+- **Branch:** `hardening/data-script-fixes` checked out and ready
+- **AWS Credentials:** Configured and validated
+- **Dataset:** Pinned to `s3://hpo-bucket-773934887314/56_stocks/46_models/2025-07-02-03-05-02/train.csv`
+- **Next Task:** Implement training script fixes and relaunch production HPO
+- **Expected Outcome:** Zero NonRetryableErrors, successful HPO job completion
