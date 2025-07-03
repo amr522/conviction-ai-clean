@@ -9,3 +9,15 @@ __pycache__/
 *.py[cod]
 *$py.class
 *.so
+
+# Large data files that exceed GitHub limits
+data/enhanced_features/
+data/holdout_test/
+data/oof_predictions/
+data/processed_features/all_symbols_features.csv
+data/sagemaker/test.csv
+data/sagemaker/train.csv
+data/sagemaker/validation.csv
+models/stacking_meta_enhanced/
+train/data/
+train/models/
