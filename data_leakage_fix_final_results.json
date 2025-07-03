@@ -1,0 +1,17 @@
+{
+  "timestamp": "2025-07-03T04:28:08.158670",
+  "performance": {
+    "train_auc": 0.9670809657096546,
+    "val_auc": 0.4897964977023934,
+    "auc_gap": 0.4772844680072612
+  },
+  "success_criteria": {
+    "validation_auc_threshold": false,
+    "training_auc_reasonable": true,
+    "auc_gap_reasonable": false
+  },
+  "all_criteria_met": false,
+  "corrected_data_dir": "data/corrected_sagemaker_input",
+  "feature_count": 17,
+  "integration_approved": false
+}

@@ -1,0 +1,22 @@
+{
+  "feature_columns": [
+    "open",
+    "close",
+    "high",
+    "low",
+    "volume",
+    "vwap",
+    "rsi_14",
+    "macd",
+    "macd_signal",
+    "macd_hist",
+    "bb_middle",
+    "bb_upper",
+    "bb_lower",
+    "news_sentiment",
+    "news_volume",
+    "options_put_call_ratio",
+    "options_implied_volatility"
+  ],
+  "target_column": "target_binary"
+}
