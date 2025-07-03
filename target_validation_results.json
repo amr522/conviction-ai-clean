@@ -1,0 +1,59 @@
+{
+  "validation_timestamp": "2025-07-03T15:30:24.476602",
+  "total_files": 3,
+  "passed_files": 3,
+  "failed_files": 0,
+  "pass_rate": 1.0,
+  "failed_file_list": [],
+  "detailed_results": [
+    {
+      "file": "train.csv",
+      "status": "PASS",
+      "total_samples": 1000,
+      "target_samples": 1000,
+      "positive_ratio": 0.456,
+      "has_direction_column": false,
+      "direction_correlation": null,
+      "first_column_name": "1",
+      "unique_target_values": [
+        0,
+        1
+      ],
+      "format": "XGBoost"
+    },
+    {
+      "file": "test.csv",
+      "status": "PASS",
+      "total_samples": 1000,
+      "target_samples": 1000,
+      "positive_ratio": 0.446,
+      "has_direction_column": false,
+      "direction_correlation": null,
+      "first_column_name": "1",
+      "unique_target_values": [
+        0,
+        1
+      ],
+      "format": "XGBoost"
+    },
+    {
+      "file": "validation.csv",
+      "status": "PASS",
+      "total_samples": 1000,
+      "target_samples": 1000,
+      "positive_ratio": 0.525,
+      "has_direction_column": false,
+      "direction_correlation": null,
+      "first_column_name": "0",
+      "unique_target_values": [
+        0,
+        1
+      ],
+      "format": "XGBoost"
+    }
+  ],
+  "avg_positive_ratio": 0.4756666666666667,
+  "std_positive_ratio": 0.035122009560324935,
+  "avg_correlation": null,
+  "min_correlation": null
+}
