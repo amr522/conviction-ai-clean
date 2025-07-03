@@ -1,0 +1,98 @@
+{
+  "Lagged Returns Only": {
+    "AAPL": {
+      "auc": "0.5009",
+      "std": "0.0274",
+      "feature_count": 19,
+      "sample_count": 900
+    },
+    "MSFT": {
+      "auc": "0.4613",
+      "std": "0.0080",
+      "feature_count": 19,
+      "sample_count": 900
+    },
+    "AMZN": {
+      "auc": "0.4712",
+      "std": "0.0106",
+      "feature_count": 19,
+      "sample_count": 900
+    },
+    "GOOGL": {
+      "auc": "0.5064",
+      "std": "0.0115",
+      "feature_count": 19,
+      "sample_count": 900
+    },
+    "TSLA": {
+      "auc": "0.5105",
+      "std": "0.0234",
+      "feature_count": 19,
+      "sample_count": 900
+    }
+  },
+  "Cross-Asset Signals Only": {
+    "AAPL": {
+      "auc": "0.4956",
+      "std": "0.0139",
+      "feature_count": 22,
+      "sample_count": 837
+    },
+    "MSFT": {
+      "auc": "0.4717",
+      "std": "0.0084",
+      "feature_count": 22,
+      "sample_count": 837
+    },
+    "AMZN": {
+      "auc": "0.5239",
+      "std": "0.0325",
+      "feature_count": 22,
+      "sample_count": 837
+    },
+    "GOOGL": {
+      "auc": "0.4793",
+      "std": "0.0094",
+      "feature_count": 22,
+      "sample_count": 837
+    },
+    "TSLA": {
+      "auc": "0.5396",
+      "std": "0.0130",
+      "feature_count": 22,
+      "sample_count": 837
+    }
+  },
+  "Combined Features": {
+    "AAPL": {
+      "auc": "0.5393",
+      "std": "0.0212",
+      "feature_count": 29,
+      "sample_count": 833
+    },
+    "MSFT": {
+      "auc": "0.4636",
+      "std": "0.0125",
+      "feature_count": 29,
+      "sample_count": 833
+    },
+    "AMZN": {
+      "auc": "0.4773",
+      "std": "0.0235",
+      "feature_count": 29,
+      "sample_count": 833
+    },
+    "GOOGL": {
+      "auc": "0.5084",
+      "std": "0.0193",
+      "feature_count": 29,
+      "sample_count": 833
+    },
+    "TSLA": {
+      "auc": "0.5544",
+      "std": "0.0090",
+      "feature_count": 29,
+      "sample_count": 833
+    }
+  }
+}
