@@ -35,6 +35,7 @@ logger = logging.getLogger(__name__)
 ROLE_ARN = 'arn:aws:iam::773934887314:role/SageMakerExecutionRole'
 BUCKET = 'hpo-bucket-773934887314'
 S3_OUTPUT_PREFIX = f's3://{BUCKET}/models/'
+XGBOOST_IMAGE_URI = '683313688378.dkr.ecr.us-east-1.amazonaws.com/sagemaker-xgboost:1.0-1-cpu-py3'
 
 def get_input_data_s3(cli_arg=None):
     """Get input data S3 URI with proper precedence order"""
@@ -129,15 +130,15 @@ def get_hyperparameter_ranges():
         'reuters_weight': ContinuousParameter(0.5, 2.0),
         'sa_weight': ContinuousParameter(0.5, 2.0),
         
-        # Model parameters
-        'num_leaves': IntegerParameter(10, 500),
-        'max_depth': IntegerParameter(3, 15),
-        'learning_rate': ContinuousParameter(0.001, 0.3, scaling_type='Logarithmic'),
-        'feature_fraction': ContinuousParameter(0.1, 1.0),
-        'bagging_fraction': ContinuousParameter(0.1, 1.0),
-        'min_child_samples': IntegerParameter(5, 200),
-        'lambda_l1': ContinuousParameter(0.0, 10.0, scaling_type='Logarithmic'),
-        'lambda_l2': ContinuousParameter(0.0, 10.0, scaling_type='Logarithmic'),
+        # XGBoost model parameters
+        'max_depth': IntegerParameter(3, 10),
+        'eta': ContinuousParameter(0.01, 0.3),
+        'min_child_weight': IntegerParameter(1, 10),
+        'subsample': ContinuousParameter(0.5, 1.0),
+        'gamma': ContinuousParameter(0, 10),
+        'alpha': ContinuousParameter(0, 10),
+        'lambda': ContinuousParameter(0, 10),
+        'colsample_bytree': ContinuousParameter(0.5, 1.0),
     }
 
 def launch_aapl_hpo(input_data_s3=None, dry_run=False):
@@ -163,7 +164,7 @@ def launch_aapl_hpo(input_data_s3=None, dry_run=False):
         
         # Set up estimator
         estimator = Estimator(
-            image_uri='811284229777.dkr.ecr.us-east-1.amazonaws.com/xgboost:1',
+            image_uri=XGBOOST_IMAGE_URI,
             entry_point='xgboost_train.py',
             role=ROLE_ARN,
             instance_count=1,
@@ -222,7 +223,7 @@ def launch_full_universe_hpo(input_data_s3=None, dry_run=False):
         
         # Set up estimator
         estimator = Estimator(
-            image_uri='811284229777.dkr.ecr.us-east-1.amazonaws.com/xgboost:1',
+            image_uri=XGBOOST_IMAGE_URI,
             entry_point='xgboost_train.py',
             role=ROLE_ARN,
             instance_count=1,

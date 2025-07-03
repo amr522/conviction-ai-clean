@@ -396,6 +396,48 @@ aws sagemaker list-hyper-parameter-tuning-jobs --status-equals Completed
 - Session 1: Future return columns (`target_1d`, `target_3d`, `target_5d`, `target_10d`) excluded due to leakage
 - Session 1: Technical indicators with look-ahead bias excluded
 
+## Pipeline Hardening Enhancements (Session 5)
+
+### Enhancement Implementation Status
+- [x] Replace LightGBM parameters with XGBoost ranges
+- [x] Extract XGBOOST_IMAGE_URI constant  
+- [x] Add --dry-run to final_production_launch.py
+- [x] Synthetic CSV local test with auc>=0.5
+- [x] CI dry-run & small HPO job passes
+- [x] omar.md updated with enhancement notes
+- [x] Next-HPO-run success monitor job added
+
+### XGBoost Parameter Migration
+**From LightGBM:**
+- `num_leaves`: IntegerParameter(10, 500) → **REMOVED**
+- `feature_fraction`: ContinuousParameter(0.1, 1.0) → **REMOVED**  
+- `bagging_fraction`: ContinuousParameter(0.1, 1.0) → **REMOVED**
+- `min_child_samples`: IntegerParameter(5, 200) → **REMOVED**
+
+**To XGBoost:**
+- `max_depth`: IntegerParameter(3, 10)
+- `eta`: ContinuousParameter(0.01, 0.3)
+- `subsample`: ContinuousParameter(0.5, 1.0)
+- `colsample_bytree`: ContinuousParameter(0.5, 1.0)
+- `gamma`: ContinuousParameter(0, 10)
+- `alpha`: ContinuousParameter(0, 10)
+- `lambda`: ContinuousParameter(0, 10)
+- `min_child_weight`: IntegerParameter(1, 10)
+
+### Container Image Standardization
+- **Constant:** `XGBOOST_IMAGE_URI = '683313688378.dkr.ecr.us-east-1.amazonaws.com/sagemaker-xgboost:1.0-1-cpu-py3'`
+- **References:** Updated in `aws_hpo_launch.py` estimator calls (lines 166, 225)
+
+### Testing Infrastructure
+- **Synthetic Test:** `tests/test_xgboost_train.py` with `fixtures/tiny.csv`
+- **Validation:** Asserts AUC >= 0.5 on minimal positive/negative samples
+- **Dry-run:** `final_production_launch.py --dry-run` skips HPO job creation
+
+### CI Monitoring Enhancement
+- **Monitor Job:** Added to `.github/workflows/hpo.yml`
+- **Functionality:** Waits up to 12 minutes for HPO job completion
+- **Integration:** Runs after main HPO job, fails if job doesn't complete
+
 ## Troubleshooting
 
 ### Common Issues

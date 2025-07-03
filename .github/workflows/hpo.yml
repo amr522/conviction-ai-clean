@@ -162,3 +162,25 @@ print(f'✅ Full Universe HPO job launched: {job_name}')
             --output table
           
           echo "✅ HPO pipeline validation complete"
+
+  monitor:
+    needs: run-hpo
+    runs-on: ubuntu-latest
+    steps:
+      - name: Wait & verify HPO success
+        run: |
+          for i in {1..12}; do
+            status=$(aws sagemaker describe-hyper-parameter-tuning-job \
+              --hyper-parameter-tuning-job-name ${{ github.run_id }} \
+              --query 'HyperParameterTuningJobStatus' --output text)
+            if [[ "$status" == "Completed" ]]; then
+              echo "✅ HPO Completed"
+              exit 0
+            fi
+            sleep 60
+          done
+          echo "❌ HPO did not complete within expected time" && exit 1
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: ${{ env.AWS_DEFAULT_REGION }}
