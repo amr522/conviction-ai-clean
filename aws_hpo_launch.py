@@ -163,7 +163,8 @@ def launch_aapl_hpo(input_data_s3=None, dry_run=False):
         
         # Set up estimator
         estimator = Estimator(
-            entry_point='run_hpo_with_macro.py',
+            image_uri='811284229777.dkr.ecr.us-east-1.amazonaws.com/xgboost:1',
+            entry_point='xgboost_train.py',
             role=ROLE_ARN,
             instance_count=1,
             instance_type='ml.m5.4xlarge',
@@ -186,7 +187,7 @@ def launch_aapl_hpo(input_data_s3=None, dry_run=False):
         )
         
         # Launch tuning job
-        job_name = f"options-hpo-aapl-{int(time.time())}"
+        job_name = f"hpo-aapl-{int(time.time())}"
         tuner.fit({
             'training': training_data
         }, job_name=job_name)
@@ -221,7 +222,8 @@ def launch_full_universe_hpo(input_data_s3=None, dry_run=False):
         
         # Set up estimator
         estimator = Estimator(
-            entry_point='run_hpo_with_macro.py',
+            image_uri='811284229777.dkr.ecr.us-east-1.amazonaws.com/xgboost:1',
+            entry_point='xgboost_train.py',
             role=ROLE_ARN,
             instance_count=1,
             instance_type='ml.m5.4xlarge',
@@ -240,11 +242,11 @@ def launch_full_universe_hpo(input_data_s3=None, dry_run=False):
             objective_metric_name='validation:auc',
             hyperparameter_ranges=hyperparameter_ranges,
             max_jobs=50,
-            max_parallel_jobs=10
+            max_parallel_jobs=4
         )
         
         # Launch tuning job
-        job_name = f"options-hpo-full-universe-{int(time.time())}"
+        job_name = f"hpo-full-{int(time.time())}"
         tuner.fit({
             'training': training_data
         }, job_name=job_name)
