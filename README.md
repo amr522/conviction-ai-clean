@@ -1,6 +1,7 @@
 README.md
 
-# Conviction AI Trading System 🚀
+<!-- Verification comment added by Devin for PR testing -->
+# Conviction AI Trading Systemtem 🚀
 
 **2,662 trained models** across 242 stocks with **0.516 mean AUC** (ExtraTrees best).
 
