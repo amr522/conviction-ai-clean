@@ -1,108 +1,187 @@
-name: SageMaker HPO Pipeline
+name: HPO Pipeline with Pinned Dataset
 
 on:
-  schedule:
-    # Run every Monday at midnight UTC
-    - cron: '0 0 * * 1'
-  workflow_dispatch:  # Allow manual triggering
+  workflow_dispatch:
+    inputs:
+      target_completed:
+        description: 'Minimum completed training jobs for dataset selection'
+        required: false
+        default: '138'
+        type: string
+      hpo_type:
+        description: 'HPO job type to run'
+        required: true
+        default: 'aapl'
+        type: choice
+        options:
+        - aapl
+        - full_universe
+        - both
 
 env:
   AWS_DEFAULT_REGION: us-east-1
-  S3_BUCKET: hpo-bucket-773934887314
-  PYTHON_VERSION: '3.10'
-  TARGET_COMPLETED: 138
 
 jobs:
-  hpo-job:
+  pin-dataset:
+    name: Pin HPO Dataset
     runs-on: ubuntu-latest
-    
+    outputs:
+      pinned_data_s3: ${{ steps.pin.outputs.pinned_data_s3 }}
     steps:
-      - name: Checkout repository
+      - name: Checkout code
         uses: actions/checkout@v4
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: ${{ env.PYTHON_VERSION }}
-          
-      - name: Cache pip dependencies
-        uses: actions/cache@v3
-        with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-
-            
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-          
+      
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_DEFAULT_REGION }}
-          
-      - name: Verify AWS connection
+      
+      - name: Pin HPO dataset
+        id: pin
+        env:
+          TARGET_COMPLETED: ${{ github.event.inputs.target_completed }}
         run: |
-          aws sts get-caller-identity
-          aws s3 ls s3://${{ env.S3_BUCKET }} --summarize
+          echo "🔍 Searching for HPO dataset with ≥$TARGET_COMPLETED completed jobs..."
           
-      - name: Get pinned dataset
-        run: |
-          echo "🔍 Getting pinned dataset from previous HPO job..."
-          source scripts/get_last_hpo_dataset.sh
+          # Make script executable
+          chmod +x scripts/get_last_hpo_dataset.sh
           
-      - name: Echo dataset path
-        run: ./ci_echo_dataset.sh            # masks + prints $PINNED_DATA_S3
-          
-      - name: Launch HPO job
-        run: |
-          echo "🚀 Launching SageMaker HPO job with pinned dataset..."
-          python aws_hpo_launch.py
-          
-      - name: Monitor HPO progress
-        run: |
-          echo "📊 Setting up HPO monitoring..."
-          nohup python automated_hpo_monitor.py --job-prefix "46-models" --wait-time 600 > hpo_monitor.log &
-          echo "✅ HPO monitoring started in background"
-          
-      - name: Create status report
-        run: |
-          echo "📝 Generating initial HPO status report..."
-          python analyze_hpo_results.py --partial --output-file hpo_initial_report.md
-          
-      - name: Commit status report
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          
-          # Add HPO report
-          git add hpo_initial_report.md
-          git add last_dataset_uri.txt
-          
-          # Check if there are changes to commit
-          if git diff --staged --quiet; then
-            echo "No changes to commit"
+          # Run dataset pinning script
+          if ./scripts/get_last_hpo_dataset.sh; then
+            PINNED_DATA_S3=$(cat last_dataset_uri.txt)
+            echo "pinned_data_s3=$PINNED_DATA_S3" >> $GITHUB_OUTPUT
+            
+            # Mask the S3 URI for security but echo for debugging
+            echo "::add-mask::$PINNED_DATA_S3"
+            echo "🔒 Pinned dataset: $PINNED_DATA_S3"
           else
-            git commit -m "HPO Job Started - $(date +%Y-%m-%d)
-            
-            - Launched new HPO job with pinned dataset
-            - Generated initial status report
-            - Updated dataset pinning files
-            
-            Automated by GitHub Actions"
-            
-            git push
+            echo "❌ Failed to pin dataset"
+            exit 1
           fi
-          
-      - name: Notify on failure
-        if: failure()
+
+  run-hpo:
+    name: Run HPO Job
+    runs-on: ubuntu-latest
+    needs: pin-dataset
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+      
+      - name: Install dependencies
         run: |
-          echo "❌ HPO job launch failed!"
-          echo "Check the GitHub Actions logs for details."
-          # In production, you could send notifications to Slack, email, etc.
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_DEFAULT_REGION }}
+      
+      - name: Run HPO with pinned dataset
+        env:
+          PINNED_DATA_S3: ${{ needs.pin-dataset.outputs.pinned_data_s3 }}
+          HPO_TYPE: ${{ github.event.inputs.hpo_type }}
+        run: |
+          echo "🚀 Running HPO with pinned dataset"
+          echo "Dataset: $PINNED_DATA_S3"
+          echo "HPO Type: $HPO_TYPE"
+          
+          # Export environment variable for Python script
+          export PINNED_DATA_S3="$PINNED_DATA_S3"
+          
+          # Run appropriate HPO job based on input
+          case "$HPO_TYPE" in
+            "aapl")
+              echo "Running AAPL HPO job..."
+              python -c "
+from aws_hpo_launch import launch_aapl_hpo
+import sys
+job_name = launch_aapl_hpo()
+if not job_name:
+    sys.exit(1)
+print(f'✅ AAPL HPO job launched: {job_name}')
+"
+              ;;
+            "full_universe")
+              echo "Running Full Universe HPO job..."
+              python -c "
+from aws_hpo_launch import launch_full_universe_hpo
+import sys
+job_name = launch_full_universe_hpo()
+if not job_name:
+    sys.exit(1)
+print(f'✅ Full Universe HPO job launched: {job_name}')
+"
+              ;;
+            "both")
+              echo "Running both AAPL and Full Universe HPO jobs..."
+              python aws_hpo_launch.py
+              ;;
+            *)
+              echo "❌ Invalid HPO type: $HPO_TYPE"
+              exit 1
+              ;;
+          esac
+
+  validate-results:
+    name: Validate HPO Results
+    runs-on: ubuntu-latest
+    needs: [pin-dataset, run-hpo]
+    if: always()
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_DEFAULT_REGION }}
+      
+      - name: Validate HPO job status
+        env:
+          PINNED_DATA_S3: ${{ needs.pin-dataset.outputs.pinned_data_s3 }}
+        run: |
+          echo "🔍 Validating HPO job results..."
+          echo "Used dataset: $PINNED_DATA_S3"
+          
+          # List recent HPO jobs
+          echo "Recent HPO jobs:"
+          aws sagemaker list-hyper-parameter-tuning-jobs \
+            --creation-time-after "$(date -d '1 hour ago' -u +%Y-%m-%dT%H:%M:%SZ)" \
+            --query 'HyperParameterTuningJobSummaries[*].[HyperParameterTuningJobName,HyperParameterTuningJobStatus,CreationTime]' \
+            --output table
+          
+          echo "✅ HPO pipeline validation complete"
+
+  monitor:
+    needs: run-hpo
+    runs-on: ubuntu-latest
+    steps:
+      - name: Wait & verify HPO success
+        run: |
+          for i in {1..12}; do
+            status=$(aws sagemaker describe-hyper-parameter-tuning-job \
+              --hyper-parameter-tuning-job-name ${{ github.run_id }} \
+              --query 'HyperParameterTuningJobStatus' --output text)
+            if [[ "$status" == "Completed" ]]; then
+              echo "✅ HPO Completed"
+              exit 0
+            fi
+            sleep 60
+          done
+          echo "❌ HPO did not complete within expected time" && exit 1
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: ${{ env.AWS_DEFAULT_REGION }}
