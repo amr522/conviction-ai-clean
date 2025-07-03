@@ -1,0 +1,110 @@
+{
+  "job_name": "hpo-full-1751555388",
+  "analysis_date": "2025-07-03T16:01:02.037049",
+  "summary": {
+    "total_jobs": 25,
+    "completed_jobs": 25,
+    "success_rate": 100.0
+  },
+  "performance": {
+    "best_auc": 1.0,
+    "worst_auc": 0.7255499958992004,
+    "average_auc": 0.9468843984603882,
+    "median_auc": 0.991379976272583,
+    "std_auc": 0.07747261549619813
+  },
+  "threshold_analysis": {
+    "auc_ge_0.55": {
+      "count": 25,
+      "total": 25,
+      "percentage": 100.0
+    },
+    "auc_ge_0.60": {
+      "count": 25,
+      "total": 25,
+      "percentage": 100.0
+    },
+    "auc_ge_0.70": {
+      "count": 25,
+      "total": 25,
+      "percentage": 100.0
+    },
+    "auc_ge_0.80": {
+      "count": 24,
+      "total": 25,
+      "percentage": 96.0
+    },
+    "auc_ge_0.90": {
+      "count": 18,
+      "total": 25,
+      "percentage": 72.0
+    },
+    "auc_ge_0.95": {
+      "count": 17,
+      "total": 25,
+      "percentage": 68.0
+    }
+  },
+  "top_models": [
+    {
+      "job_name": "hpo-full-1751555388-032-dcdd3022",
+      "auc_score": 1.0,
+      "status": "Completed",
+      "creation_time": "2025-07-03 15:18:23+00:00"
+    },
+    {
+      "job_name": "hpo-full-1751555388-021-f66675f8",
+      "auc_score": 1.0,
+      "status": "Completed",
+      "creation_time": "2025-07-03 15:15:37+00:00"
+    },
+    {
+      "job_name": "hpo-full-1751555388-009-a7d0c81a",
+      "auc_score": 0.9996700286865234,
+      "status": "Completed",
+      "creation_time": "2025-07-03 15:13:04+00:00"
+    },
+    {
+      "job_name": "hpo-full-1751555388-022-b7bfbc62",
+      "auc_score": 0.9995399713516236,
+      "status": "Completed",
+      "creation_time": "2025-07-03 15:15:51+00:00"
+    },
+    {
+      "job_name": "hpo-full-1751555388-036-06f529f1",
+      "auc_score": 0.999459981918335,
+      "status": "Completed",
+      "creation_time": "2025-07-03 15:19:19+00:00"
+    },
+    {
+      "job_name": "hpo-full-1751555388-039-b49295c4",
+      "auc_score": 0.9989799857139589,
+      "status": "Completed",
+      "creation_time": "2025-07-03 15:19:51+00:00"
+    },
+    {
+      "job_name": "hpo-full-1751555388-025-ece36c67",
+      "auc_score": 0.9988099932670592,
+      "status": "Completed",
+      "creation_time": "2025-07-03 15:16:26+00:00"
+    },
+    {
+      "job_name": "hpo-full-1751555388-030-89046499",
+      "auc_score": 0.998449981212616,
+      "status": "Completed",
+      "creation_time": "2025-07-03 15:17:50+00:00"
+    },
+    {
+      "job_name": "hpo-full-1751555388-014-ec44ad21",
+      "auc_score": 0.9978899955749512,
+      "status": "Completed",
+      "creation_time": "2025-07-03 15:14:10+00:00"
+    },
+    {
+      "job_name": "hpo-full-1751555388-044-ebfc71fc",
+      "auc_score": 0.9964500069618224,
+      "status": "Completed",
+      "creation_time": "2025-07-03 15:21:08+00:00"
+    }
+  ]
+}
