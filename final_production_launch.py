@@ -7,6 +7,7 @@ import os
 import sys
 import time
 import logging
+import argparse
 import boto3
 import sagemaker
 from sagemaker.tuner import HyperparameterTuner
@@ -18,6 +19,10 @@ logger = logging.getLogger(__name__)
 
 def main():
     """Launch production HPO job"""
+    parser = argparse.ArgumentParser(description='Launch production HPO job')
+    parser.add_argument('--dry-run', action='store_true', help='Skip HPO job creation, log what would be done')
+    args = parser.parse_args()
+    
     try:
         pinned_data = os.environ.get('PINNED_DATA_S3')
         if not pinned_data:
@@ -59,6 +64,11 @@ def main():
         job_name = f"prod-hpo-{timestamp}"
         
         logger.info(f"Launching production HPO job: {job_name}")
+        
+        if args.dry_run:
+            logger.info(f"🔍 [dry-run] Would launch HPO with dataset: {pinned_data}")
+            logger.info(f"🔍 [dry-run] Job name would be: {job_name}")
+            return True
         
         # Launch tuning job
         tuner.fit({'training': pinned_data}, job_name=job_name)
