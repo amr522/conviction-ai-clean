@@ -1,0 +1,75 @@
+2025-07-03 05:33:17,895 - INFO - Verification complete – launching AWS HPO on AAPL for test.
+2025-07-03 05:33:17,895 - INFO - Launching AWS SageMaker HPO job for AAPL only
+2025-07-03 05:33:17,907 - INFO - Found credentials in environment variables.
+2025-07-03 05:33:18,205 - ERROR - Failed to launch AAPL HPO job: Estimator.__init__() missing 1 required positional argument: 'image_uri'
+2025-07-03 05:33:18,206 - ERROR - Failed to launch AAPL HPO job. Aborting.
+2025-07-03 05:34:26,064 - INFO - Verification complete – launching AWS HPO on AAPL for test.
+2025-07-03 05:34:26,065 - INFO - Launching AWS SageMaker HPO job for AAPL only
+2025-07-03 05:34:26,076 - INFO - Found credentials in environment variables.
+2025-07-03 05:34:26,332 - INFO - Found credentials in environment variables.
+2025-07-03 05:34:26,457 - ERROR - Failed to launch AAPL HPO job: [Errno 2] No such file or directory: 'enhanced_train_sagemaker.py'
+2025-07-03 05:34:26,458 - ERROR - Failed to launch AAPL HPO job. Aborting.
+2025-07-03 05:35:45,564 - INFO - Verification complete – launching AWS HPO on AAPL for test.
+2025-07-03 05:35:45,565 - INFO - Launching AWS SageMaker HPO job for AAPL only
+2025-07-03 05:35:45,576 - INFO - Found credentials in environment variables.
+2025-07-03 05:35:45,829 - INFO - Found credentials in environment variables.
+2025-07-03 05:35:46,363 - WARNING - No finished training job found associated with this estimator. Please make sure this estimator is only used for building workflow config
+2025-07-03 05:35:46,364 - INFO - Creating hyperparameter tuning job with name: combined-features-hpo-aapl-1751520945
+2025-07-03 05:35:46,730 - ERROR - Failed to launch AAPL HPO job: An error occurred (ValidationException) when calling the CreateHyperParameterTuningJob operation: 2 validation errors detected: Value 'combined-features-hpo-aapl-1751520945' at 'hyperParameterTuningJobName' failed to satisfy constraint: Member must satisfy regular expression pattern: [a-zA-Z0-9](-*[a-zA-Z0-9]){0,31}; Value 'combined-features-hpo-aapl-1751520945' at 'hyperParameterTuningJobName' failed to satisfy constraint: Member must have length less than or equal to 32
+2025-07-03 05:35:46,733 - ERROR - Failed to launch AAPL HPO job. Aborting.
+2025-07-03 05:36:11,295 - INFO - Verification complete – launching AWS HPO on AAPL for test.
+2025-07-03 05:36:11,296 - INFO - Launching AWS SageMaker HPO job for AAPL only
+2025-07-03 05:36:11,307 - INFO - Found credentials in environment variables.
+2025-07-03 05:36:11,566 - INFO - Found credentials in environment variables.
+2025-07-03 05:36:12,087 - WARNING - No finished training job found associated with this estimator. Please make sure this estimator is only used for building workflow config
+2025-07-03 05:36:12,088 - INFO - Creating hyperparameter tuning job with name: cf-hpo-aapl-1751520971
+2025-07-03 05:36:12,626 - ERROR - Failed to launch AAPL HPO job: An error occurred (ResourceLimitExceeded) when calling the CreateHyperParameterTuningJob operation: The account-level service limit 'ml.m5.4xlarge for training job usage' is 4 Instances, with current utilization of 0 Instances and a request delta of 5 Instances. Please use AWS Service Quotas to request an increase for this quota. If AWS Service Quotas is not available, contact AWS support to request an increase for this quota.
+2025-07-03 05:36:12,629 - ERROR - Failed to launch AAPL HPO job. Aborting.
+2025-07-03 05:37:00,215 - INFO - Verification complete – launching AWS HPO on AAPL for test.
+2025-07-03 05:37:00,216 - INFO - Launching AWS SageMaker HPO job for AAPL only
+2025-07-03 05:37:00,228 - INFO - Found credentials in environment variables.
+2025-07-03 05:37:00,497 - INFO - Found credentials in environment variables.
+2025-07-03 05:37:01,026 - WARNING - No finished training job found associated with this estimator. Please make sure this estimator is only used for building workflow config
+2025-07-03 05:37:01,027 - INFO - Creating hyperparameter tuning job with name: cf-hpo-aapl-1751521020
+2025-07-03 05:37:01,961 - ERROR - Failed to launch AAPL HPO job: An error occurred (ValidationException) when calling the CreateHyperParameterTuningJob operation: A metric is required for this hyperparameter tuning job objective. Provide a metric in the metric definitions.
+2025-07-03 05:37:01,964 - ERROR - Failed to launch AAPL HPO job. Aborting.
+2025-07-03 05:37:24,738 - INFO - Verification complete – launching AWS HPO on AAPL for test.
+2025-07-03 05:37:24,738 - INFO - Launching AWS SageMaker HPO job for AAPL only
+2025-07-03 05:37:24,750 - INFO - Found credentials in environment variables.
+2025-07-03 05:37:25,004 - INFO - Found credentials in environment variables.
+2025-07-03 05:37:25,571 - WARNING - No finished training job found associated with this estimator. Please make sure this estimator is only used for building workflow config
+2025-07-03 05:37:25,572 - INFO - Creating hyperparameter tuning job with name: cf-hpo-aapl-1751521045
+2025-07-03 05:37:26,407 - ERROR - Failed to launch AAPL HPO job: An error occurred (ValidationException) when calling the CreateHyperParameterTuningJob operation: The range for hyperparameter [lambda_l1] can not be scaled using Logarithmic. Please update the hyperparameter range to values greater than zero.
+2025-07-03 05:37:26,410 - ERROR - Failed to launch AAPL HPO job. Aborting.
+2025-07-03 05:37:46,808 - INFO - Verification complete – launching AWS HPO on AAPL for test.
+2025-07-03 05:37:46,808 - INFO - Launching AWS SageMaker HPO job for AAPL only
+2025-07-03 05:37:46,820 - INFO - Found credentials in environment variables.
+2025-07-03 05:37:47,090 - INFO - Found credentials in environment variables.
+2025-07-03 05:37:47,699 - WARNING - No finished training job found associated with this estimator. Please make sure this estimator is only used for building workflow config
+2025-07-03 05:37:47,699 - INFO - Creating hyperparameter tuning job with name: cf-hpo-aapl-1751521067
+2025-07-03 05:40:59,757 - ERROR - Failed to launch AAPL HPO job: Error for HyperParameterTuning job cf-hpo-aapl-1751521067: Failed. Reason: No training job succeeded after 5 attempts. For additional details, please take a look at the training job failures by listing training jobs for the hyperparameter tuning job.. Check troubleshooting guide for common errors: https://docs.aws.amazon.com/sagemaker/latest/dg/sagemaker-python-sdk-troubleshooting.html
+2025-07-03 05:40:59,759 - ERROR - Failed to launch AAPL HPO job. Aborting.
+2025-07-03 05:42:11,428 - INFO - Verification complete – launching AWS HPO on AAPL for test.
+2025-07-03 05:42:11,429 - INFO - Launching AWS SageMaker HPO job for AAPL only
+2025-07-03 05:42:11,441 - INFO - Found credentials in environment variables.
+2025-07-03 05:42:11,696 - INFO - Found credentials in environment variables.
+2025-07-03 05:42:12,219 - WARNING - No finished training job found associated with this estimator. Please make sure this estimator is only used for building workflow config
+2025-07-03 05:42:12,220 - INFO - Creating hyperparameter tuning job with name: cf-hpo-aapl-1751521331
+2025-07-03 05:45:29,975 - ERROR - Failed to launch AAPL HPO job: Error for HyperParameterTuning job cf-hpo-aapl-1751521331: Failed. Reason: No training job succeeded after 5 attempts. For additional details, please take a look at the training job failures by listing training jobs for the hyperparameter tuning job.. Check troubleshooting guide for common errors: https://docs.aws.amazon.com/sagemaker/latest/dg/sagemaker-python-sdk-troubleshooting.html
+2025-07-03 05:45:29,978 - ERROR - Failed to launch AAPL HPO job. Aborting.
+2025-07-03 05:48:52,291 - INFO - Verification complete – launching AWS HPO on AAPL for test.
+2025-07-03 05:48:52,291 - INFO - Launching AWS SageMaker HPO job for AAPL only
+2025-07-03 05:48:52,303 - INFO - Found credentials in environment variables.
+2025-07-03 05:48:52,555 - INFO - Found credentials in environment variables.
+2025-07-03 05:48:53,110 - WARNING - No finished training job found associated with this estimator. Please make sure this estimator is only used for building workflow config
+2025-07-03 05:48:53,110 - INFO - Creating hyperparameter tuning job with name: cf-hpo-aapl-1751521732
+2025-07-03 05:52:05,298 - ERROR - Failed to launch AAPL HPO job: Error for HyperParameterTuning job cf-hpo-aapl-1751521732: Failed. Reason: No training job succeeded after 5 attempts. For additional details, please take a look at the training job failures by listing training jobs for the hyperparameter tuning job.. Check troubleshooting guide for common errors: https://docs.aws.amazon.com/sagemaker/latest/dg/sagemaker-python-sdk-troubleshooting.html
+2025-07-03 05:52:05,302 - ERROR - Failed to launch AAPL HPO job. Aborting.
+2025-07-03 05:52:58,817 - INFO - Verification complete – launching AWS HPO on AAPL for test.
+2025-07-03 05:52:58,817 - INFO - Launching AWS SageMaker HPO job for AAPL only
+2025-07-03 05:52:58,829 - INFO - Found credentials in environment variables.
+2025-07-03 05:52:59,092 - INFO - Found credentials in environment variables.
+2025-07-03 05:52:59,581 - WARNING - No finished training job found associated with this estimator. Please make sure this estimator is only used for building workflow config
+2025-07-03 05:52:59,582 - INFO - Creating hyperparameter tuning job with name: cf-hpo-aapl-1751521979
+2025-07-03 05:56:17,800 - ERROR - Failed to launch AAPL HPO job: Error for HyperParameterTuning job cf-hpo-aapl-1751521979: Failed. Reason: No training job succeeded after 5 attempts. For additional details, please take a look at the training job failures by listing training jobs for the hyperparameter tuning job.. Check troubleshooting guide for common errors: https://docs.aws.amazon.com/sagemaker/latest/dg/sagemaker-python-sdk-troubleshooting.html
+2025-07-03 05:56:17,803 - ERROR - Failed to launch AAPL HPO job. Aborting.

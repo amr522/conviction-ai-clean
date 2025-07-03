@@ -1,0 +1,5 @@
+train: s3://hpo-bucket-773934887314/56_stocks/2025-07-03-05-41-43/train.csv
+validation: s3://hpo-bucket-773934887314/56_stocks/2025-07-03-05-41-43/validation.csv
+test: s3://hpo-bucket-773934887314/56_stocks/2025-07-03-05-41-43/test.csv
+feature_metadata: s3://hpo-bucket-773934887314/56_stocks/2025-07-03-05-41-43/feature_metadata.json
+scaler: s3://hpo-bucket-773934887314/56_stocks/2025-07-03-05-41-43/scaler.joblib
