@@ -1,0 +1,40 @@
+{
+  "authenticity": "True",
+  "alignment_issues": [
+    "Future return columns found: ['target_1d', 'target_3d', 'target_5d', 'target_10d']",
+    "rsi_14: Suspicious early values (20/20)",
+    "macd: Suspicious early values (20/20)",
+    "macd_signal: Suspicious early values (20/20)",
+    "bb_upper: Suspicious early values (20/20)",
+    "bb_lower: Suspicious early values (20/20)",
+    "bb_middle: Suspicious early values (20/20)"
+  ],
+  "key_answers": {
+    "target_method": "Investigate discrepancy between target_1d and close.shift(-1)",
+    "additional_leakage": [
+      "rsi_14: Values too early (index 0)",
+      "macd: Values too early (index 0)",
+      "bb_upper: Values too early (index 0)",
+      "bb_lower: Values too early (index 0)"
+    ],
+    "fallback_strategies": [
+      "1. Feature Engineering: Add more sophisticated technical indicators (Ichimoku, Fibonacci levels)",
+      "2. Temporal Features: Add day-of-week, month, quarter seasonality features",
+      "3. Cross-Asset Features: Include market regime indicators (VIX, sector performance)",
+      "4. Ensemble Methods: Combine multiple models with different lookback windows",
+      "5. Alternative Targets: Try 3-day or 5-day return predictions instead of 1-day",
+      "6. Data Quality: Increase minimum volume/liquidity filters for cleaner signals",
+      "7. Synthetic Augmentation: Blend real data with carefully crafted synthetic scenarios"
+    ]
+  },
+  "test_results": {
+    "train_auc": 1.0,
+    "val_auc": 0.48957028547096504,
+    "auc_gap": 0.510429714529035,
+    "train_samples": 7014,
+    "val_samples": 1503,
+    "features": 17,
+    "leakage_fixed": false,
+    "meets_threshold": false
+  }
+}

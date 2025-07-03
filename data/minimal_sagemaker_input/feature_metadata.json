@@ -1,0 +1,18 @@
+{
+  "feature_columns": [
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume",
+    "price_range",
+    "open_close_ratio",
+    "high_close_ratio",
+    "low_close_ratio",
+    "return_1d",
+    "return_5d",
+    "volume_ma_5",
+    "volume_ratio"
+  ],
+  "target_column": "target_binary"
+}

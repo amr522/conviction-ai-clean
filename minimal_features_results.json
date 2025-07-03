@@ -1,0 +1,17 @@
+{
+  "minimal_data_path": "data/minimal_sagemaker_input",
+  "test_results": {
+    "train_auc": 1.0,
+    "val_auc": 0.5063679283401543,
+    "auc_gap": 0.4936320716598457,
+    "train_samples": 6976,
+    "val_samples": 1494,
+    "features": 13,
+    "leakage_fixed": false,
+    "meets_threshold": false
+  },
+  "approach": "minimal_features",
+  "feature_count": 13,
+  "train_samples": 6976,
+  "val_samples": 1494
+}
