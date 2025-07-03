@@ -29,10 +29,64 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # AWS Configuration
-ROLE_ARN = 'arn:aws:iam::YOUR_ACCOUNT:role/SageMakerExecutionRole'
-BUCKET = 'your-hpo-bucket'
+ROLE_ARN = 'arn:aws:iam::773934887314:role/SageMakerExecutionRole'
+BUCKET = 'hpo-bucket-773934887314'
 S3_DATA_PREFIX = f's3://{BUCKET}/data/'
 S3_OUTPUT_PREFIX = f's3://{BUCKET}/models/'
+
+def get_pinned_dataset():
+    """Get pinned dataset URI from environment or file"""
+    pinned_data = os.environ.get('PINNED_DATA_S3')
+    
+    if pinned_data:
+        logger.info(f"Using PINNED_DATA_S3 from environment: {pinned_data}")
+        return pinned_data
+    
+    dataset_file = "last_dataset_uri.txt"
+    if os.path.exists(dataset_file):
+        try:
+            with open(dataset_file, 'r') as f:
+                pinned_data = f.read().strip()
+            if pinned_data:
+                logger.info(f"Using pinned dataset from {dataset_file}: {pinned_data}")
+                return pinned_data
+        except Exception as e:
+            logger.warning(f"Failed to read {dataset_file}: {e}")
+    
+    logger.warning("No pinned dataset found. Using default data prefix.")
+    return None
+
+def validate_s3_uri(s3_uri):
+    """Validate S3 URI format and accessibility"""
+    if not s3_uri:
+        return False
+    
+    if not s3_uri.startswith('s3://'):
+        logger.error(f"Invalid S3 URI format: {s3_uri}")
+        return False
+    
+    try:
+        import boto3
+        s3_client = boto3.client('s3')
+        
+        parts = s3_uri.replace('s3://', '').split('/', 1)
+        bucket = parts[0]
+        key = parts[1] if len(parts) > 1 else ''
+        
+        if key.endswith('.csv'):
+            s3_client.head_object(Bucket=bucket, Key=key)
+        else:
+            response = s3_client.list_objects_v2(Bucket=bucket, Prefix=key, MaxKeys=1)
+            if 'Contents' not in response:
+                logger.error(f"No objects found at S3 URI: {s3_uri}")
+                return False
+        
+        logger.info(f"✅ S3 URI validated: {s3_uri}")
+        return True
+        
+    except Exception as e:
+        logger.error(f"Failed to validate S3 URI {s3_uri}: {e}")
+        return False
 
 def get_hyperparameter_ranges():
     """Define hyperparameter ranges for tuning"""
@@ -77,6 +131,15 @@ def launch_aapl_hpo():
     try:
         logger.info("Launching AWS SageMaker HPO job for AAPL only")
         
+        pinned_data = get_pinned_dataset()
+        
+        if pinned_data and validate_s3_uri(pinned_data):
+            training_data = pinned_data
+            logger.info(f"🔒 Using pinned dataset: {training_data}")
+        else:
+            training_data = f'{S3_DATA_PREFIX}AAPL/'
+            logger.warning(f"⚠️ Using fallback data source: {training_data}")
+        
         # Create SageMaker session
         session = sagemaker.Session()
         
@@ -107,7 +170,7 @@ def launch_aapl_hpo():
         # Launch tuning job
         job_name = f"options-hpo-aapl-{int(time.time())}"
         tuner.fit({
-            'training': f'{S3_DATA_PREFIX}AAPL/'
+            'training': training_data
         }, job_name=job_name)
         
         logger.info(f"Successfully launched AAPL HPO job: {job_name}")
@@ -121,6 +184,15 @@ def launch_full_universe_hpo():
     """Launch AWS SageMaker HPO job for the full filtered universe"""
     try:
         logger.info("Launching AWS SageMaker HPO job for full filtered universe")
+        
+        pinned_data = get_pinned_dataset()
+        
+        if pinned_data and validate_s3_uri(pinned_data):
+            training_data = pinned_data
+            logger.info(f"🔒 Using pinned dataset: {training_data}")
+        else:
+            training_data = f'{S3_DATA_PREFIX}filtered_universe/'
+            logger.warning(f"⚠️ Using fallback data source: {training_data}")
         
         # Create SageMaker session
         session = sagemaker.Session()
@@ -152,7 +224,7 @@ def launch_full_universe_hpo():
         # Launch tuning job
         job_name = f"options-hpo-full-universe-{int(time.time())}"
         tuner.fit({
-            'training': f'{S3_DATA_PREFIX}filtered_universe/'
+            'training': training_data
         }, job_name=job_name)
         
         logger.info(f"Successfully launched full universe HPO job: {job_name}")
