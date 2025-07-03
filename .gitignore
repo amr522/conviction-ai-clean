@@ -21,3 +21,5 @@ data/sagemaker/validation.csv
 models/stacking_meta_enhanced/
 train/data/
 train/models/
+train/__pycache__/
+train/catboost_info/
