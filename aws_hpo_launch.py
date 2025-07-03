@@ -5,12 +5,15 @@ AWS HPO Launch Script for AAPL and Full Universe
 This script launches two staged HPO jobs on AWS SageMaker:
 1. First on AAPL only (as a test)
 2. Then on the full filtered universe
+
+It reuses the same data source from the last successful HPO job with 138 completed models.
 """
 
 import os
 import sys
 import time
 import logging
+import argparse
 import boto3
 import sagemaker
 from sagemaker.tuner import HyperparameterTuner
@@ -28,11 +31,21 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# Parse command line arguments
+parser = argparse.ArgumentParser(description='Launch AWS SageMaker HPO jobs with consistent data source')
+parser.add_argument('--input-data-s3', type=str, help='S3 URI for input data', 
+                    default=os.getenv('LAST_DATA_S3'))
+parser.add_argument('--dry-run', action='store_true', help='Print config without launching jobs')
+args = parser.parse_args()
+
 # AWS Configuration
 ROLE_ARN = 'arn:aws:iam::YOUR_ACCOUNT:role/SageMakerExecutionRole'
 BUCKET = 'your-hpo-bucket'
-S3_DATA_PREFIX = f's3://{BUCKET}/data/'
+S3_DATA_PREFIX = args.input_data_s3 if args.input_data_s3 else f's3://{BUCKET}/data/'
 S3_OUTPUT_PREFIX = f's3://{BUCKET}/models/'
+
+# Log the data source
+logger.info(f"🔗 Using dataset: {S3_DATA_PREFIX}")
 
 def get_hyperparameter_ranges():
     """Define hyperparameter ranges for tuning"""
@@ -165,6 +178,21 @@ def launch_full_universe_hpo():
 def main():
     """Main function to launch AWS HPO jobs"""
     logger.info("Verification complete – launching AWS HPO on AAPL for test.")
+    
+    # Safety check - verify S3 data path
+    if not S3_DATA_PREFIX or not S3_DATA_PREFIX.startswith('s3://'):
+        logger.error(f"Invalid S3 data path: {S3_DATA_PREFIX}")
+        logger.error("Please run 'source ./scripts/get_last_hpo_dataset.sh' before executing this script")
+        sys.exit(1)
+    
+    # Print configuration for dry run
+    if args.dry_run:
+        logger.info("DRY RUN MODE - Configuration:")
+        logger.info(f"Data source: {S3_DATA_PREFIX}")
+        logger.info(f"Output location: {S3_OUTPUT_PREFIX}")
+        logger.info("Job would use the above data source for training")
+        logger.info("Exiting due to --dry-run flag")
+        sys.exit(0)
     
     # Step 1: Launch AAPL HPO job
     aapl_job = launch_aapl_hpo()
