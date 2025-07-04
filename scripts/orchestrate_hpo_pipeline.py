@@ -70,22 +70,16 @@ class HPOOrchestrator:
             return job_name
         
         try:
-            cmd = [
-                sys.executable, 'aws_catboost_hpo_launch.py',
-                '--input-data-s3', input_data_s3
-            ]
-            
+            import aws_catboost_hpo_launch
             logger.info(f"🚀 Launching CatBoost HPO job with timestamp {timestamp}")
-            result = subprocess.run(cmd, capture_output=True, text=True, cwd=os.getcwd())
             
-            if result.returncode == 0:
-                job_name = f"cb-hpo-{timestamp}"
-                if len(job_name) > 32:
-                    job_name = f"cb-{timestamp}"
+            job_name = aws_catboost_hpo_launch.launch_catboost_hpo(input_data_s3, dry_run=False)
+            
+            if job_name:
                 logger.info(f"✅ Successfully launched CatBoost HPO job: {job_name}")
                 return job_name
             else:
-                logger.error(f"❌ Failed to launch CatBoost HPO job: {result.stderr}")
+                logger.error(f"❌ Failed to launch CatBoost HPO job")
                 return None
                 
         except Exception as e:
@@ -375,7 +369,16 @@ def run_full_automation(input_data_s3: str, dry_run: bool = False):
     existing_endpoints = ["conviction-hpo-fixed-1751615264"]
     endpoint_results = orchestrator.monitor_and_fix_endpoints(existing_endpoints, 30, dry_run)
     
-    catboost_job = orchestrator.launch_catboost_hpo(input_data_s3, dry_run)
+    existing_job = "cb-hpo-1751617810"  # Currently running job
+    try:
+        status, _ = orchestrator.check_hpo_job_status(existing_job, dry_run)
+        if status in ['InProgress', 'Completed']:
+            logger.info(f"🔍 Found existing CatBoost HPO job: {existing_job}")
+            catboost_job = existing_job
+        else:
+            catboost_job = orchestrator.launch_catboost_hpo(input_data_s3, dry_run)
+    except:
+        catboost_job = orchestrator.launch_catboost_hpo(input_data_s3, dry_run)
     
     if catboost_job:
         for attempt in range(3):

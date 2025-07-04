@@ -3,7 +3,12 @@ import subprocess
 import sys
 import os
 
-subprocess.check_call([sys.executable, "-m", "pip", "install", "catboost"])
+try:
+    import catboost
+except ImportError:
+    print("Installing CatBoost...")
+    subprocess.check_call([sys.executable, "-m", "pip", "install", "catboost"])
+    import catboost
 
 import argparse
 import pandas as pd
