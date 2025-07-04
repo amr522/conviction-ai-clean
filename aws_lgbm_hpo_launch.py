@@ -27,56 +27,51 @@ def launch_lightgbm_hpo(input_data_s3: str, dry_run: bool = False) -> str | None
     
     sagemaker = boto3.client('sagemaker')
     
-    hyperparameter_ranges = {
-        'num_leaves': {
+    integer_parameter_ranges = [
+        {
             'Name': 'num_leaves',
-            'Type': 'Integer',
             'MinValue': '10',
             'MaxValue': '300'
         },
-        'learning_rate': {
-            'Name': 'learning_rate',
-            'Type': 'Continuous',
-            'MinValue': '0.01',
-            'MaxValue': '0.3'
-        },
-        'feature_fraction': {
-            'Name': 'feature_fraction',
-            'Type': 'Continuous',
-            'MinValue': '0.4',
-            'MaxValue': '1.0'
-        },
-        'bagging_fraction': {
-            'Name': 'bagging_fraction',
-            'Type': 'Continuous',
-            'MinValue': '0.4',
-            'MaxValue': '1.0'
-        },
-        'bagging_freq': {
+        {
             'Name': 'bagging_freq',
-            'Type': 'Integer',
             'MinValue': '1',
             'MaxValue': '7'
         },
-        'min_child_samples': {
+        {
             'Name': 'min_child_samples',
-            'Type': 'Integer',
             'MinValue': '5',
             'MaxValue': '100'
+        }
+    ]
+    
+    continuous_parameter_ranges = [
+        {
+            'Name': 'learning_rate',
+            'MinValue': '0.01',
+            'MaxValue': '0.3'
         },
-        'reg_alpha': {
+        {
+            'Name': 'feature_fraction',
+            'MinValue': '0.4',
+            'MaxValue': '1.0'
+        },
+        {
+            'Name': 'bagging_fraction',
+            'MinValue': '0.4',
+            'MaxValue': '1.0'
+        },
+        {
             'Name': 'reg_alpha',
-            'Type': 'Continuous',
             'MinValue': '0',
             'MaxValue': '10'
         },
-        'reg_lambda': {
+        {
             'Name': 'reg_lambda',
-            'Type': 'Continuous',
             'MinValue': '0',
             'MaxValue': '10'
         }
-    }
+    ]
     
     static_hyperparameters = {
         'objective': 'binary',
@@ -106,24 +101,20 @@ def launch_lightgbm_hpo(input_data_s3: str, dry_run: bool = False) -> str | None
                 'MaxParallelTrainingJobs': 5
             },
             'ParameterRanges': {
-                'IntegerParameterRanges': [
-                    hyperparameter_ranges['num_leaves'],
-                    hyperparameter_ranges['bagging_freq'],
-                    hyperparameter_ranges['min_child_samples']
-                ],
-                'ContinuousParameterRanges': [
-                    hyperparameter_ranges['learning_rate'],
-                    hyperparameter_ranges['feature_fraction'],
-                    hyperparameter_ranges['bagging_fraction'],
-                    hyperparameter_ranges['reg_alpha'],
-                    hyperparameter_ranges['reg_lambda']
-                ]
+                'IntegerParameterRanges': integer_parameter_ranges,
+                'ContinuousParameterRanges': continuous_parameter_ranges
             }
         },
         'TrainingJobDefinition': {
             'AlgorithmSpecification': {
                 'TrainingImage': training_image,
-                'TrainingInputMode': 'File'
+                'TrainingInputMode': 'File',
+                'MetricDefinitions': [
+                    {
+                        'Name': 'validation:auc',
+                        'Regex': 'valid_1-auc:([0-9\\.]+)'
+                    }
+                ]
             },
             'RoleArn': role_arn,
             'InputDataConfig': [
