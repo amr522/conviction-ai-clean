@@ -828,7 +828,27 @@ if not args.train and not os.environ.get('SM_CHANNEL_TRAINING'):
 - ✅ Environment variables: Script works with SM_CHANNEL_TRAINING and SM_MODEL_DIR
 - ✅ All 5 unit tests pass
 
-**Current Test:** HPO job `hpo-aapl-1751597558` launched to verify training execution fixes
+**Current Test:** HPO job `hpo-aapl-1751598779` launched to verify training execution and metric emission fixes
+
+#### Final Resolution (Session 5 continued)
+**Problem:** Training jobs failing with "No objective metrics found" after fixing ExecuteUserScriptError
+**Root Cause:** Training script not emitting validation:auc metric in format expected by SageMaker HPO
+**Solution Applied:**
+- **Metric Emission:** Added `print(f"validation-auc:{validation_auc:.6f}")` to training script output
+- **Environment Variable Fix:** Corrected `SM_CHANNEL_TRAINING` to `SM_CHANNEL_TRAIN` in validation logic
+- **Enhanced Error Handling:** Added ❌ emoji-prefixed error messages for better debugging
+
+**Verification Results:**
+- ✅ All 5 unit tests pass after fixing argument validation logic
+- ✅ Local metric emission test: outputs both "Final validation AUC: 0.5000" and "validation-auc:0.500000"
+- ✅ Local scenario tests: missing args (parser error), nonexistent file (FileNotFoundError), valid run (successful training)
+- 🔧 HPO job `hpo-aapl-1751598779` running to verify complete fix
+
+**Technical Details:**
+- **Before:** Training script failed with "SM_CHANNEL_TRAINING environment variable is not set"
+- **After:** Training script correctly uses `SM_CHANNEL_TRAIN` environment variable set by SageMaker
+- **Metric Format:** SageMaker expects `validation-auc:{value}` format, regex `validation-auc:([0-9\\.]+)`
+- **Error Messages:** Clear ❌ prefixed messages for missing data paths and validation failures
 
 ### ✅ Final Deliverables Summary
 1. **HPO secrets set:** AWS credentials configured in GitHub HPO environment
