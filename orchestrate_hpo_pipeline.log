@@ -1,0 +1,93 @@
+2025-07-04 19:32:50,800 - INFO - Found credentials in environment variables.
+2025-07-04 19:32:50,941 - ERROR - No input data specified. Use --input-data-s3 or set PINNED_DATA_S3
+2025-07-04 19:33:11,113 - INFO - Found credentials in environment variables.
+2025-07-04 19:33:11,245 - INFO - 🚀 Starting HPO Pipeline Orchestration
+2025-07-04 19:33:11,245 - INFO -    Algorithm: both
+2025-07-04 19:33:11,245 - INFO -    Input data: s3://hpo-bucket-773934887314/56_stocks/46_models/2025-07-02-03-05-02/train.csv
+2025-07-04 19:33:11,246 - INFO -    Auto-recover: False
+2025-07-04 19:33:11,246 - INFO -    Auto-ensemble: False
+2025-07-04 19:33:11,246 - INFO -    Notifications: False
+2025-07-04 19:33:11,246 - INFO -    Set-and-forget: False
+2025-07-04 19:33:11,246 - INFO -    Dry-run: True
+2025-07-04 19:33:11,246 - INFO - 🧪 DRY RUN MODE - No actual operations will be performed
+2025-07-04 19:33:11,246 - INFO - 🧪 DRY RUN: Would launch CatBoost HPO job: cb-hpo-1751657591-dry
+2025-07-04 19:33:11,695 - ERROR - Failed to check HPO job cb-hpo-1751657591-dry: An error occurred (ResourceNotFound) when calling the DescribeHyperParameterTuningJob operation: Amazon SageMaker can't find a tuning job called cb-hpo-1751657591-dry. Type another name.
+2025-07-04 19:33:11,696 - ERROR - ❌ CATBOOST HPO job failed permanently: An error occurred (ResourceNotFound) when calling the DescribeHyperParameterTuningJob operation: Amazon SageMaker can't find a tuning job called cb-hpo-1751657591-dry. Type another name.
+2025-07-04 19:33:11,696 - INFO - 🏁 HPO Pipeline Orchestration completed!
+2025-07-04 19:38:31,488 - INFO - Found credentials in environment variables.
+2025-07-04 19:38:31,623 - INFO - 🚀 Starting HPO Pipeline Orchestration
+2025-07-04 19:38:31,623 - INFO -    Algorithm: both
+2025-07-04 19:38:31,623 - INFO -    Input data: s3://hpo-bucket-773934887314/56_stocks/46_models/2025-07-02-03-05-02/train.csv
+2025-07-04 19:38:31,623 - INFO -    Auto-recover: True
+2025-07-04 19:38:31,623 - INFO -    Auto-ensemble: False
+2025-07-04 19:38:31,623 - INFO -    Notifications: False
+2025-07-04 19:38:31,623 - INFO -    Set-and-forget: False
+2025-07-04 19:38:31,623 - INFO -    Dry-run: True
+2025-07-04 19:38:31,623 - INFO - 🧪 DRY RUN MODE - No actual operations will be performed
+2025-07-04 19:38:31,623 - INFO - 🧪 DRY RUN: Would launch CatBoost HPO job: cb-hpo-1751657911-dry
+2025-07-04 19:38:32,057 - ERROR - Failed to check HPO job cb-hpo-1751657911-dry: An error occurred (ResourceNotFound) when calling the DescribeHyperParameterTuningJob operation: Amazon SageMaker can't find a tuning job called cb-hpo-1751657911-dry. Type another name.
+2025-07-04 19:38:32,057 - WARNING - ⚠️ CATBOOST HPO job failed, retrying (1/3)
+2025-07-04 19:38:32,057 - INFO - 🧪 DRY RUN: Would launch CatBoost HPO job: cb-hpo-1751657912-dry
+2025-07-04 19:38:32,057 - INFO - ⏳ Waiting for active jobs: ['catboost']
+2025-07-04 19:57:38,129 - INFO - Found credentials in environment variables.
+2025-07-04 19:57:38,256 - INFO - 🚀 Starting HPO Pipeline Orchestration
+2025-07-04 19:57:38,256 - INFO -    Algorithm: both
+2025-07-04 19:57:38,256 - INFO -    Input data: s3://hpo-bucket-773934887314/56_stocks/46_models/2025-07-02-03-05-02/train.csv
+2025-07-04 19:57:38,256 - INFO -    Auto-recover: True
+2025-07-04 19:57:38,256 - INFO -    Auto-ensemble: True
+2025-07-04 19:57:38,256 - INFO -    Notifications: False
+2025-07-04 19:57:38,256 - INFO -    Set-and-forget: True
+2025-07-04 19:57:38,256 - INFO -    Dry-run: True
+2025-07-04 19:57:38,257 - INFO - 🧪 DRY RUN MODE - No actual operations will be performed
+2025-07-04 19:57:38,266 - INFO - 🚀 Starting Full Automation Mode
+2025-07-04 19:57:38,266 - INFO -    Features: auto-recovery, auto-ensemble, notifications, endpoint monitoring
+2025-07-04 19:57:38,266 - INFO - ⏭️ Skipping endpoint monitoring to prioritize HPO job completion
+2025-07-04 19:57:38,733 - INFO - ✅ HPO job cb-hpo-1751617810 completed successfully!
+2025-07-04 19:57:38,733 - INFO -    Best AUC: 0.513627290725708
+2025-07-04 19:57:38,733 - INFO - 🔍 Found existing CatBoost HPO job: cb-hpo-1751617810
+2025-07-04 19:57:38,898 - INFO - ✅ HPO job cb-hpo-1751617810 completed successfully!
+2025-07-04 19:57:38,898 - INFO -    Best AUC: 0.513627290725708
+2025-07-04 19:57:38,898 - INFO - ✅ CatBoost HPO completed successfully!
+2025-07-04 19:57:38,898 - INFO - 🧪 DRY RUN: Would extract hyperparams to configs/hpo/best_full_catboost_hyperparams.json
+2025-07-04 19:57:38,899 - INFO - 🧪 DRY RUN: Would deploy ensemble with XGB:configs/hpo/best_full_hyperparams.json CB:configs/hpo/best_full_catboost_hyperparams.json
+2025-07-04 19:57:38,899 - INFO - 🧪 DRY RUN: Would send notification: 🎯 Full automation completed! Ensemble deployed successfully.
+2025-07-04 19:57:38,899 - INFO - 🏁 Full automation completed!
+2025-07-04 19:57:50,579 - INFO - Found credentials in environment variables.
+2025-07-04 19:57:50,706 - INFO - 🚀 Starting HPO Pipeline Orchestration
+2025-07-04 19:57:50,706 - INFO -    Algorithm: both
+2025-07-04 19:57:50,706 - INFO -    Input data: s3://hpo-bucket-773934887314/56_stocks/46_models/2025-07-02-03-05-02/train.csv
+2025-07-04 19:57:50,706 - INFO -    Auto-recover: True
+2025-07-04 19:57:50,706 - INFO -    Auto-ensemble: True
+2025-07-04 19:57:50,706 - INFO -    Notifications: False
+2025-07-04 19:57:50,707 - INFO -    Set-and-forget: True
+2025-07-04 19:57:50,707 - INFO -    Dry-run: False
+2025-07-04 19:57:50,717 - INFO - 🚀 Starting Full Automation Mode
+2025-07-04 19:57:50,717 - INFO -    Features: auto-recovery, auto-ensemble, notifications, endpoint monitoring
+2025-07-04 19:57:51,076 - INFO - ⏭️ Skipping endpoint monitoring to prioritize HPO job completion
+2025-07-04 19:57:51,523 - INFO - ✅ HPO job cb-hpo-1751617810 completed successfully!
+2025-07-04 19:57:51,523 - INFO -    Best AUC: 0.513627290725708
+2025-07-04 19:57:51,524 - INFO - 🔍 Found existing CatBoost HPO job: cb-hpo-1751617810
+2025-07-04 19:57:51,681 - INFO - ✅ HPO job cb-hpo-1751617810 completed successfully!
+2025-07-04 19:57:51,682 - INFO -    Best AUC: 0.513627290725708
+2025-07-04 19:57:51,682 - INFO - ✅ CatBoost HPO completed successfully!
+2025-07-04 19:57:51,889 - INFO - ✅ Extracted catboost hyperparams to configs/hpo/best_full_catboost_hyperparams.json
+2025-07-04 19:57:51,890 - INFO -    Best AUC: 0.513627290725708
+2025-07-04 19:57:51,890 - INFO - 🚀 Deploying ensemble model
+2025-07-04 19:57:51,890 - INFO -    XGBoost config: configs/hpo/best_full_hyperparams.json
+2025-07-04 19:57:51,890 - INFO -    CatBoost config: configs/hpo/best_full_catboost_hyperparams.json
+2025-07-04 19:57:52,196 - ERROR - ❌ Failed to deploy ensemble: usage: deploy_ensemble.py [-h] --model-path MODEL_PATH --endpoint-name
+                          ENDPOINT_NAME [--role-arn ROLE_ARN]
+                          [--instance-type INSTANCE_TYPE]
+deploy_ensemble.py: error: the following arguments are required: --model-path, --endpoint-name
+
+2025-07-04 19:57:52,197 - INFO - 🏁 Full automation completed!
+2025-07-04 19:58:58,285 - INFO - Found credentials in environment variables.
+2025-07-04 19:58:58,417 - INFO - 🚀 Starting HPO Pipeline Orchestration
+2025-07-04 19:58:58,418 - INFO -    Algorithm: xgboost
+2025-07-04 19:58:58,418 - INFO -    Input data: s3://hpo-bucket-773934887314/56_stocks/46_models/2025-07-02-03-05-02/train.csv
+2025-07-04 19:58:58,418 - INFO -    Auto-recover: True
+2025-07-04 19:58:58,418 - INFO -    Auto-ensemble: False
+2025-07-04 19:58:58,418 - INFO -    Notifications: False
+2025-07-04 19:58:58,418 - INFO -    Set-and-forget: False
+2025-07-04 19:58:58,418 - INFO -    Dry-run: False
+2025-07-04 19:58:58,418 - INFO - 🏁 HPO Pipeline Orchestration completed!

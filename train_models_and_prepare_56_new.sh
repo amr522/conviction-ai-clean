@@ -187,6 +187,14 @@ for arg in "$@"; do
       MODELS_FILE="$2"
       shift 2
       ;;
+    --algorithms)
+      ALGORITHMS="$2"
+      shift 2
+      ;;
+    --sentiment-source)
+      SENTIMENT_SOURCE="$2"
+      shift 2
+      ;;
   esac
 done
 
@@ -413,6 +421,8 @@ if $USE_ENHANCED; then
   $USE_PER_SECTOR && ENHANCED_ARGS="$ENHANCED_ARGS --per-sector"
   $USE_DEPLOY && ENHANCED_ARGS="$ENHANCED_ARGS --deploy"
   [ -n "$MODELS_FILE" ] && ENHANCED_ARGS="$ENHANCED_ARGS --models-file $MODELS_FILE"
+  [ -n "$ALGORITHMS" ] && ENHANCED_ARGS="$ENHANCED_ARGS --algorithms $ALGORITHMS"
+  [ -n "$SENTIMENT_SOURCE" ] && ENHANCED_ARGS="$ENHANCED_ARGS --sentiment-source $SENTIMENT_SOURCE"
   
   echo "🧠 Using enhanced training pipeline with args: $ENHANCED_ARGS"
   

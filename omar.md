@@ -1053,3 +1053,127 @@ All missing components have been implemented according to the comprehensive retr
 - **Phase 5**: Real-time sentiment dashboard with tweet volume widgets
 - **Phase 6**: Advanced sentiment features (momentum, volatility, cross-correlation)
 - **Phase 7**: Multi-source sentiment fusion (Reddit, Discord, news sentiment correlation)
+
+---
+
+## 🔧 SESSION 7 PRODUCTION EXECUTION: LEAK-PROOF RETRAIN WORKFLOW
+**Execution Date:** July 4, 2025 19:56-20:02 UTC  
+**Branch:** retrain/leak-proof-TA  
+**Status:** ⚠️ PARTIAL SUCCESS - 1/4 algorithms running, 1 failed, 2 blocked
+
+### ✅ COMPLETED STEPS
+
+**1. Endpoint Teardown (19:56 UTC)**
+- ✅ Successfully deleted failed endpoint `conviction-ensemble-v4-1751650627`
+- ✅ Confirmed deletion with wait script
+
+**2. Branch Creation (19:57 UTC)**
+- ✅ Created fresh branch `retrain/leak-proof-TA`
+- ✅ Ready for leak-proof retraining workflow
+
+**3. HPO Job Launches (19:59-20:00 UTC)**
+- ✅ LightGBM HPO: `lgbm-hpo-1751659217` (LAUNCHED → FAILED)
+- ✅ GRU Training: `price-gru-1751659215` (LAUNCHED → InProgress)
+- ❌ XGBoost: Blocked by missing SageMaker SDK environment issue
+- ⚠️ CatBoost: Existing job `cb-hpo-1751617810` (AUC 0.513 < 0.60 threshold)
+
+### 🔧 TECHNICAL FIXES APPLIED
+
+**LightGBM HPO Parameter Validation:**
+- Fixed parameter validation by removing invalid 'Type' fields from hyperparameter ranges
+- Added metric definitions for SageMaker HPO objective tracking (`validation:auc`)
+- Corrected parameter range format for SageMaker API compatibility
+
+**GRU Training Infrastructure:**
+- Changed from GPU (ml.p3.2xlarge) to CPU (ml.m5.2xlarge) due to AWS quota limits
+- Successfully launched with PyTorch training container
+- Currently in progress with 50 epochs configuration
+
+### ⚠️ CURRENT ISSUES
+
+**1. LightGBM HPO Failure (20:02 UTC)**
+- Job `lgbm-hpo-1751659217` failed after successful launch
+- Investigating failure reason for potential retry (attempt 1/3)
+
+**2. Environment Blocking Issue**
+- SageMaker Python SDK missing from environment
+- Prevents launching XGBoost HPO jobs
+- All HPO launcher scripts require `sagemaker` module
+
+**3. Performance Threshold Issue**
+- Existing CatBoost job AUC 0.513 < 0.60 threshold requirement
+- Need fresh XGBoost job to meet performance criteria
+
+### 📊 CURRENT STATUS SUMMARY
+- **Running Jobs:** 1/4 (GRU training in progress)
+- **Failed Jobs:** 1/4 (LightGBM HPO failed, investigating)
+- **Blocked Jobs:** 1/4 (XGBoost blocked by environment)
+- **Below Threshold:** 1/4 (CatBoost AUC 0.513 < 0.60)
+
+## Session 6 - Leak-Proof Retrain Workflow + Twitter Sentiment Integration (Current Session)
+
+**Status: INFRASTRUCTURE COMPLETE - Ready for Algorithm Execution**
+
+### Part A: Leak-Proof Retrain Workflow Progress
+
+**✅ COMPLETED STEPS:**
+1. **Environment Fix & AWS Resource Optimization**
+   - ✅ Installed SageMaker SDK version 2.247.1
+   - ✅ Fixed AWS resource quota issues by changing instance types:
+     - XGBoost: ml.m5.4xlarge → ml.m5.xlarge (quota: 15.0 available)
+     - CatBoost: ml.m5.4xlarge → ml.m5.xlarge (quota: 15.0 available)
+     - GRU: ml.g4dn.xlarge → ml.m5.2xlarge (quota: 15.0 available)
+
+2. **Algorithm Status Monitoring**
+   - ✅ **CatBoost HPO**: `cb-hpo-1751662733` (48/50 jobs completed, 2 in progress)
+     - Current best AUC: 0.5106 (below 0.60 threshold)
+   - 🔄 **XGBoost HPO**: Ready to relaunch with fixed instance type
+   - ❌ **LightGBM HPO**: Failed all 3 attempts (exhausted retries)
+   - 🔄 **GRU Training**: Ready to relaunch with CPU instance
+
+3. **Infrastructure Preparation**
+   - ✅ Created comprehensive training scripts for all algorithms
+   - ✅ Updated HPO launchers with proper AWS resource management
+   - ✅ Verified SageMaker SDK functionality
+
+### Part B: Twitter Sentiment Integration Implementation
+
+**✅ COMPLETED STEPS:**
+1. **Phase 1-A: Secrets Management**
+   - ✅ Created `aws_utils.py` with secure secret retrieval functions
+   - ✅ Implemented fallback to environment variables
+   - ✅ Support for Twitter, Polygon, XAI, FRED API keys
+
+2. **Phase 1-B: Twitter Stream Ingestion**
+   - ✅ Created `scripts/twitter_stream_ingest.py` with async Tweepy v2 API
+   - ✅ Implemented filtered stream for 46-stock cashtags
+   - ✅ S3 storage with gzip compression: `raw/twitter/{symbol}/YYYY-MM-DD.json.gz`
+   - ✅ Rate limiting and error handling
+
+3. **Phase 2-A: FinBERT Sentiment Scoring**
+   - ✅ Created `score_tweets_finbert.py` with ONNXRuntime CPU
+   - ✅ HuggingFace FinBERT model integration
+   - ✅ Parquet output: `sentiment/finbert/{symbol}/YYYY-MM-DD.parquet`
+   - ✅ Test mode for development
+
+4. **Phase 4: Pipeline Integration**
+   - ✅ Enhanced `scripts/orchestrate_hpo_pipeline.py` with `--twitter-sentiment` flag
+   - ✅ Added TwitterSentimentTask class for automated processing
+   - ✅ Dry-run support for sentiment pipeline testing
+
+### 🔄 CURRENT EXECUTION STATUS
+- **Part A**: Ready to relaunch algorithms with fixed AWS resources
+- **Part B**: Sentiment infrastructure complete, ready for feature integration
+- **Next**: Execute algorithm training, build ensemble, deploy v5 endpoint
+
+### 📊 PERFORMANCE TARGETS
+- **Base Models**: AUC ≥ 0.60 (3-4 algorithms)
+- **Ensemble**: AUC ≥ 0.62
+- **Sentiment Uplift**: ≥ +0.02 AUC improvement
+- **Endpoint**: `conviction-ensemble-v5-{timestamp}` InService status
+
+### 🎯 AUTOMATION STRATEGY
+- Auto-monitoring HPO jobs every 15 minutes
+- Auto-retry failed jobs (≤ 3 attempts)
+- Progress logging and intermediate commits
+- Comprehensive documentation updates
