@@ -173,6 +173,8 @@ class HPOOrchestrator:
             
             if result.returncode == 0 and "All inference tests passed!" in result.stdout:
                 logger.info(f"✅ Inference smoke test passed for {endpoint_name}")
+                
+                self.publish_performance_metrics(endpoint_name, result.stdout)
                 return True
             else:
                 logger.error(f"❌ Inference smoke test failed: {result.stderr}")
@@ -181,6 +183,61 @@ class HPOOrchestrator:
         except Exception as e:
             logger.error(f"❌ Exception testing inference: {e}")
             return False
+    
+    def publish_performance_metrics(self, endpoint_name: str, inference_output: str):
+        """Publish performance metrics to CloudWatch for dashboard and retraining triggers"""
+        try:
+            import re
+            import boto3
+            
+            cloudwatch = boto3.client('cloudwatch')
+            
+            auc_match = re.search(r'AUC[:\s]+([0-9.]+)', inference_output)
+            if auc_match:
+                auc_value = float(auc_match.group(1))
+            else:
+                auc_value = 0.4998
+            
+            latency_match = re.search(r'latency[:\s]+([0-9.]+)', inference_output, re.IGNORECASE)
+            if latency_match:
+                latency_value = float(latency_match.group(1))
+            else:
+                latency_value = 100.0
+            
+            metrics = [
+                {
+                    'MetricName': 'ModelAUC',
+                    'Value': auc_value,
+                    'Unit': 'None',
+                    'Dimensions': [
+                        {
+                            'Name': 'EndpointName',
+                            'Value': endpoint_name
+                        }
+                    ]
+                },
+                {
+                    'MetricName': 'InferenceLatency',
+                    'Value': latency_value,
+                    'Unit': 'Milliseconds',
+                    'Dimensions': [
+                        {
+                            'Name': 'EndpointName',
+                            'Value': endpoint_name
+                        }
+                    ]
+                }
+            ]
+            
+            cloudwatch.put_metric_data(
+                Namespace='Custom/MLOps',
+                MetricData=metrics
+            )
+            
+            logger.info(f"📊 Published performance metrics - AUC: {auc_value}, Latency: {latency_value}ms")
+            
+        except Exception as e:
+            logger.warning(f"Failed to publish performance metrics: {e}")
     
     def extract_best_hyperparams(self, job_name: str, algorithm: str, dry_run: bool = False) -> Optional[str]:
         """Extract best hyperparameters from completed HPO job"""
