@@ -49,6 +49,7 @@ class TestXGBoostTrainArgs(unittest.TestCase):
         with patch.object(sys, 'argv', [
             'xgboost_train.py',
             '--train', '/tmp/train.csv',
+            '--model-dir', '/tmp/model',
             '--max_depth', '6',
             '--eta', '0.1',
             '--min_child_weight', '3'

@@ -796,8 +796,39 @@ This README should be updated automatically at the end of each session with:
 #### Current Status
 - **HPO Job Creation:** ✅ Successfully creates hyperparameter tuning jobs (no more ValidationException)
 - **Data Format:** ✅ No more AlgorithmError during data validation 
-- **Training Execution:** ⚠️ Individual training jobs failing - investigating root cause
-- **Next Steps:** Debug training job failures, verify container compatibility
+- **Training Execution:** 🔧 Enhanced validation and error handling implemented
+- **Unit Tests:** ✅ All 5 tests pass after fixing argument validation logic
+- **Local Testing:** ✅ All scenario tests pass (missing args, nonexistent file, valid run)
+
+#### Training Execution Debugging (Session 5 continued)
+**Problem:** Individual training jobs failing with ExecuteUserScriptError exit code 1
+**Root Cause:** SageMaker XGBoost Framework calls script as `python3 -m xgboost_train` with hyperparameters but without `--train` and `--model-dir` arguments. Instead, it sets environment variables `SM_CHANNEL_TRAINING` and `SM_MODEL_DIR`.
+
+**Solution Applied:**
+- **Enhanced Argument Validation:** Updated `parse_args()` to check for both CLI arguments AND environment variables
+- **Clear Error Messages:** Added ❌ emoji-prefixed error messages for better debugging
+- **Robust Data Loading:** Enhanced `load_data()` and `train_model()` with detailed validation and logging
+- **Fixed Unit Tests:** Updated test to include required `--model-dir` argument
+
+**Code Changes:**
+```python
+# Before: Only checked CLI arguments
+if not args.train:
+    parser.error("--train argument is required")
+
+# After: Check both CLI args and environment variables  
+if not args.train and not os.environ.get('SM_CHANNEL_TRAINING'):
+    parser.error("--train argument is required when SM_CHANNEL_TRAINING environment variable is not set")
+```
+
+**Verification Results:**
+- ✅ Missing --train: Clear parser error with exit code 2
+- ✅ Nonexistent file: Clear FileNotFoundError with ❌ emoji and exit code 1  
+- ✅ Valid scenario: Successfully trained model with detailed debug output
+- ✅ Environment variables: Script works with SM_CHANNEL_TRAINING and SM_MODEL_DIR
+- ✅ All 5 unit tests pass
+
+**Current Test:** HPO job `hpo-aapl-1751597558` launched to verify training execution fixes
 
 ### ✅ Final Deliverables Summary
 1. **HPO secrets set:** AWS credentials configured in GitHub HPO environment
