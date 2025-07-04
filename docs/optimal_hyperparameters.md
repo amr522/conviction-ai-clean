@@ -1,14 +1,37 @@
 # Optimal Hyperparameters Guide
 
-This document contains the optimal hyperparameters from the successful HPO job that achieved perfect validation AUC = 1.0.
+This document contains the optimal hyperparameters from successful HPO jobs.
 
-## Best Training Job Details
+## Latest HPO Job Results (Session 7)
+- **HPO Job:** hpo-full-1751610067
+- **Best Training Job:** hpo-full-1751610067-032-ecde9880
+- **Validation AUC:** 1.0 (perfect score)
+- **Status:** Completed (50/50 training jobs successful)
+- **Completion Time:** 2025-07-04T06:43:22Z
+
+## Previous HPO Job Results (Session 6)
 - **HPO Job:** hpo-full-1751604591
 - **Best Training Job:** hpo-full-1751604591-044-b07b4aa3
 - **Validation AUC:** 1.0 (perfect score)
 - **Completion Time:** 2025-07-04T05:03:06.795Z
 
-## XGBoost Hyperparameters (Optimal)
+## XGBoost Hyperparameters (Latest - Session 7)
+
+### Core Model Parameters
+```json
+{
+  "max_depth": 10,
+  "eta": 0.2629932420726331,
+  "min_child_weight": 2,
+  "subsample": 0.9135096821292192,
+  "gamma": 0.6498349748696841,
+  "alpha": 0.5164473042633577,
+  "lambda": 1.9489287645384434,
+  "colsample_bytree": 0.9550893077982054
+}
+```
+
+## XGBoost Hyperparameters (Previous - Session 6)
 
 ### Core Model Parameters
 ```json
