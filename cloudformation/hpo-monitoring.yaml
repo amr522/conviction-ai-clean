@@ -16,7 +16,7 @@ Resources:
   HPOAlertsTopic:
     Type: AWS::SNS::Topic
     Properties:
-      TopicName: hpo-pipeline-alerts
+      TopicName: !Sub "hpo-pipeline-alerts-${AWS::StackName}"
       DisplayName: HPO Pipeline Alerts
       Subscription:
         - Protocol: email
