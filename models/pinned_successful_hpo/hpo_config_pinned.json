@@ -1,0 +1,11 @@
+{
+  "successful_hpo_job": "hpo-full-1751604591",
+  "best_training_job": "hpo-full-1751604591-044-b07b4aa3",
+  "validation_auc": 1.0,
+  "completion_time": "2025-07-04T05:03:06.795Z",
+  "dataset_uri": "s3://hpo-bucket-773934887314/56_stocks/46_models/2025-07-02-03-05-02/train.csv",
+  "training_jobs_completed": 50,
+  "training_jobs_failed": 0,
+  "model_artifact_s3": "s3://sagemaker-us-east-1-773934887314/hpo-full-1751604591-044-b07b4aa3/output/model.tar.gz",
+  "model_artifact_local": "models/pinned_successful_hpo/best_model_hpo-full-1751604591-044-b07b4aa3.tar.gz"
+}

@@ -912,6 +912,20 @@ This README should be updated automatically at the end of each session with:
    - `hpo-aapl-1751604055` (test) - Completed successfully
    - `hpo-full-1751604591` (production) - Running successfully
 
+#### Pinned Successful Training Artifacts
+- **Location:** `models/pinned_successful_hpo/`
+- **Best Model:** `best_model_hpo-full-1751604591-044-b07b4aa3.tar.gz` (1.1MB)
+- **Hyperparameters:** `best_hyperparameters.json` - Optimal XGBoost parameters achieving AUC=1.0
+- **Configuration:** `hpo_config_pinned.json` - Complete job metadata and S3 references
+- **Dataset:** `s3://hpo-bucket-773934887314/56_stocks/46_models/2025-07-02-03-05-02/train.csv`
+- **Status:** ✅ PRESERVED - All successful training artifacts pinned for future reference
+
+#### Cleaned Up Files
+- **Removed:** `aws_hpo_launch.log` (temporary session logs)
+- **Removed:** `data/processed_with_news_20250628/` (old sample data, 3.9MB)
+- **Archived:** `last_dataset_uri.txt` → `models/pinned_successful_hpo/pinned_dataset_uri.txt`
+- **Status:** ✅ CLEAN - Repository ready for future training sessions
+
 #### Key Technical Details
 - **Training Script:** All 26 custom hyperparameters now supported
 - **Argument Validation:** Enhanced error handling and validation
