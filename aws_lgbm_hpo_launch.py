@@ -82,7 +82,7 @@ def launch_lightgbm_hpo(input_data_s3: str, dry_run: bool = False) -> str | None
         'verbose': '-1'
     }
     
-    training_image = "683313688378.dkr.ecr.us-east-1.amazonaws.com/sagemaker-lightgbm:latest"
+    training_image = "683313688378.dkr.ecr.us-east-1.amazonaws.com/sagemaker-scikit-learn:0.23-1-cpu-py3"
     
     role_arn = "arn:aws:iam::773934887314:role/SageMakerExecutionRole"
     
