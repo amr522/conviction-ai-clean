@@ -97,7 +97,7 @@ class TwitterStreamProcessor(tweepy.StreamingClient):
         except Exception as e:
             logger.error(f"Error flushing buffer for {symbol}: {e}")
 
-def get_twitter_bearer_token():
+def get_twitter_bearer_token(dry_run=False):
     """Get Twitter Bearer Token from AWS Secrets Manager"""
     try:
         secrets_client = boto3.client('secretsmanager')
@@ -106,7 +106,11 @@ def get_twitter_bearer_token():
         return secrets['bearer_token']
     except Exception as e:
         logger.warning(f"Failed to get Twitter token from Secrets Manager: {e}")
-        return os.environ.get('TWITTER_BEARER_TOKEN')
+        token = os.environ.get('TWITTER_BEARER_TOKEN')
+        if not token and dry_run:
+            logger.info("🧪 DRY RUN: Using mock Twitter Bearer Token")
+            return "mock_token_for_dry_run_testing"
+        return token
 
 def get_stock_symbols():
     """Get 46 stock symbols from config"""
@@ -125,7 +129,7 @@ def main():
     
     args = parser.parse_args()
     
-    bearer_token = get_twitter_bearer_token()
+    bearer_token = get_twitter_bearer_token(args.dry_run)
     if not bearer_token:
         logger.error("Twitter Bearer Token not found. Set TWITTER_BEARER_TOKEN or configure AWS Secrets Manager")
         sys.exit(1)

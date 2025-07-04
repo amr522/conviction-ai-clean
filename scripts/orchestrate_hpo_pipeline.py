@@ -357,6 +357,71 @@ class HPOOrchestrator:
         
         return success
 
+class TwitterSentimentTask:
+    """Twitter sentiment integration task for HPO pipeline"""
+    
+    def __init__(self, s3_bucket: str = 'hpo-bucket-773934887314'):
+        self.s3_bucket = s3_bucket
+        self.s3_client = boto3.client('s3')
+        
+    def run_sentiment_pipeline(self, symbols: List[str] = None, dry_run: bool = False) -> bool:
+        """Run complete sentiment pipeline: ingestion -> scoring -> features"""
+        try:
+            if symbols is None:
+                symbols = ['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'TSLA']
+            
+            logger.info(f"🐦 Starting Twitter sentiment pipeline for {len(symbols)} symbols")
+            
+            if dry_run:
+                logger.info("🧪 DRY RUN: Would run complete sentiment pipeline")
+                return True
+            
+            logger.info("Phase 1: Twitter stream ingestion")
+            result = subprocess.run([
+                'python', 'scripts/twitter_stream_ingest.py',
+                '--dry-run', '--duration', '60'
+            ], capture_output=True, text=True, timeout=120)
+            
+            if result.returncode != 0:
+                logger.error(f"Twitter ingestion failed: {result.stderr}")
+                return False
+            
+            logger.info("Phase 2: FinBERT sentiment scoring")
+            result = subprocess.run([
+                'python', 'score_tweets_finbert.py',
+                '--test-mode'
+            ], capture_output=True, text=True, timeout=300)
+            
+            if result.returncode != 0:
+                logger.error(f"FinBERT scoring failed: {result.stderr}")
+                return False
+            
+            logger.info("Phase 3: Sentiment feature creation")
+            success_count = 0
+            for symbol in symbols[:2]:  # Test with first 2 symbols
+                result = subprocess.run([
+                    'python', 'create_intraday_features.py',
+                    '--symbol', symbol,
+                    '--test-sentiment'
+                ], capture_output=True, text=True, timeout=180)
+                
+                if result.returncode == 0:
+                    success_count += 1
+                    logger.info(f"✅ Created sentiment features for {symbol}")
+                else:
+                    logger.warning(f"⚠️ Failed sentiment features for {symbol}")
+            
+            if success_count >= 1:
+                logger.info("✅ Twitter sentiment pipeline completed successfully")
+                return True
+            else:
+                logger.error("❌ Twitter sentiment pipeline failed")
+                return False
+                
+        except Exception as e:
+            logger.error(f"❌ Twitter sentiment pipeline error: {e}")
+            return False
+
 def run_full_automation(input_data_s3: str, dry_run: bool = False):
     """Run complete automated HPO pipeline with recovery"""
     orchestrator = HPOOrchestrator()
@@ -458,6 +523,10 @@ def main():
     parser.add_argument('--endpoint-names', nargs='+', 
                         default=['conviction-hpo-fixed-1751615264'],
                         help='Endpoint names to monitor and fix')
+    parser.add_argument('--twitter-sentiment', action='store_true',
+                        help='Include Twitter sentiment integration pipeline')
+    parser.add_argument('--sentiment-symbols', nargs='+',
+                        help='Symbols for sentiment analysis (default: AAPL, MSFT, GOOGL, AMZN, TSLA)')
     
     args = parser.parse_args()
     
@@ -481,6 +550,7 @@ def main():
     logger.info(f"   Notifications: {args.notify}")
     logger.info(f"   Set-and-forget: {args.set_and_forget}")
     logger.info(f"   Dry-run: {args.dry_run}")
+    logger.info(f"   Twitter sentiment: {args.twitter_sentiment}")
     
     if args.dry_run:
         logger.info("🧪 DRY RUN MODE - No actual operations will be performed")
@@ -564,6 +634,21 @@ def main():
                 orchestrator.send_notification("❌ Ensemble deployment failed", topic_arn, args.dry_run)
         else:
             logger.warning("Cannot deploy ensemble: missing configuration files")
+    
+    if args.twitter_sentiment:
+        sentiment_symbols = args.sentiment_symbols or ['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'TSLA']
+        sentiment_task = TwitterSentimentTask()
+        
+        logger.info(f"🐦 Running Twitter sentiment integration for {sentiment_symbols}")
+        success = sentiment_task.run_sentiment_pipeline(sentiment_symbols, args.dry_run)
+        
+        if success:
+            logger.info("✅ Twitter sentiment integration completed successfully")
+        else:
+            logger.error("❌ Twitter sentiment integration failed")
+            if args.notify:
+                topic_arn = orchestrator.setup_notifications("conviction-hpo", args.dry_run)
+                orchestrator.send_notification("❌ Twitter sentiment integration failed", topic_arn, args.dry_run)
     
     logger.info("🏁 HPO Pipeline Orchestration completed!")
     
