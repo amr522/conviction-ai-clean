@@ -35,7 +35,7 @@ import os
 
 def install_dependencies():
     try:
-        subprocess.check_call([sys.executable, '-m', 'pip', 'install', 'xgboost==1.7.1', 'catboost==1.1.1'])
+        subprocess.check_call([sys.executable, '-m', 'pip', 'install', 'xgboost==1.6.2', 'catboost==1.0.6'])
         print("✅ Successfully installed XGBoost and CatBoost")
     except Exception as e:
         print(f"❌ Failed to install dependencies: {{e}}")
