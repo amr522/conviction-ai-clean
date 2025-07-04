@@ -38,8 +38,8 @@ class HPOOrchestrator:
     def check_hpo_job_status(self, job_name: str, dry_run: bool = False) -> Tuple[str, Optional[str]]:
         """Check HPO job status and return (status, failure_reason)"""
         if dry_run and 'dry' in job_name:
-            logger.info(f"🧪 DRY RUN: Would check HPO job status for {job_name}")
-            return 'InProgress', None
+            logger.info(f"🧪 DRY RUN: Simulating completion for {job_name}")
+            return 'Completed', None
         
         try:
             response = self.sagemaker.describe_hyper_parameter_tuning_job(
