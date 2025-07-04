@@ -505,7 +505,7 @@ def main():
     
     while active_jobs and any(retry_counts[alg] < max_retries for alg in active_jobs):
         for algorithm, job_name in list(active_jobs.items()):
-            status, failure_reason = orchestrator.check_hpo_job_status(job_name)
+            status, failure_reason = orchestrator.check_hpo_job_status(job_name, args.dry_run)
             
             if status == 'Completed':
                 logger.info(f"✅ {algorithm.upper()} HPO job completed: {job_name}")

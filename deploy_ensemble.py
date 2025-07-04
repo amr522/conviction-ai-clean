@@ -97,7 +97,7 @@ def output_fn(prediction, content_type):
                     'ModelDataUrl': model_uri,
                     'Environment': {
                         'SAGEMAKER_PROGRAM': 'inference.py',
-                        'SAGEMAKER_SUBMIT_DIRECTORY': '/opt/ml/code',
+                        'SAGEMAKER_SUBMIT_DIRECTORY': '/opt/ml/model',
                         'SAGEMAKER_ENABLE_CLOUDWATCH_METRICS': 'false'
                     }
                 },
