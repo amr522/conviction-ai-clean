@@ -29,10 +29,23 @@ class EnsembleDeployer:
         os.makedirs(package_dir, exist_ok=True)
         
         inference_script = f"""
+import subprocess
+import sys
+import os
+
+def install_dependencies():
+    try:
+        subprocess.check_call([sys.executable, '-m', 'pip', 'install', 'xgboost==1.7.1', 'catboost==1.1.1'])
+        print("✅ Successfully installed XGBoost and CatBoost")
+    except Exception as e:
+        print(f"❌ Failed to install dependencies: {{e}}")
+        raise
+
+install_dependencies()
+
 import joblib
 import numpy as np
 import json
-import os
 
 def model_fn(model_dir):
     '''Load the ensemble model'''
@@ -93,7 +106,7 @@ def output_fn(prediction, content_type):
             response = self.sagemaker.create_model(
                 ModelName=model_name,
                 PrimaryContainer={
-                    'Image': '683313688378.dkr.ecr.us-east-1.amazonaws.com/sagemaker-xgboost:1.7-1',
+                    'Image': '683313688378.dkr.ecr.us-east-1.amazonaws.com/sagemaker-scikit-learn:0.23-1-cpu-py3',
                     'ModelDataUrl': model_uri,
                     'Environment': {
                         'SAGEMAKER_PROGRAM': 'inference.py',
