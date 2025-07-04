@@ -39,13 +39,13 @@ pytest==7.4.0
 pytest-cov==4.1.0
 # -------------------------------------------------------------
 
-# Time Series Libraries
-pytorch-forecasting>=1.0.0
-pytorch-lightning>=2.2.0
+# Time Series Libraries (removed to fix CI dependency resolution)
+# pytorch-forecasting>=1.0.0
+# pytorch-lightning>=2.2.0
 
-# Reinforcement Learning
-stable-baselines3[extra]>=2.2.0
-gymnasium>=0.29.0
+# Reinforcement Learning (removed to fix CI dependency resolution)
+# stable-baselines3[extra]>=2.2.0
+# gymnasium>=0.29.0
 
 # Financial Libraries - Basic
 yfinance>=0.2.36
@@ -56,6 +56,6 @@ datasets>=2.16.0
 evaluate>=0.4.1
 sentence-transformers>=2.3.0
 
-# Visualization & Monitoring
-plotly>=5.14.0
+# Visualization & Monitoring (removed duplicate plotly specification)
+# plotly>=5.14.0 (duplicate - using pinned version above)
 tensorboard>=2.13.0
