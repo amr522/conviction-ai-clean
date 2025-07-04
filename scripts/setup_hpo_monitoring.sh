@@ -42,7 +42,11 @@ aws cloudformation "$OPERATION" \
     --capabilities CAPABILITY_IAM
 
 echo "⏳ Waiting for stack operation to complete..."
-aws cloudformation wait stack-"${OPERATION//-/}-complete" --stack-name "$STACK_NAME"
+if [[ "$OPERATION" == "create-stack" ]]; then
+    aws cloudformation wait stack-create-complete --stack-name "$STACK_NAME"
+else
+    aws cloudformation wait stack-update-complete --stack-name "$STACK_NAME"
+fi
 
 SNS_TOPIC_ARN=$(aws cloudformation describe-stacks \
     --stack-name "$STACK_NAME" \
