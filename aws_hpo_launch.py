@@ -19,6 +19,8 @@ import sagemaker
 from sagemaker.tuner import HyperparameterTuner
 from sagemaker.parameter import IntegerParameter, ContinuousParameter, CategoricalParameter
 from sagemaker.estimator import Estimator
+from sagemaker.xgboost import XGBoost
+from sagemaker.inputs import TrainingInput
 
 # Configure logging
 logging.basicConfig(
@@ -35,7 +37,7 @@ logger = logging.getLogger(__name__)
 ROLE_ARN = 'arn:aws:iam::773934887314:role/SageMakerExecutionRole'
 BUCKET = 'hpo-bucket-773934887314'
 S3_OUTPUT_PREFIX = f's3://{BUCKET}/models/'
-XGBOOST_IMAGE_URI = '683313688378.dkr.ecr.us-east-1.amazonaws.com/sagemaker-xgboost:1.0-1-cpu-py3'
+# XGBOOST_IMAGE_URI = '683313688378.dkr.ecr.us-east-1.amazonaws.com/sagemaker-xgboost:1.0-1-cpu-py3'
 
 def get_input_data_s3(cli_arg=None):
     """Get input data S3 URI with proper precedence order"""
@@ -103,33 +105,9 @@ def validate_s3_uri(s3_uri):
         logger.error(f"Failed to validate S3 URI {s3_uri}: {e}")
         return False
 def get_hyperparameter_ranges():
-    """Define hyperparameter ranges for tuning"""
+    """Define hyperparameter ranges for tuning - only XGBoost native parameters"""
     return {
-        # Options-specific parameters
-        'iv_rank_window': IntegerParameter(10, 60),
-        'iv_rank_weight': ContinuousParameter(0.1, 1.0),
-        'term_slope_window': IntegerParameter(5, 30),
-        'term_slope_weight': ContinuousParameter(0.1, 1.0),
-        'oi_window': IntegerParameter(5, 30),
-        'oi_weight': ContinuousParameter(0.1, 1.0),
-        'theta_window': IntegerParameter(5, 30),
-        'theta_weight': ContinuousParameter(0.1, 1.0),
-        
-        # VIX parameters
-        'vix_mom_window': IntegerParameter(5, 20),
-        'vix_regime_thresh': ContinuousParameter(15.0, 35.0),
-        
-        # Event parameters
-        'event_lag': IntegerParameter(1, 5),
-        'event_lead': IntegerParameter(1, 5),
-        
-        # News parameters
-        'news_threshold': ContinuousParameter(0.01, 0.2),
-        'lookback_window': IntegerParameter(1, 10),
-        'reuters_weight': ContinuousParameter(0.5, 2.0),
-        'sa_weight': ContinuousParameter(0.5, 2.0),
-        
-        # XGBoost model parameters
+        # XGBoost model parameters (tunable in script mode)
         'max_depth': IntegerParameter(3, 10),
         'eta': ContinuousParameter(0.01, 0.3),
         'min_child_weight': IntegerParameter(1, 10),
@@ -162,16 +140,32 @@ def launch_aapl_hpo(input_data_s3=None, dry_run=False):
         session = sagemaker.Session()
         
         # Set up estimator
-        estimator = Estimator(
-            image_uri=XGBOOST_IMAGE_URI,
+        estimator = XGBoost(
             entry_point='xgboost_train.py',
             role=ROLE_ARN,
             instance_count=1,
             instance_type='ml.m5.4xlarge',
+            framework_version='1.0-1',
             hyperparameters={
                 'symbol': 'AAPL',
                 'model': 'xgb',
-                'debug': True
+                'debug': True,
+                'iv_rank_window': 30,
+                'iv_rank_weight': 0.5,
+                'term_slope_window': 15,
+                'term_slope_weight': 0.5,
+                'oi_window': 15,
+                'oi_weight': 0.5,
+                'theta_window': 15,
+                'theta_weight': 0.5,
+                'vix_mom_window': 10,
+                'vix_regime_thresh': 25.0,
+                'event_lag': 2,
+                'event_lead': 2,
+                'news_threshold': 0.05,
+                'lookback_window': 5,
+                'reuters_weight': 1.0,
+                'sa_weight': 1.0,
             },
             sagemaker_session=session
         )
@@ -182,14 +176,19 @@ def launch_aapl_hpo(input_data_s3=None, dry_run=False):
             estimator,
             objective_metric_name='validation:auc',
             hyperparameter_ranges=hyperparameter_ranges,
+            metric_definitions=[{'Name': 'validation:auc', 'Regex': 'validation-auc:([0-9\\.]+)'}],
             max_jobs=20,
-            max_parallel_jobs=5
+            max_parallel_jobs=3
         )
         
         # Launch tuning job
         job_name = f"hpo-aapl-{int(time.time())}"
         tuner.fit({
-            'training': training_data
+            'train': TrainingInput(
+                s3_data=training_data,
+                content_type='text/csv',
+                input_mode='File'
+            )
         }, job_name=job_name)
         
         logger.info(f"Successfully launched AAPL HPO job: {job_name}")
@@ -221,16 +220,32 @@ def launch_full_universe_hpo(input_data_s3=None, dry_run=False):
         session = sagemaker.Session()
         
         # Set up estimator
-        estimator = Estimator(
-            image_uri=XGBOOST_IMAGE_URI,
+        estimator = XGBoost(
             entry_point='xgboost_train.py',
             role=ROLE_ARN,
             instance_count=1,
             instance_type='ml.m5.4xlarge',
+            framework_version='1.0-1',
             hyperparameters={
                 'symbol': 'ALL',  # Special keyword for all filtered symbols
                 'model': 'xgb',
-                'apply_universe_filter': True
+                'apply_universe_filter': True,
+                'iv_rank_window': 30,
+                'iv_rank_weight': 0.5,
+                'term_slope_window': 15,
+                'term_slope_weight': 0.5,
+                'oi_window': 15,
+                'oi_weight': 0.5,
+                'theta_window': 15,
+                'theta_weight': 0.5,
+                'vix_mom_window': 10,
+                'vix_regime_thresh': 25.0,
+                'event_lag': 2,
+                'event_lead': 2,
+                'news_threshold': 0.05,
+                'lookback_window': 5,
+                'reuters_weight': 1.0,
+                'sa_weight': 1.0,
             },
             sagemaker_session=session
         )
@@ -241,14 +256,19 @@ def launch_full_universe_hpo(input_data_s3=None, dry_run=False):
             estimator,
             objective_metric_name='validation:auc',
             hyperparameter_ranges=hyperparameter_ranges,
+            metric_definitions=[{'Name': 'validation:auc', 'Regex': 'validation-auc:([0-9\\.]+)'}],
             max_jobs=50,
-            max_parallel_jobs=4
+            max_parallel_jobs=3
         )
         
         # Launch tuning job
         job_name = f"hpo-full-{int(time.time())}"
         tuner.fit({
-            'training': training_data
+            'train': TrainingInput(
+                s3_data=training_data,
+                content_type='text/csv',
+                input_mode='File'
+            )
         }, job_name=job_name)
         
         logger.info(f"Successfully launched full universe HPO job: {job_name}")
