@@ -283,6 +283,92 @@ def setup_sagemaker_monitoring(endpoint_name, topic_arn, baseline_uri, schedule=
         logger.error(f"Failed to set up SageMaker monitoring: {e}")
         return None
 
+def setup_mlops_monitoring(endpoint_name, topic_arn, auc_threshold=0.50, data_age_threshold=7):
+    """Set up ML Ops specific monitoring for dashboard and retraining triggers"""
+    logger.info(f"Setting up ML Ops monitoring for endpoint {endpoint_name}")
+    
+    cw_client = boto3.client('cloudwatch')
+    
+    try:
+        auc_alarm_name = f"{endpoint_name}-auc-retraining-alarm"
+        
+        cw_client.put_metric_alarm(
+            AlarmName=auc_alarm_name,
+            ComparisonOperator='LessThanThreshold',
+            EvaluationPeriods=2,
+            MetricName='ModelAUC',
+            Namespace='Custom/MLOps',
+            Period=3600,
+            Statistic='Average',
+            Threshold=auc_threshold,
+            ActionsEnabled=True,
+            AlarmActions=[topic_arn],
+            AlarmDescription=f'Alarm when model AUC drops below {auc_threshold} for retraining trigger',
+            Dimensions=[
+                {
+                    'Name': 'EndpointName',
+                    'Value': endpoint_name
+                }
+            ]
+        )
+        
+        # Create data freshness alarm
+        data_freshness_alarm_name = f"{endpoint_name}-data-freshness-alarm"
+        
+        cw_client.put_metric_alarm(
+            AlarmName=data_freshness_alarm_name,
+            ComparisonOperator='GreaterThanThreshold',
+            EvaluationPeriods=1,
+            MetricName='DataAgeDays',
+            Namespace='Custom/MLOps',
+            Period=86400,
+            Statistic='Maximum',
+            Threshold=data_age_threshold,
+            ActionsEnabled=True,
+            AlarmActions=[topic_arn],
+            AlarmDescription=f'Alarm when training data is older than {data_age_threshold} days',
+            Dimensions=[
+                {
+                    'Name': 'EndpointName',
+                    'Value': endpoint_name
+                }
+            ]
+        )
+        
+        # Create dashboard health alarm
+        dashboard_health_alarm_name = f"{endpoint_name}-dashboard-health-alarm"
+        
+        cw_client.put_metric_alarm(
+            AlarmName=dashboard_health_alarm_name,
+            ComparisonOperator='LessThanThreshold',
+            EvaluationPeriods=3,
+            MetricName='DashboardHealth',
+            Namespace='Custom/MLOps',
+            Period=300,
+            Statistic='Average',
+            Threshold=0.8,
+            ActionsEnabled=True,
+            AlarmActions=[topic_arn],
+            AlarmDescription=f'Alarm when dashboard health score drops below 0.8',
+            Dimensions=[
+                {
+                    'Name': 'EndpointName',
+                    'Value': endpoint_name
+                }
+            ]
+        )
+        
+        logger.info(f"Successfully set up ML Ops monitoring alarms:")
+        logger.info(f"  - AUC threshold alarm: {auc_alarm_name}")
+        logger.info(f"  - Data freshness alarm: {data_freshness_alarm_name}")
+        logger.info(f"  - Dashboard health alarm: {dashboard_health_alarm_name}")
+        
+        return True
+        
+    except Exception as e:
+        logger.error(f"Failed to set up ML Ops monitoring: {e}")
+        return False
+
 def main():
     """Main function to parse arguments and execute commands"""
     parser = argparse.ArgumentParser(description="Set up monitoring and alerts for ML pipeline")
@@ -320,6 +406,13 @@ def main():
     monitor_parser.add_argument("--topic-arn", required=True, help="ARN of the SNS topic for notifications")
     monitor_parser.add_argument("--baseline-uri", required=True, help="S3 URI to baseline statistics and constraints")
     monitor_parser.add_argument("--schedule", default="daily", choices=["hourly", "daily", "weekly"], help="Monitoring schedule")
+    
+    # Setup MLOps dashboard monitoring command
+    mlops_parser = subparsers.add_parser("mlops", help="Set up ML Ops dashboard and retraining monitoring")
+    mlops_parser.add_argument("--endpoint-name", required=True, help="Name of the SageMaker endpoint")
+    mlops_parser.add_argument("--topic-arn", required=True, help="ARN of the SNS topic for notifications")
+    mlops_parser.add_argument("--auc-threshold", type=float, default=0.50, help="AUC threshold for retraining alerts")
+    mlops_parser.add_argument("--data-age-threshold", type=int, default=7, help="Data age threshold in days")
     
     # Setup all monitoring command
     all_parser = subparsers.add_parser("setup-all", help="Set up all monitoring components")
@@ -369,6 +462,13 @@ def main():
             logger.info(f"Successfully set up all monitoring for endpoint {args.endpoint_name}")
         else:
             logger.error("Failed to create SNS topic, monitoring setup aborted")
+    elif args.command == "mlops":
+        success = setup_mlops_monitoring(args.endpoint_name, args.topic_arn, args.auc_threshold, args.data_age_threshold)
+        if success:
+            print(f"✅ ML Ops monitoring setup complete for {args.endpoint_name}")
+        else:
+            print("❌ Failed to set up ML Ops monitoring")
+            sys.exit(1)
     else:
         parser.print_help()
 
