@@ -17,7 +17,7 @@ def parse_args():
     parser = argparse.ArgumentParser()
     
     parser.add_argument('--model-dir', type=str, default=os.environ.get('SM_MODEL_DIR'))
-    parser.add_argument('--train', type=str, default=os.environ.get('SM_CHANNEL_TRAINING'))
+    parser.add_argument('--train', type=str, default=os.environ.get('SM_CHANNEL_TRAIN') or os.environ.get('SM_CHANNEL_TRAINING'))
     parser.add_argument('--validation', type=str, default=os.environ.get('SM_CHANNEL_VALIDATION'))
     
     parser.add_argument('--max_depth', type=int, default=6)
@@ -54,8 +54,8 @@ def parse_args():
     
     args = parser.parse_args()
     
-    if not args.train and not os.environ.get('SM_CHANNEL_TRAINING'):
-        parser.error("--train argument is required when SM_CHANNEL_TRAINING environment variable is not set")
+    if not args.train and not (os.environ.get('SM_CHANNEL_TRAIN') or os.environ.get('SM_CHANNEL_TRAINING')):
+        parser.error("--train argument is required when SM_CHANNEL_TRAIN environment variable is not set")
     
     if not args.model_dir and not os.environ.get('SM_MODEL_DIR'):
         parser.error("--model-dir argument is required when SM_MODEL_DIR environment variable is not set")
