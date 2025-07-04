@@ -16,6 +16,7 @@ import sagemaker
 from sagemaker.tuner import HyperparameterTuner
 from sagemaker.parameter import IntegerParameter, ContinuousParameter, CategoricalParameter
 from sagemaker.sklearn import SKLearn
+from sagemaker.pytorch import PyTorch
 from sagemaker.inputs import TrainingInput
 
 logging.basicConfig(
@@ -167,13 +168,13 @@ def launch_catboost_hpo(input_data_s3=None, dry_run=False):
         
         session = sagemaker.Session()
         
-        estimator = SKLearn(
+        estimator = PyTorch(
             entry_point='catboost_train.py',
             role=ROLE_ARN,
             instance_count=1,
             instance_type='ml.m5.4xlarge',
-            framework_version='1.0-1',
-            py_version='py3',
+            framework_version='1.13.1',
+            py_version='py39',
             sagemaker_session=session
         )
         
