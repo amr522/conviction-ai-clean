@@ -91,3 +91,19 @@ During hyperparameter optimization, the following ranges are used:
 - `gamma`: 0-5
 - `lambda`: 0-10
 - `alpha`: 0-10
+
+## Recent Updates
+
+### Session 6 (Current) - Leak-Proof Retrain + Twitter Sentiment Integration
+- **Branch**: `retrain/leak-proof-TA` (Part A), `feature/twitter-sentiment` (Part B)
+- **Status**: Infrastructure complete, ready for algorithm execution
+- **Progress**: AWS resources fixed, sentiment pipeline implemented
+- **Next**: Execute algorithm training, build ensemble, deploy v5 endpoint
+
+#### Twitter Sentiment Integration Features
+- **Data Sources**: Twitter/X API v2 filtered streams for 46-stock cashtags
+- **Sentiment Analysis**: FinBERT ONNX model with CPU optimization
+- **Feature Windows**: 5/10/60 minute rolling sentiment aggregations
+- **Storage**: S3 parquet format with automated compression
+- **Pipeline Integration**: `--twitter-sentiment` flag in orchestration
+- **Security**: AWS Secrets Manager for API key management
