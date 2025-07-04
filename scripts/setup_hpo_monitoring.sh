@@ -1,47 +1,63 @@
 #!/bin/bash
 set -euo pipefail
 
+
 EMAIL=${1:-"amr522@gmail.com"}
+DRY_RUN=${2:-"false"}
+STACK_NAME="hpo-monitoring-stack"
 
 echo "🔧 Setting up CloudWatch monitoring for HPO pipeline..."
 
 cd "$(dirname "$0")/.."
 
-TOPIC_ARN=$(python setup_monitoring.py create-sns-topic --topic-name "hpo-pipeline-alerts" --email "$EMAIL" 2>&1 | grep "arn:aws:sns" | tail -1 || echo "")
+REQUIRED_PERMISSIONS=(
+    "cloudformation:CreateStack"
+    "cloudformation:UpdateStack" 
+    "cloudformation:DescribeStacks"
+    "sns:CreateTopic"
+    "sns:Subscribe"
+    "cloudwatch:PutMetricAlarm"
+)
 
-if [[ -z "$TOPIC_ARN" ]]; then
-    echo "❌ Failed to create SNS topic, creating manually..."
-    TOPIC_ARN=$(aws sns create-topic --name "hpo-pipeline-alerts" --query 'TopicArn' --output text)
-    if [[ -n "$EMAIL" ]]; then
-        aws sns subscribe --topic-arn "$TOPIC_ARN" --protocol email --notification-endpoint "$EMAIL"
-        echo "📧 Subscription request sent to $EMAIL"
-    fi
+if [[ "$DRY_RUN" == "true" ]]; then
+    echo "🔍 [DRY-RUN] Would validate IAM permissions: ${REQUIRED_PERMISSIONS[*]}"
+    echo "🔍 [DRY-RUN] Would deploy CloudFormation stack: $STACK_NAME"
+    echo "🔍 [DRY-RUN] Would create SNS subscription for: $EMAIL"
+    echo "🔍 [DRY-RUN] Would create CloudWatch alarms for HPO monitoring"
+    exit 0
 fi
 
-echo "✅ SNS Topic: $TOPIC_ARN"
+if aws cloudformation describe-stacks --stack-name "$STACK_NAME" >/dev/null 2>&1; then
+    echo "📋 Stack $STACK_NAME already exists, updating..."
+    OPERATION="update-stack"
+else
+    echo "🆕 Creating new stack: $STACK_NAME"
+    OPERATION="create-stack"
+fi
 
-aws cloudwatch put-metric-alarm \
-    --alarm-name "HPO-Training-Job-Failures" \
-    --alarm-description "Alert when HPO training jobs fail" \
-    --metric-name "TrainingJobsFailed" \
-    --namespace "AWS/SageMaker" \
-    --statistic "Sum" \
-    --period 300 \
-    --threshold 1 \
-    --comparison-operator "GreaterThanOrEqualToThreshold" \
-    --evaluation-periods 1 \
-    --alarm-actions "$TOPIC_ARN"
+aws cloudformation "$OPERATION" \
+    --stack-name "$STACK_NAME" \
+    --template-body file://cloudformation/hpo-monitoring.yaml \
+    --parameters ParameterKey=NotificationEmail,ParameterValue="$EMAIL" \
+    --capabilities CAPABILITY_IAM
 
-aws cloudwatch put-metric-alarm \
-    --alarm-name "HPO-Job-Failures" \
-    --alarm-description "Alert when HPO jobs fail" \
-    --metric-name "HyperParameterTuningJobsFailed" \
-    --namespace "AWS/SageMaker" \
-    --statistic "Sum" \
-    --period 300 \
-    --threshold 1 \
-    --comparison-operator "GreaterThanOrEqualToThreshold" \
-    --evaluation-periods 1 \
-    --alarm-actions "$TOPIC_ARN"
+echo "⏳ Waiting for stack operation to complete..."
+aws cloudformation wait stack-"${OPERATION//-/}-complete" --stack-name "$STACK_NAME"
 
-echo "✅ CloudWatch alarms created for HPO monitoring"
+SNS_TOPIC_ARN=$(aws cloudformation describe-stacks \
+    --stack-name "$STACK_NAME" \
+    --query 'Stacks[0].Outputs[?OutputKey==`SNSTopicArn`].OutputValue' \
+    --output text)
+
+echo "✅ CloudFormation stack deployed successfully"
+echo "📧 SNS Topic ARN: $SNS_TOPIC_ARN"
+echo "📧 Email subscription sent to: $EMAIL"
+echo "⚠️ Please check your email and confirm the SNS subscription"
+
+echo "🔍 Verifying CloudWatch alarms..."
+aws cloudwatch describe-alarms \
+    --alarm-names "HPO-Pipeline-Training-Job-Failures" "HPO-Pipeline-Job-Failures" "HPO-Pipeline-Job-Completion" \
+    --query 'MetricAlarms[].{Name:AlarmName,State:StateValue}' \
+    --output table
+
+echo "✅ HPO monitoring setup completed successfully"

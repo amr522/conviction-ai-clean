@@ -1,0 +1,90 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'CloudWatch monitoring infrastructure for HPO pipeline'
+
+Parameters:
+  NotificationEmail:
+    Type: String
+    Description: Email address for HPO failure notifications
+    Default: amr522@gmail.com
+  
+  AlarmPrefix:
+    Type: String
+    Description: Prefix for alarm names
+    Default: HPO-Pipeline
+
+Resources:
+  HPOAlertsTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: hpo-pipeline-alerts
+      DisplayName: HPO Pipeline Alerts
+      Subscription:
+        - Protocol: email
+          Endpoint: !Ref NotificationEmail
+
+  HPOTrainingJobFailuresAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub "${AlarmPrefix}-Training-Job-Failures"
+      AlarmDescription: Alert when HPO training jobs fail
+      MetricName: TrainingJobsFailed
+      Namespace: AWS/SageMaker
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      AlarmActions:
+        - !Ref HPOAlertsTopic
+      TreatMissingData: notBreaching
+
+  HPOJobFailuresAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub "${AlarmPrefix}-Job-Failures"
+      AlarmDescription: Alert when HPO jobs fail
+      MetricName: HyperParameterTuningJobsFailed
+      Namespace: AWS/SageMaker
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      AlarmActions:
+        - !Ref HPOAlertsTopic
+      TreatMissingData: notBreaching
+
+  HPOJobCompletionAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub "${AlarmPrefix}-Job-Completion"
+      AlarmDescription: Alert when HPO jobs complete successfully
+      MetricName: HyperParameterTuningJobsCompleted
+      Namespace: AWS/SageMaker
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      AlarmActions:
+        - !Ref HPOAlertsTopic
+      TreatMissingData: notBreaching
+
+Outputs:
+  SNSTopicArn:
+    Description: ARN of the SNS topic for HPO alerts
+    Value: !Ref HPOAlertsTopic
+    Export:
+      Name: !Sub "${AWS::StackName}-SNSTopicArn"
+  
+  TrainingJobFailuresAlarmArn:
+    Description: ARN of the training job failures alarm
+    Value: !GetAtt HPOTrainingJobFailuresAlarm.Arn
+    Export:
+      Name: !Sub "${AWS::StackName}-TrainingJobFailuresAlarmArn"
+  
+  HPOJobFailuresAlarmArn:
+    Description: ARN of the HPO job failures alarm
+    Value: !GetAtt HPOJobFailuresAlarm.Arn
+    Export:
+      Name: !Sub "${AWS::StackName}-HPOJobFailuresAlarmArn"

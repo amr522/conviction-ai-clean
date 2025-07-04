@@ -1,0 +1,43 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'S3 bucket versioning configuration for HPO pipeline'
+
+Parameters:
+  BucketName:
+    Type: String
+    Description: Name of the S3 bucket to configure
+    Default: hpo-bucket-773934887314
+
+Resources:
+  S3BucketVersioning:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Ref BucketName
+      VersioningConfiguration:
+        Status: Enabled
+      LifecycleConfiguration:
+        Rules:
+          - Id: DeleteOldVersions
+            Status: Enabled
+            NoncurrentVersionExpirationInDays: 90
+          - Id: DeleteIncompleteMultipartUploads
+            Status: Enabled
+            AbortIncompleteMultipartUpload:
+              DaysAfterInitiation: 7
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+
+Outputs:
+  BucketName:
+    Description: Name of the S3 bucket with versioning enabled
+    Value: !Ref S3BucketVersioning
+    Export:
+      Name: !Sub "${AWS::StackName}-BucketName"
+  
+  BucketArn:
+    Description: ARN of the S3 bucket
+    Value: !GetAtt S3BucketVersioning.Arn
+    Export:
+      Name: !Sub "${AWS::StackName}-BucketArn"

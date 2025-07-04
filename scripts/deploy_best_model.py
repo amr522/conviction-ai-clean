@@ -7,10 +7,11 @@ import json
 import argparse
 import tempfile
 import tarfile
-import boto3
 from datetime import datetime
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from aws_utils import AWSClientManager, safe_aws_operation, load_pinned_config, get_sagemaker_execution_role, format_resource_name, validate_iam_permissions
 
 def create_xgboost_inference_script():
     """Create inference script for XGBoost model"""
@@ -51,15 +52,36 @@ def output_fn(prediction, content_type):
         return str(prediction)
 '''
 
-def deploy_xgboost_model(model_file, endpoint_name):
-    """Deploy XGBoost model to SageMaker endpoint"""
+def deploy_xgboost_model(model_file, endpoint_name, dry_run=False):
+    """Deploy XGBoost model to SageMaker endpoint with dry-run support"""
     print(f"🚀 Deploying XGBoost model to endpoint: {endpoint_name}")
     
-    sagemaker_client = boto3.client('sagemaker')
-    s3_client = boto3.client('s3')
+    required_permissions = [
+        "sagemaker:CreateModel",
+        "sagemaker:CreateEndpointConfig", 
+        "sagemaker:CreateEndpoint",
+        "s3:PutObject",
+        "s3:GetObject"
+    ]
+    validate_iam_permissions(required_permissions, dry_run)
     
+    aws_manager = AWSClientManager()
     bucket = 'hpo-bucket-773934887314'
     timestamp = datetime.now().strftime('%Y%m%d-%H%M%S')
+    
+    if dry_run:
+        print(f"🔍 [DRY-RUN] Would deploy model from: {model_file}")
+        print(f"🔍 [DRY-RUN] Would upload to S3: s3://{bucket}/models/best-hpo/{timestamp}/model.tar.gz")
+        print(f"🔍 [DRY-RUN] Would create SageMaker model: best-hpo-model-{timestamp}")
+        print(f"🔍 [DRY-RUN] Would create endpoint config: best-hpo-config-{timestamp}")
+        print(f"🔍 [DRY-RUN] Would create endpoint: {endpoint_name}")
+        return {
+            'dry_run': True,
+            'endpoint_name': endpoint_name,
+            'model_name': f"best-hpo-model-{timestamp}",
+            'config_name': f"best-hpo-config-{timestamp}",
+            'model_uri': f"s3://{bucket}/models/best-hpo/{timestamp}/model.tar.gz"
+        }
     
     with tempfile.TemporaryDirectory() as temp_dir:
         with tarfile.open(model_file, 'r:gz') as tar:
@@ -74,15 +96,25 @@ def deploy_xgboost_model(model_file, endpoint_name):
             tar.add(temp_dir, arcname='.')
         
         s3_key = f"models/best-hpo/{timestamp}/model.tar.gz"
-        s3_client.upload_file(model_tar_path, bucket, s3_key)
+        safe_aws_operation(
+            "S3 Upload",
+            aws_manager.s3.upload_file,
+            dry_run=False,
+            Filename=model_tar_path,
+            Bucket=bucket,
+            Key=s3_key
+        )
         model_uri = f"s3://{bucket}/{s3_key}"
-        
         print(f"📤 Model uploaded to: {model_uri}")
         
-        model_name = f"best-hpo-model-{timestamp}"
-        config_name = f"best-hpo-config-{timestamp}"
+        model_name = format_resource_name("best-hpo-model", timestamp)
+        config_name = format_resource_name("best-hpo-config", timestamp)
+        execution_role = get_sagemaker_execution_role()
         
-        sagemaker_client.create_model(
+        safe_aws_operation(
+            "Create SageMaker Model",
+            aws_manager.sagemaker.create_model,
+            dry_run=False,
             ModelName=model_name,
             PrimaryContainer={
                 'Image': '683313688378.dkr.ecr.us-east-1.amazonaws.com/sagemaker-xgboost:1.0-1-cpu-py3',
@@ -92,10 +124,13 @@ def deploy_xgboost_model(model_file, endpoint_name):
                     'SAGEMAKER_SUBMIT_DIRECTORY': '/opt/ml/code'
                 }
             },
-            ExecutionRoleArn='arn:aws:iam::773934887314:role/SageMakerExecutionRole'
+            ExecutionRoleArn=execution_role
         )
         
-        sagemaker_client.create_endpoint_config(
+        safe_aws_operation(
+            "Create Endpoint Configuration",
+            aws_manager.sagemaker.create_endpoint_config,
+            dry_run=False,
             EndpointConfigName=config_name,
             ProductionVariants=[
                 {
@@ -108,7 +143,10 @@ def deploy_xgboost_model(model_file, endpoint_name):
             ]
         )
         
-        sagemaker_client.create_endpoint(
+        safe_aws_operation(
+            "Create Endpoint",
+            aws_manager.sagemaker.create_endpoint,
+            dry_run=False,
             EndpointName=endpoint_name,
             EndpointConfigName=config_name
         )
@@ -123,10 +161,9 @@ def deploy_xgboost_model(model_file, endpoint_name):
             'model_uri': model_uri
         }
 
-def extract_and_deploy_pinned_model(endpoint_name="conviction-best-model"):
+def extract_and_deploy_pinned_model(endpoint_name="conviction-best-model", dry_run=False):
     """Extract and deploy the pinned best model"""
     pinned_dir = "models/pinned_successful_hpo"
-    config_file = os.path.join(pinned_dir, "hpo_config_pinned.json")
     model_file = None
     
     for file in os.listdir(pinned_dir):
@@ -138,23 +175,38 @@ def extract_and_deploy_pinned_model(endpoint_name="conviction-best-model"):
         print("❌ Best model artifact not found in pinned directory")
         return None
     
-    with open(config_file, 'r') as f:
-        config = json.load(f)
+    config = load_pinned_config()
     
     print(f"🚀 Deploying best model from HPO job: {config['successful_hpo_job']}")
     print(f"📊 Model achieved validation AUC: {config['validation_auc']}")
     
-    result = deploy_xgboost_model(model_file, endpoint_name)
+    aws_manager = AWSClientManager()
+    try:
+        existing_endpoint = aws_manager.sagemaker.describe_endpoint(EndpointName=endpoint_name)
+        if not dry_run:
+            print(f"⚠️ Endpoint {endpoint_name} already exists with status: {existing_endpoint['EndpointStatus']}")
+            response = input("Do you want to update the existing endpoint? (y/N): ")
+            if response.lower() != 'y':
+                print("❌ Deployment cancelled by user")
+                return None
+    except aws_manager.sagemaker.exceptions.ClientError:
+        pass
+    
+    result = deploy_xgboost_model(model_file, endpoint_name, dry_run)
     return result
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Deploy best HPO model to SageMaker endpoint')
     parser.add_argument('--endpoint-name', default='conviction-best-model', help='Endpoint name')
+    parser.add_argument('--dry-run', action='store_true', help='Show what would be deployed without creating resources')
     args = parser.parse_args()
     
-    result = extract_and_deploy_pinned_model(args.endpoint_name)
+    result = extract_and_deploy_pinned_model(args.endpoint_name, args.dry_run)
     if result:
-        print("✅ Best model deployment completed successfully!")
+        if args.dry_run:
+            print("✅ Dry-run completed successfully!")
+        else:
+            print("✅ Best model deployment completed successfully!")
     else:
         print("❌ Deployment failed")
         sys.exit(1)
