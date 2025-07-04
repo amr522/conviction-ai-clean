@@ -77,7 +77,17 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
+          echo "📦 Installing dependencies from requirements.txt..."
+          pip install -r requirements.txt --verbose
+          echo "✅ Dependencies installation completed"
+          
+      - name: Verify critical dependencies
+        run: |
+          echo "🔍 Verifying critical dependencies..."
+          python -c "import boto3; print(f'✅ boto3 {boto3.__version__}')" || (echo "❌ boto3 import failed" && exit 1)
+          python -c "import sagemaker; print(f'✅ sagemaker {sagemaker.__version__}')" || (echo "❌ sagemaker import failed" && exit 1)
+          python -c "from aws_hpo_launch import launch_aapl_hpo; print('✅ aws_hpo_launch imports successfully')" || (echo "❌ aws_hpo_launch import failed" && exit 1)
+          echo "✅ All critical dependencies verified"
       
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
