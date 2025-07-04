@@ -63,7 +63,7 @@ def deploy_xgboost_model(model_file, endpoint_name):
     
     with tempfile.TemporaryDirectory() as temp_dir:
         with tarfile.open(model_file, 'r:gz') as tar:
-            tar.extractall(temp_dir)
+            tar.extractall(temp_dir, filter='data')
         
         inference_script = create_xgboost_inference_script()
         with open(os.path.join(temp_dir, 'inference.py'), 'w') as f:
@@ -95,7 +95,7 @@ def deploy_xgboost_model(model_file, endpoint_name):
             ExecutionRoleArn='arn:aws:iam::773934887314:role/SageMakerExecutionRole'
         )
         
-        sagemaker_client.create_endpoint_configuration(
+        sagemaker_client.create_endpoint_config(
             EndpointConfigName=config_name,
             ProductionVariants=[
                 {
