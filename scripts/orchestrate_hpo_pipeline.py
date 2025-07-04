@@ -366,8 +366,8 @@ def run_full_automation(input_data_s3: str, dry_run: bool = False):
     
     topic_arn = orchestrator.setup_notifications("conviction-hpo", dry_run)
     
-    existing_endpoints = ["conviction-hpo-fixed-1751615264"]
-    endpoint_results = orchestrator.monitor_and_fix_endpoints(existing_endpoints, 30, dry_run)
+    logger.info("⏭️ Skipping endpoint monitoring to prioritize HPO job completion")
+    endpoint_results = {"conviction-hpo-fixed-1751615264": False}  # Mark as failed but continue
     
     existing_job = "cb-hpo-1751617810"  # Currently running job
     try:
@@ -407,11 +407,32 @@ def run_full_automation(input_data_s3: str, dry_run: bool = False):
             elif status == 'Failed' and attempt < 2:
                 logger.warning(f"⚠️ HPO attempt {attempt + 1} failed, retrying...")
                 catboost_job = orchestrator.launch_catboost_hpo(input_data_s3, dry_run)
-            elif status == 'InProgress' and dry_run:
-                logger.info(f"🧪 DRY RUN: HPO job {catboost_job} would continue running")
-                break
+            elif status == 'InProgress':
+                if dry_run:
+                    logger.info(f"🧪 DRY RUN: HPO job {catboost_job} would continue running")
+                    break
+                else:
+                    try:
+                        response = orchestrator.sagemaker.describe_hyper_parameter_tuning_job(
+                            HyperParameterTuningJobName=catboost_job
+                        )
+                        counters = response.get('TrainingJobStatusCounters', {})
+                        completed = counters.get('Completed', 0)
+                        in_progress = counters.get('InProgress', 0)
+                        total = response.get('MaxNumberOfTrainingJobs', 50)
+                        
+                        logger.info(f"📊 HPO job {catboost_job} progress: {completed}/{total} completed, {in_progress} in progress")
+                        
+                        if completed >= int(total * 0.9):
+                            logger.info(f"🎯 HPO job nearly complete ({completed}/{total}), checking more frequently")
+                            time.sleep(60)  # Check every minute when close to completion
+                        else:
+                            time.sleep(300)  # Wait 5 minutes for normal progress
+                    except Exception as e:
+                        logger.error(f"Failed to get detailed progress: {e}")
+                        time.sleep(300)
             
-            if not dry_run:
+            if not dry_run and status not in ['Completed', 'InProgress']:
                 time.sleep(300)
     
     logger.info("🏁 Full automation completed!")
