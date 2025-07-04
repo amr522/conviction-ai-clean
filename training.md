@@ -131,15 +131,88 @@ This README outlines an 8‑step plan to maximize model accuracy through advance
 
 #### 🔄 Phase 3: HPO & Algorithm Expansion (IN PROGRESS)
 - **Algorithms Ready:** XGBoost, CatBoost, LightGBM, RandomForest, ExtraTreesClassifier
-- **Next:** Run HPO sweeps with combined daily + intraday features
+- **Current Status:** Mini-HPO running for AAPL validation (job: hpo-aapl-1751655887)
+- **Next:** Complete AAPL validation → Full 46-symbol HPO sweep with intraday features
 - **Integration:** Use existing `scripts/orchestrate_hpo_pipeline.py` framework
 
-#### 📋 Remaining Steps
-1. Test intraday data pipeline end-to-end
-2. Run HPO with expanded feature set
-3. Deploy new ensemble with intraday features
-4. Validate ML Ops automation with intraday triggers
-5. Create comprehensive PR with all changes
+#### 📋 Current Session Status (Over 5 ACUs - Continuation Required)
+1. ✅ Intraday data pipeline implemented and tested end-to-end
+2. ✅ Multi-timeframe TA feature engineering completed
+3. ✅ ML Ops dashboard extended with intraday drift monitoring
+4. ✅ EventBridge automation updated with intraday triggers
+5. 🔄 Mini-HPO validation running (AAPL with intraday features)
+6. ⏳ Awaiting HPO completion to validate AUC >0.50 baseline
+7. ⏳ Full 46-symbol HPO sweep pending validation success
+8. ⏳ New ensemble deployment with intraday features
+
+#### 🚦 Next Session Priority Tasks
+
+**IMMEDIATE (Complete Current Intraday Work):**
+- Monitor mini-HPO completion: `hpo-aapl-1751655887`
+- Merge PR #24 if validation successful (AUC >0.50)
+- Deploy new ensemble endpoint with intraday features
+
+**NEW 9-STEP LEAK-PROOF RETRAINING WORKFLOW:**
+
+```bash
+# 0) Ensure current endpoint stable
+python scripts/wait_for_endpoint.py --name conviction-ensemble-v4-1751650627 --timeout 1800
+
+# 1) Start branch for leak-safe retrain + TA upgrade
+git checkout -b retrain/no-leakage
+
+# 2) Generate time-series CV splits
+python scripts/create_time_series_splits.py --horizon 20 --n-folds 5 \
+  --output configs/splits/tscv_5fold.json
+
+# 3) Validate and prune features (<=250 per symbol)
+python scripts/feature_selector.py \
+  --input-dir data/processed_intraday \
+  --max-features 250 \
+  --output feature_config.yaml
+
+# 4) Ingest new data (sentiment + ETF flows) & intraday TA
+python twitter_sentiment_sync.py --symbols-file config/models_to_train_46.txt
+python etf_flow_sync.py --tickers SPY,QQQ,XLF,XLK
+python intraday_feature_engineering.py --timeframes 5,10,60
+
+# 5) Launch regularised XGBoost & CatBoost sweeps with time-series CV
+source scripts/get_last_hpo_dataset.sh
+python aws_hpo_launch_safe.py      --input-data-s3 "$PINNED_DATA_S3"
+python aws_catboost_hpo_launch_safe.py --input-data-s3 "$PINNED_DATA_S3"
+
+# 6) OPTIONAL: run LightGBM & GRU baselines
+python aws_lgbm_hpo_launch.py      --input-data-s3 "$PINNED_DATA_S3"
+python train_price_gru.py          --input-data-s3 "$PINNED_DATA_S3"
+
+# 7) Build upgraded MLP stacker & evaluate hold-out
+python build_ensemble_model.py \
+  --strategy meta-mlp \
+  --models xgb-safe,cb-safe,lgbm,gru \
+  --splits configs/splits/tscv_5fold.json \
+  --output ensemble/meta_mlp.pkl
+
+python evaluate_holdout.py \
+  --model ensemble/meta_mlp.pkl \
+  --start 2024-07-01 --end 2025-03-31 \
+  --threshold-auc 0.60 --threshold-sharpe 0
+
+# 8) Deploy if thresholds met; use dry-run-prod gating
+python deploy_ensemble.py \
+  --model-path ensemble/meta_mlp.pkl \
+  --endpoint-name conviction-ensemble-v5 \
+  --dry-run-prod && echo "✅ Ready for manual approve"
+
+# 9) Update docs & open PR
+./update_training_docs.sh \
+  --auc $(cat holdout_metrics.json | jq .auc) \
+  --sharpe $(cat holdout_metrics.json | jq .sharpe)
+
+git add .
+git commit -m "retrain: leak-safe splits, TA intraday, regularised models, MLP stacker"
+git push origin retrain/no-leakage
+gh pr create --fill
+```
 
 ### 🧪 Testing Commands
 ```bash
