@@ -862,6 +862,76 @@ This README should be updated automatically at the end of each session with:
 - [x] PR #12 merged into main branch
 - [x] Release v1.0.0 tagged and ready for production
 
+### 🚀 Session 6: Full-Universe HPO Launch
+**Session ID:** 05ad300219f24e349ab8affe5172d62b  
+**Date:** July 4, 2025  
+**Primary Goal:** Launch and validate full-universe HPO job  
+**Status:** IN PROGRESS - HPO job creation started
+
+#### Critical Training Script Fixes (PR #17)
+- **Problem:** Previous full-universe HPO job `hpo-aapl-1751602545` failed with "No training job succeeded after 5 attempts"
+- **Root Cause:** Training script missing 26 custom hyperparameter arguments that SageMaker passes
+- **Solution:** Added comprehensive argument parser with all required hyperparameters:
+  - Custom feature parameters: iv_rank_window, iv_rank_weight, term_slope_window, etc.
+  - VIX parameters: vix_mom_window, vix_regime_thresh
+  - Event parameters: event_lag, event_lead
+  - News parameters: news_threshold, lookback_window, reuters_weight, sa_weight
+  - Model parameters: debug, symbol, model, apply_universe_filter
+- **Verification:** Local test with exact SageMaker arguments passed successfully
+- **Status:** ✅ PR #17 merged into main branch
+
+#### Current HPO Launch Status
+- **Job Name:** `hpo-aapl-1751602970` (launched at 04:22:50 UTC, completed at 04:26:56 UTC)
+- **Dataset:** `s3://hpo-bucket-773934887314/56_stocks/46_models/2025-07-02-03-05-02/train.csv`
+- **Configuration:** Full-universe HPO with 50 max jobs, 3 parallel jobs
+- **Branch:** main (with merged training script fixes)
+- **Status:** ❌ FAILED - "No training job succeeded after 5 attempts"
+- **Duration:** ~4 minutes (job creation + 5 failed training attempts)
+
+#### Next Session Continuation Instructions
+**To continue this work in a new session:**
+
+1. **Debug the failed training jobs:**
+   ```bash
+   # List all failed training jobs from the HPO run
+   aws sagemaker list-training-jobs-for-hyper-parameter-tuning-job \
+     --hyper-parameter-tuning-job-name hpo-aapl-1751602970 \
+     --status-equals Failed \
+     --query 'TrainingJobSummaries[].TrainingJobName' --output text
+   
+   # Get detailed failure reason for first failed job
+   FAILED_JOB=$(aws sagemaker list-training-jobs-for-hyper-parameter-tuning-job \
+     --hyper-parameter-tuning-job-name hpo-aapl-1751602970 \
+     --status-equals Failed \
+     --query 'TrainingJobSummaries[0].TrainingJobName' --output text)
+   
+   aws sagemaker describe-training-job --training-job-name "$FAILED_JOB"
+   ```
+
+2. **Check CloudWatch logs for specific error details:**
+   ```bash
+   # Get logs from failed training job
+   aws logs get-log-events \
+     --log-group-name /aws/sagemaker/TrainingJobs \
+     --log-stream-name "${FAILED_JOB}/algo-1" \
+     --limit 200
+   ```
+
+3. **Investigate potential remaining issues:**
+   - Verify all 26 custom hyperparameters are correctly handled
+   - Check if there are additional SageMaker environment variables needed
+   - Test training script locally with exact SageMaker container environment
+   - Review metric emission format and validation logic
+
+4. **After identifying root cause, implement fixes and relaunch HPO job**
+
+#### Key Technical Details
+- **Training Script:** All 26 custom hyperparameters now supported
+- **Argument Validation:** Enhanced error handling and validation
+- **Metric Emission:** Correct format `validation-auc:{value}` for SageMaker HPO
+- **Unit Tests:** All 5 tests pass after fixes
+- **AWS Account:** 773934887314 with valid credentials
+
 ### ✅ Final Deliverables Summary
 1. **HPO secrets set:** AWS credentials configured in GitHub HPO environment
 2. **Production HPO job launched:** Real SageMaker job created with valid ARN
