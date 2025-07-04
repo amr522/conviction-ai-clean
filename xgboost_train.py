@@ -28,19 +28,59 @@ def parse_args():
     parser.add_argument('--gamma', type=float, default=0.0)
     parser.add_argument('--alpha', type=float, default=0.0)
     parser.add_argument('--reg_lambda', type=float, default=1.0)
+    parser.add_argument('--lambda', type=float, default=1.0, dest='reg_lambda')
     parser.add_argument('--num_round', type=int, default=100)
     
-    return parser.parse_args()
+    parser.add_argument('--debug', type=bool, default=False)
+    parser.add_argument('--symbol', type=str, default='AAPL')
+    parser.add_argument('--model', type=str, default='xgb')
+    parser.add_argument('--apply_universe_filter', type=bool, default=False)
+    parser.add_argument('--iv_rank_window', type=int, default=30)
+    parser.add_argument('--iv_rank_weight', type=float, default=0.5)
+    parser.add_argument('--term_slope_window', type=int, default=15)
+    parser.add_argument('--term_slope_weight', type=float, default=0.5)
+    parser.add_argument('--oi_window', type=int, default=15)
+    parser.add_argument('--oi_weight', type=float, default=0.5)
+    parser.add_argument('--theta_window', type=int, default=15)
+    parser.add_argument('--theta_weight', type=float, default=0.5)
+    parser.add_argument('--vix_mom_window', type=int, default=10)
+    parser.add_argument('--vix_regime_thresh', type=float, default=25.0)
+    parser.add_argument('--event_lag', type=int, default=2)
+    parser.add_argument('--event_lead', type=int, default=2)
+    parser.add_argument('--news_threshold', type=float, default=0.05)
+    parser.add_argument('--lookback_window', type=int, default=5)
+    parser.add_argument('--reuters_weight', type=float, default=1.0)
+    parser.add_argument('--sa_weight', type=float, default=1.0)
+    
+    args = parser.parse_args()
+    
+    if not args.train and not os.environ.get('SM_CHANNEL_TRAINING'):
+        parser.error("--train argument is required when SM_CHANNEL_TRAINING environment variable is not set")
+    
+    if not args.model_dir and not os.environ.get('SM_MODEL_DIR'):
+        parser.error("--model-dir argument is required when SM_MODEL_DIR environment variable is not set")
+    
+    return args
 
 def load_data(data_path):
     """Load training data from CSV"""
+    print(f"Attempting to load data from: {data_path}")
+    
+    if not data_path:
+        raise ValueError("❌ Data path cannot be empty")
+    
     if os.path.isdir(data_path):
+        print(f"Data path is directory: {data_path}")
         csv_files = [f for f in os.listdir(data_path) if f.endswith('.csv')]
+        print(f"Found CSV files: {csv_files}")
         if 'train.csv' in csv_files:
             data_path = os.path.join(data_path, 'train.csv')
-        else:
+        elif csv_files:
             data_path = os.path.join(data_path, csv_files[0])
+        else:
+            raise FileNotFoundError(f"❌ No CSV files found in directory: {data_path}")
     
+    print(f"Loading CSV file: {data_path}")
     df = pd.read_csv(data_path, header=None)
     
     y = df.iloc[:, 0]
@@ -51,6 +91,14 @@ def load_data(data_path):
 def train_model(args):
     """Train XGBoost model"""
     print("Loading training data...")
+    print(f"Training data path: {args.train}")
+    
+    if not args.train:
+        raise ValueError("❌ --train path is required")
+    
+    if not os.path.exists(args.train):
+        raise FileNotFoundError(f"❌ Training data not found at: {args.train}")
+    
     X_train, y_train = load_data(args.train)
     
     print(f"Training data shape: {X_train.shape}")
@@ -110,6 +158,7 @@ def train_model(args):
     
     print(f"Model saved to {model_path}")
     print(f"Final validation AUC: {validation_auc:.4f}")
+    print(f"validation-auc:{validation_auc:.6f}")
     
     return validation_auc
 
