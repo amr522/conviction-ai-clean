@@ -18,7 +18,6 @@ import boto3
 import sagemaker
 from sagemaker.tuner import HyperparameterTuner
 from sagemaker.parameter import IntegerParameter, ContinuousParameter, CategoricalParameter
-from sagemaker.estimator import Estimator
 from sagemaker.xgboost import XGBoost
 from sagemaker.inputs import TrainingInput
 
