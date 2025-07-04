@@ -1,0 +1,17 @@
+{
+  "symbols_with_complete_data": [
+    "JNJ",
+    "NVDA",
+    "META",
+    "AMZN",
+    "TSLA",
+    "GOOGL",
+    "JPM",
+    "V",
+    "MSFT",
+    "AAPL"
+  ],
+  "symbols_with_missing_data": [],
+  "total_symbols_found": 10,
+  "validation_passed": true
+}
