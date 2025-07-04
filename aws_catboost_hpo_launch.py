@@ -77,7 +77,12 @@ import subprocess
 import sys
 import os
 
-subprocess.check_call([sys.executable, "-m", "pip", "install", "catboost"])
+try:
+    import catboost
+except ImportError:
+    print("Installing CatBoost...")
+    subprocess.check_call([sys.executable, "-m", "pip", "install", "catboost"])
+    import catboost
 
 import argparse
 import pandas as pd
@@ -161,7 +166,8 @@ def launch_catboost_hpo(input_data_s3=None, dry_run=False):
         
         if dry_run:
             logger.info("🧪 DRY RUN MODE - No SageMaker calls will be made")
-            job_name = f"catboost-hpo-46-{int(time.time())}-dry-run"
+            timestamp = int(time.time())
+            job_name = f"cb-hpo-{timestamp}-dry"
             logger.info(f"✅ DRY RUN: Would launch CatBoost HPO job: {job_name}")
             logger.info(f"✅ DRY RUN: Would use training data: {training_data}")
             return job_name
@@ -190,7 +196,8 @@ def launch_catboost_hpo(input_data_s3=None, dry_run=False):
             max_parallel_jobs=3
         )
         
-        job_name = f"catboost-hpo-46-{int(time.time())}"
+        timestamp = int(time.time())
+        job_name = f"cb-hpo-{timestamp}"
         tuner.fit({
             'train': TrainingInput(
                 s3_data=training_data,
