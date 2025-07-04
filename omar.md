@@ -863,10 +863,10 @@ This README should be updated automatically at the end of each session with:
 - [x] Release v1.0.0 tagged and ready for production
 
 ### 🚀 Session 6: Full-Universe HPO Launch
-**Session ID:** 05ad300219f24e349ab8affe5172d62b  
+**Session ID:** 1831de920258421e8336dc053439356e  
 **Date:** July 4, 2025  
-**Primary Goal:** Launch and validate full-universe HPO job  
-**Status:** IN PROGRESS - HPO job creation started
+**Primary Goal:** Debug and fix ExecuteUserScriptError in failed HPO job  
+**Status:** ✅ COMPLETED - Root cause identified and fixed
 
 #### Critical Training Script Fixes (PR #17)
 - **Problem:** Previous full-universe HPO job `hpo-aapl-1751602545` failed with "No training job succeeded after 5 attempts"
@@ -880,50 +880,37 @@ This README should be updated automatically at the end of each session with:
 - **Verification:** Local test with exact SageMaker arguments passed successfully
 - **Status:** ✅ PR #17 merged into main branch
 
-#### Current HPO Launch Status
-- **Job Name:** `hpo-aapl-1751602970` (launched at 04:22:50 UTC, completed at 04:26:56 UTC)
-- **Dataset:** `s3://hpo-bucket-773934887314/56_stocks/46_models/2025-07-02-03-05-02/train.csv`
-- **Configuration:** Full-universe HPO with 50 max jobs, 3 parallel jobs
-- **Branch:** main (with merged training script fixes)
-- **Status:** ❌ FAILED - "No training job succeeded after 5 attempts"
-- **Duration:** ~4 minutes (job creation + 5 failed training attempts)
+#### Root Cause Analysis & Resolution
+- **Failed Job:** `hpo-aapl-1751602970` - "No training job succeeded after 5 attempts"
+- **Root Cause:** SageMaker environment variable mismatch - script expected `SM_CHANNEL_TRAINING` but SageMaker sets `SM_CHANNEL_TRAIN`
+- **CloudWatch Evidence:** Training jobs failed with ExecuteUserScriptError due to missing `--train` argument
+- **Fix Applied:** Updated `xgboost_train.py` to use correct SageMaker environment variables with fallback logic
+- **Branch:** `devin/1751603818-fix-hpo-execution-errors`
+- **PR Created:** #19 - Fix SageMaker environment variable mismatch causing HPO training failures
 
-#### Next Session Continuation Instructions
-**To continue this work in a new session:**
+#### Verification Results
+- **Test AAPL HPO:** `hpo-aapl-1751604055` - ✅ 17 completed training jobs, 0 errors
+- **Full-Universe HPO:** `hpo-full-1751604591` - ✅ 9+ completed training jobs, 0 errors  
+- **Status:** ✅ SUCCESSFUL - Training jobs now completing without ExecuteUserScriptError
 
-1. **Debug the failed training jobs:**
-   ```bash
-   # List all failed training jobs from the HPO run
-   aws sagemaker list-training-jobs-for-hyper-parameter-tuning-job \
-     --hyper-parameter-tuning-job-name hpo-aapl-1751602970 \
-     --status-equals Failed \
-     --query 'TrainingJobSummaries[].TrainingJobName' --output text
-   
-   # Get detailed failure reason for first failed job
-   FAILED_JOB=$(aws sagemaker list-training-jobs-for-hyper-parameter-tuning-job \
-     --hyper-parameter-tuning-job-name hpo-aapl-1751602970 \
-     --status-equals Failed \
-     --query 'TrainingJobSummaries[0].TrainingJobName' --output text)
-   
-   aws sagemaker describe-training-job --training-job-name "$FAILED_JOB"
-   ```
+#### Technical Details of Fix
+1. **Environment Variable Correction:**
+   - Changed `SM_CHANNEL_TRAINING` to `SM_CHANNEL_TRAIN` in argument defaults
+   - Added fallback logic: `os.environ.get('SM_CHANNEL_TRAIN') or os.environ.get('SM_CHANNEL_TRAINING')`
+   - Updated validation logic to check both variable names
 
-2. **Check CloudWatch logs for specific error details:**
-   ```bash
-   # Get logs from failed training job
-   aws logs get-log-events \
-     --log-group-name /aws/sagemaker/TrainingJobs \
-     --log-stream-name "${FAILED_JOB}/algo-1" \
-     --limit 200
-   ```
+2. **Files Modified:**
+   - `xgboost_train.py` - Fixed SageMaker environment variable handling
+   - Lines 20, 57-58 updated with correct variable names and fallback logic
 
-3. **Investigate potential remaining issues:**
-   - Verify all 26 custom hyperparameters are correctly handled
-   - Check if there are additional SageMaker environment variables needed
-   - Test training script locally with exact SageMaker container environment
-   - Review metric emission format and validation logic
+3. **Testing Performed:**
+   - Local simulation with SageMaker environment variables
+   - Test AAPL HPO job with 17 successful training jobs
+   - Full-universe HPO job with 9+ successful training jobs
 
-4. **After identifying root cause, implement fixes and relaunch HPO job**
+4. **Current Running Jobs:**
+   - `hpo-aapl-1751604055` (test) - Completed successfully
+   - `hpo-full-1751604591` (production) - Running successfully
 
 #### Key Technical Details
 - **Training Script:** All 26 custom hyperparameters now supported
