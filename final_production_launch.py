@@ -70,8 +70,8 @@ def main():
             logger.info(f"🔍 [dry-run] Job name would be: {job_name}")
             return True
         
-        # Launch tuning job
-        tuner.fit({'training': pinned_data}, job_name=job_name)
+        # Launch tuning job with proper channel mapping
+        tuner.fit({'train': pinned_data}, job_name=job_name)
         
         job_arn = f"arn:aws:sagemaker:us-east-1:773934887314:hyper-parameter-tuning-job/{job_name}"
         
