@@ -1,6 +1,11 @@
 
-import argparse
+import subprocess
+import sys
 import os
+
+subprocess.check_call([sys.executable, "-m", "pip", "install", "catboost"])
+
+import argparse
 import pandas as pd
 import numpy as np
 from catboost import CatBoostClassifier
