@@ -97,7 +97,8 @@ def output_fn(prediction, content_type):
                     'ModelDataUrl': model_uri,
                     'Environment': {
                         'SAGEMAKER_PROGRAM': 'inference.py',
-                        'SAGEMAKER_SUBMIT_DIRECTORY': '/opt/ml/code'
+                        'SAGEMAKER_SUBMIT_DIRECTORY': '/opt/ml/code',
+                        'SAGEMAKER_ENABLE_CLOUDWATCH_METRICS': 'false'
                     }
                 },
                 ExecutionRoleArn=role_arn
@@ -115,7 +116,7 @@ def output_fn(prediction, content_type):
         print(f"⚙️ Creating endpoint config: {config_name}")
         
         try:
-            response = self.sagemaker.create_endpoint_configuration(
+            response = self.sagemaker.create_endpoint_config(
                 EndpointConfigName=config_name,
                 ProductionVariants=[
                     {

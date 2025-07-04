@@ -1,6 +1,16 @@
 
-import argparse
+import subprocess
+import sys
 import os
+
+try:
+    import catboost
+except ImportError:
+    print("Installing CatBoost...")
+    subprocess.check_call([sys.executable, "-m", "pip", "install", "catboost"])
+    import catboost
+
+import argparse
 import pandas as pd
 import numpy as np
 from catboost import CatBoostClassifier
@@ -28,13 +38,10 @@ def main():
     args = parse_args()
     
     train_file = os.path.join(args.train, 'train.csv')
-    df = pd.read_csv(train_file)
+    df = pd.read_csv(train_file, header=None)
     
-    target_col = 'direction' if 'direction' in df.columns else 'target_next_day'
-    feature_cols = [col for col in df.columns if col not in ['date', 'symbol', target_col]]
-    
-    X = df[feature_cols].values
-    y = df[target_col].values
+    y = df.iloc[:, 0].values
+    X = df.iloc[:, 1:].values
     
     X_train, X_val, y_train, y_val = train_test_split(X, y, test_size=0.2, random_state=42)
     

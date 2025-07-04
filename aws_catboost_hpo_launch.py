@@ -73,8 +73,18 @@ def get_catboost_hyperparameter_ranges():
 def create_catboost_training_script():
     """Create CatBoost training script for SageMaker"""
     script_content = '''
-import argparse
+import subprocess
+import sys
 import os
+
+try:
+    import catboost
+except ImportError:
+    print("Installing CatBoost...")
+    subprocess.check_call([sys.executable, "-m", "pip", "install", "catboost"])
+    import catboost
+
+import argparse
 import pandas as pd
 import numpy as np
 from catboost import CatBoostClassifier
@@ -102,13 +112,10 @@ def main():
     args = parse_args()
     
     train_file = os.path.join(args.train, 'train.csv')
-    df = pd.read_csv(train_file)
+    df = pd.read_csv(train_file, header=None)
     
-    target_col = 'direction' if 'direction' in df.columns else 'target_next_day'
-    feature_cols = [col for col in df.columns if col not in ['date', 'symbol', target_col]]
-    
-    X = df[feature_cols].values
-    y = df[target_col].values
+    y = df.iloc[:, 0].values
+    X = df.iloc[:, 1:].values
     
     X_train, X_val, y_train, y_val = train_test_split(X, y, test_size=0.2, random_state=42)
     
@@ -159,7 +166,8 @@ def launch_catboost_hpo(input_data_s3=None, dry_run=False):
         
         if dry_run:
             logger.info("🧪 DRY RUN MODE - No SageMaker calls will be made")
-            job_name = f"catboost-hpo-46-{int(time.time())}-dry-run"
+            timestamp = int(time.time())
+            job_name = f"cb-hpo-{timestamp}-dry"
             logger.info(f"✅ DRY RUN: Would launch CatBoost HPO job: {job_name}")
             logger.info(f"✅ DRY RUN: Would use training data: {training_data}")
             return job_name
@@ -188,7 +196,8 @@ def launch_catboost_hpo(input_data_s3=None, dry_run=False):
             max_parallel_jobs=3
         )
         
-        job_name = f"catboost-hpo-46-{int(time.time())}"
+        timestamp = int(time.time())
+        job_name = f"cb-hpo-{timestamp}"
         tuner.fit({
             'train': TrainingInput(
                 s3_data=training_data,
