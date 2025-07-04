@@ -312,7 +312,6 @@ def setup_mlops_monitoring(endpoint_name, topic_arn, auc_threshold=0.50, data_ag
             ]
         )
         
-        # Create data freshness alarm
         data_freshness_alarm_name = f"{endpoint_name}-data-freshness-alarm"
         
         cw_client.put_metric_alarm(
@@ -335,7 +334,6 @@ def setup_mlops_monitoring(endpoint_name, topic_arn, auc_threshold=0.50, data_ag
             ]
         )
         
-        # Create dashboard health alarm
         dashboard_health_alarm_name = f"{endpoint_name}-dashboard-health-alarm"
         
         cw_client.put_metric_alarm(
@@ -358,10 +356,34 @@ def setup_mlops_monitoring(endpoint_name, topic_arn, auc_threshold=0.50, data_ag
             ]
         )
         
+        for interval in [5, 10, 60]:
+            intraday_alarm_name = f"{endpoint_name}-intraday-drift-{interval}min-alarm"
+            
+            cw_client.put_metric_alarm(
+                AlarmName=intraday_alarm_name,
+                ComparisonOperator='GreaterThanThreshold',
+                EvaluationPeriods=2,
+                MetricName=f'IntradayDrift_{interval}min',
+                Namespace='Custom/MLOps',
+                Period=3600,
+                Statistic='Average',
+                Threshold=0.3,
+                ActionsEnabled=True,
+                AlarmActions=[topic_arn],
+                AlarmDescription=f'Alarm when {interval}min intraday drift exceeds threshold',
+                Dimensions=[
+                    {
+                        'Name': 'EndpointName',
+                        'Value': endpoint_name
+                    }
+                ]
+            )
+        
         logger.info(f"Successfully set up ML Ops monitoring alarms:")
         logger.info(f"  - AUC threshold alarm: {auc_alarm_name}")
         logger.info(f"  - Data freshness alarm: {data_freshness_alarm_name}")
         logger.info(f"  - Dashboard health alarm: {dashboard_health_alarm_name}")
+        logger.info(f"  - Intraday drift alarms: 5min, 10min, 60min")
         
         return True
         

@@ -33,7 +33,7 @@ class MLOpsCLI:
         self.default_data_uri = 's3://hpo-bucket-773934887314/56_stocks/46_models/2025-07-02-03-05-02/train.csv'
     
     def generate_dashboard(self, endpoint_name: str, output_file: Optional[str] = None, 
-                         continuous: bool = False, interval: int = 5, dry_run: bool = False) -> bool:
+                         continuous: bool = False, interval: int = 5, enhanced: bool = False, dry_run: bool = False) -> bool:
         """Generate ML Ops dashboard"""
         cmd = [sys.executable, 'mlops_dashboard.py', '--endpoint-name', endpoint_name]
         
@@ -42,6 +42,9 @@ class MLOpsCLI:
         
         if continuous:
             cmd.extend(['--continuous', '--interval', str(interval)])
+        
+        if enhanced:
+            cmd.append('--enhanced')
         
         if dry_run:
             cmd.append('--dry-run')
@@ -245,6 +248,7 @@ def main():
     dashboard_parser.add_argument('--output-file', type=str, help='Output HTML file')
     dashboard_parser.add_argument('--continuous', action='store_true', help='Run continuous monitoring')
     dashboard_parser.add_argument('--interval', type=int, default=5, help='Monitoring interval (minutes)')
+    dashboard_parser.add_argument('--enhanced', action='store_true', help='Generate enhanced dashboard with intraday metrics')
     
     retraining_parser = subparsers.add_parser('retraining', help='Retraining management', parents=[parent_parser])
     retraining_parser.add_argument('--setup', action='store_true', help='Set up automated retraining')
@@ -277,6 +281,7 @@ def main():
             args.output_file, 
             args.continuous, 
             args.interval, 
+            getattr(args, 'enhanced', False),
             args.dry_run
         )
         sys.exit(0 if success else 1)
