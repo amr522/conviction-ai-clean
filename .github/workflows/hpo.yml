@@ -103,24 +103,24 @@ jobs:
             "aapl")
               echo "Running AAPL HPO job..."
               python - << 'PYCODE'
-from aws_hpo_launch import launch_aapl_hpo
-import sys
-job_name = launch_aapl_hpo()
-if not job_name:
-    sys.exit(1)
-print(f'✅ AAPL HPO job launched: {job_name}')
-PYCODE
+              from aws_hpo_launch import launch_aapl_hpo
+              import sys
+              job_name = launch_aapl_hpo()
+              if not job_name:
+                  sys.exit(1)
+              print(f'✅ AAPL HPO job launched: {job_name}')
+              PYCODE
               ;;
             "full_universe")
               echo "Running Full Universe HPO job..."
               python - << 'PYCODE'
-from aws_hpo_launch import launch_full_universe_hpo
-import sys
-job_name = launch_full_universe_hpo()
-if not job_name:
-    sys.exit(1)
-print(f'✅ Full Universe HPO job launched: {job_name}')
-PYCODE
+              from aws_hpo_launch import launch_full_universe_hpo
+              import sys
+              job_name = launch_full_universe_hpo()
+              if not job_name:
+                  sys.exit(1)
+              print(f'✅ Full Universe HPO job launched: {job_name}')
+              PYCODE
               ;;
             "both")
               echo "Running both AAPL and Full Universe HPO jobs..."
