@@ -36,12 +36,17 @@ else
 fi
 
 if [[ "$OPERATION" == "update-stack" ]]; then
-    if aws cloudformation "$OPERATION" \
+    UPDATE_OUTPUT=$(aws cloudformation "$OPERATION" \
         --stack-name "$STACK_NAME" \
         --template-body file://cloudformation/hpo-monitoring.yaml \
         --parameters ParameterKey=NotificationEmail,ParameterValue="$EMAIL" \
-        --capabilities CAPABILITY_IAM 2>&1 | grep -q "No updates are to be performed"; then
+        --capabilities CAPABILITY_IAM 2>&1 || true)
+    
+    if echo "$UPDATE_OUTPUT" | grep -q "No updates are to be performed"; then
         echo "📋 Stack is already up-to-date, no changes needed"
+    elif echo "$UPDATE_OUTPUT" | grep -q "ValidationError"; then
+        echo "❌ CloudFormation validation error: $UPDATE_OUTPUT"
+        exit 1
     else
         echo "⏳ Waiting for stack update to complete..."
         aws cloudformation wait stack-update-complete --stack-name "$STACK_NAME"
