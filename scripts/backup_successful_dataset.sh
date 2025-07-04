@@ -36,22 +36,12 @@ if [[ ! -f "$PINNED_CONFIG" ]]; then
     exit 1
 fi
 
-if aws cloudformation describe-stacks --stack-name "$STACK_NAME" >/dev/null 2>&1; then
-    echo "📋 S3 versioning stack already exists, verifying configuration..."
-else
-    echo "🆕 Creating S3 versioning stack: $STACK_NAME"
-    aws cloudformation create-stack \
-        --stack-name "$STACK_NAME" \
-        --template-body file://cloudformation/s3-versioning.yaml \
-        --parameters ParameterKey=BucketName,ParameterValue="$BUCKET"
-    
-    echo "⏳ Waiting for S3 versioning stack to complete..."
-    aws cloudformation wait stack-create-complete --stack-name "$STACK_NAME"
-fi
+echo "🔧 Enabling S3 versioning on bucket: $BUCKET"
+aws s3api put-bucket-versioning --bucket "$BUCKET" --versioning-configuration Status=Enabled
 
 VERSIONING_STATUS=$(aws s3api get-bucket-versioning --bucket "$BUCKET" --query 'Status' --output text)
 if [[ "$VERSIONING_STATUS" != "Enabled" ]]; then
-    echo "❌ S3 versioning not enabled on bucket: $BUCKET"
+    echo "❌ Failed to enable S3 versioning on bucket: $BUCKET"
     exit 1
 fi
 
