@@ -35,17 +35,26 @@ else
     OPERATION="create-stack"
 fi
 
-aws cloudformation "$OPERATION" \
-    --stack-name "$STACK_NAME" \
-    --template-body file://cloudformation/hpo-monitoring.yaml \
-    --parameters ParameterKey=NotificationEmail,ParameterValue="$EMAIL" \
-    --capabilities CAPABILITY_IAM
-
-echo "⏳ Waiting for stack operation to complete..."
-if [[ "$OPERATION" == "create-stack" ]]; then
-    aws cloudformation wait stack-create-complete --stack-name "$STACK_NAME"
+if [[ "$OPERATION" == "update-stack" ]]; then
+    if aws cloudformation "$OPERATION" \
+        --stack-name "$STACK_NAME" \
+        --template-body file://cloudformation/hpo-monitoring.yaml \
+        --parameters ParameterKey=NotificationEmail,ParameterValue="$EMAIL" \
+        --capabilities CAPABILITY_IAM 2>&1 | grep -q "No updates are to be performed"; then
+        echo "📋 Stack is already up-to-date, no changes needed"
+    else
+        echo "⏳ Waiting for stack update to complete..."
+        aws cloudformation wait stack-update-complete --stack-name "$STACK_NAME"
+    fi
 else
-    aws cloudformation wait stack-update-complete --stack-name "$STACK_NAME"
+    aws cloudformation "$OPERATION" \
+        --stack-name "$STACK_NAME" \
+        --template-body file://cloudformation/hpo-monitoring.yaml \
+        --parameters ParameterKey=NotificationEmail,ParameterValue="$EMAIL" \
+        --capabilities CAPABILITY_IAM
+    
+    echo "⏳ Waiting for stack creation to complete..."
+    aws cloudformation wait stack-create-complete --stack-name "$STACK_NAME"
 fi
 
 SNS_TOPIC_ARN=$(aws cloudformation describe-stacks \
