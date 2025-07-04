@@ -16,7 +16,7 @@ import boto3
 import logging
 import argparse
 from datetime import datetime
-from typing import Dict, Optional
+from typing import Dict, Optional, List
 
 logging.basicConfig(
     level=logging.INFO,
@@ -273,6 +273,45 @@ def lambda_handler(event, context):
                 
             except Exception as e:
                 logger.error(f"Failed to create EventBridge rule {config['name']}: {e}")
+        
+        return rules
+    
+    def setup_intraday_drift_rules(self, dry_run: bool = False) -> List[str]:
+        """Set up EventBridge rules for intraday drift detection"""
+        rules = []
+        
+        for interval in [5, 10, 60]:
+            rule_name = f"intraday-drift-{interval}min-trigger"
+            
+            if dry_run:
+                logger.info(f"🧪 DRY RUN: Would create EventBridge rule {rule_name}")
+                rules.append(rule_name)
+                continue
+            
+            try:
+                rule_description = f"Trigger retraining when {interval}min intraday drift exceeds threshold"
+                
+                self.events_client.put_rule(
+                    Name=rule_name,
+                    Description=rule_description,
+                    State='ENABLED',
+                    EventPattern=json.dumps({
+                        "source": ["aws.cloudwatch"],
+                        "detail-type": ["CloudWatch Alarm State Change"],
+                        "detail": {
+                            "alarmName": [f"*-intraday-drift-{interval}min-alarm"],
+                            "state": {
+                                "value": ["ALARM"]
+                            }
+                        }
+                    })
+                )
+                
+                logger.info(f"✅ Created EventBridge rule: {rule_name}")
+                rules.append(rule_name)
+                
+            except Exception as e:
+                logger.error(f"Failed to create rule {rule_name}: {e}")
         
         return rules
     
