@@ -115,7 +115,7 @@ def output_fn(prediction, content_type):
         print(f"⚙️ Creating endpoint config: {config_name}")
         
         try:
-            response = self.sagemaker.create_endpoint_configuration(
+            response = self.sagemaker.create_endpoint_config(
                 EndpointConfigName=config_name,
                 ProductionVariants=[
                     {
