@@ -93,7 +93,7 @@ def output_fn(prediction, content_type):
             response = self.sagemaker.create_model(
                 ModelName=model_name,
                 PrimaryContainer={
-                    'Image': '683313688378.dkr.ecr.us-east-1.amazonaws.com/sagemaker-scikit-learn:0.23-1-cpu-py3',
+                    'Image': '683313688378.dkr.ecr.us-east-1.amazonaws.com/sagemaker-xgboost:1.7-1',
                     'ModelDataUrl': model_uri,
                     'Environment': {
                         'SAGEMAKER_PROGRAM': 'inference.py',
