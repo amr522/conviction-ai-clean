@@ -10,9 +10,27 @@ import numpy as np
 from sklearn.ensemble import VotingClassifier
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import roc_auc_score
+from sklearn.base import BaseEstimator, ClassifierMixin
 import xgboost as xgb
 from catboost import CatBoostClassifier
 import argparse
+
+class SimpleEnsemble:
+    """Custom ensemble class to avoid VotingClassifier compatibility issues"""
+    def __init__(self, models):
+        self.models = models
+        
+    def fit(self, X, y):
+        return self
+        
+    def predict_proba(self, X):
+        xgb_pred = self.models[0].predict_proba(X)
+        cb_pred = self.models[1].predict_proba(X)
+        return (xgb_pred + cb_pred) / 2
+        
+    def predict(self, X):
+        proba = self.predict_proba(X)
+        return (proba[:, 1] > 0.5).astype(int)
 
 def load_hyperparameters(xgb_config_path, cb_config_path):
     """Load hyperparameters from config files"""
@@ -23,6 +41,29 @@ def load_hyperparameters(xgb_config_path, cb_config_path):
         cb_config = json.load(f)
     
     return xgb_config, cb_config
+
+class SklearnXGBClassifier(BaseEstimator, ClassifierMixin):
+    """Wrapper for XGBClassifier to ensure compatibility with scikit-learn VotingClassifier"""
+    
+    def __init__(self, **kwargs):
+        self.model = xgb.XGBClassifier(**kwargs)
+        
+    def fit(self, X, y, **kwargs):
+        self.model.fit(X, y, **kwargs)
+        return self
+        
+    def predict(self, X):
+        return self.model.predict(X)
+        
+    def predict_proba(self, X):
+        return self.model.predict_proba(X)
+        
+    def get_params(self, deep=True):
+        return self.model.get_params(deep)
+        
+    def set_params(self, **params):
+        self.model.set_params(**params)
+        return self
 
 def create_models_from_hyperparams(xgb_config, cb_config):
     """Create model instances from hyperparameters"""
@@ -53,7 +94,7 @@ def create_models_from_hyperparams(xgb_config, cb_config):
         'verbose': False
     }
     
-    xgb_model = xgb.XGBClassifier(**xgb_params)
+    xgb_model = SklearnXGBClassifier(**xgb_params)
     cb_model = CatBoostClassifier(**cb_params)
     
     return xgb_model, cb_model
@@ -94,13 +135,7 @@ def build_ensemble(xgb_config_path, cb_config_path, data_path, output_path):
     cb_auc = roc_auc_score(y_val, cb_pred)
     print(f"   CatBoost AUC: {cb_auc:.4f}")
     
-    ensemble = VotingClassifier(
-        estimators=[
-            ('xgboost', xgb_model),
-            ('catboost', cb_model)
-        ],
-        voting='soft'
-    )
+    ensemble = SimpleEnsemble([xgb_model, cb_model])
     
     print("🎯 Training ensemble model...")
     ensemble.fit(X_train, y_train)

@@ -11,6 +11,49 @@ import tempfile
 from datetime import datetime
 import json
 
+from sklearn.base import BaseEstimator, ClassifierMixin
+import xgboost as xgb
+
+class SklearnXGBClassifier(BaseEstimator, ClassifierMixin):
+    """Wrapper for XGBClassifier to ensure compatibility with scikit-learn VotingClassifier"""
+    
+    def __init__(self, **kwargs):
+        self.model = xgb.XGBClassifier(**kwargs)
+        
+    def fit(self, X, y, **kwargs):
+        self.model.fit(X, y, **kwargs)
+        return self
+        
+    def predict(self, X):
+        return self.model.predict(X)
+        
+    def predict_proba(self, X):
+        return self.model.predict_proba(X)
+        
+    def get_params(self, deep=True):
+        return self.model.get_params(deep)
+        
+    def set_params(self, **params):
+        self.model.set_params(**params)
+        return self
+
+class SimpleEnsemble:
+    """Custom ensemble class to avoid VotingClassifier compatibility issues"""
+    def __init__(self, models):
+        self.models = models
+        
+    def fit(self, X, y):
+        return self
+        
+    def predict_proba(self, X):
+        xgb_pred = self.models[0].predict_proba(X)
+        cb_pred = self.models[1].predict_proba(X)
+        return (xgb_pred + cb_pred) / 2
+        
+    def predict(self, X):
+        proba = self.predict_proba(X)
+        return (proba[:, 1] > 0.5).astype(int)
+
 class EnsembleDeployer:
     def __init__(self, region='us-east-1'):
         self.region = region
@@ -29,23 +72,48 @@ class EnsembleDeployer:
         os.makedirs(package_dir, exist_ok=True)
         
         inference_script = f"""
-import subprocess
-import sys
-import os
-
-def install_dependencies():
-    try:
-        subprocess.check_call([sys.executable, '-m', 'pip', 'install', 'xgboost==1.6.2', 'catboost==1.0.6'])
-        print("✅ Successfully installed XGBoost and CatBoost")
-    except Exception as e:
-        print(f"❌ Failed to install dependencies: {{e}}")
-        raise
-
-install_dependencies()
-
 import joblib
 import numpy as np
 import json
+from sklearn.base import BaseEstimator, ClassifierMixin
+import xgboost as xgb
+
+class SklearnXGBClassifier(BaseEstimator, ClassifierMixin):
+    def __init__(self, **kwargs):
+        self.model = xgb.XGBClassifier(**kwargs)
+        
+    def fit(self, X, y, **kwargs):
+        self.model.fit(X, y, **kwargs)
+        return self
+        
+    def predict(self, X):
+        return self.model.predict(X)
+        
+    def predict_proba(self, X):
+        return self.model.predict_proba(X)
+        
+    def get_params(self, deep=True):
+        return self.model.get_params(deep)
+        
+    def set_params(self, **params):
+        self.model.set_params(**params)
+        return self
+
+class SimpleEnsemble:
+    def __init__(self, models):
+        self.models = models
+        
+    def fit(self, X, y):
+        return self
+        
+    def predict_proba(self, X):
+        xgb_pred = self.models[0].predict_proba(X)
+        cb_pred = self.models[1].predict_proba(X)
+        return (xgb_pred + cb_pred) / 2
+        
+    def predict(self, X):
+        proba = self.predict_proba(X)
+        return (proba[:, 1] > 0.5).astype(int)
 
 def model_fn(model_dir):
     '''Load the ensemble model'''
