@@ -1,0 +1,132 @@
+2025-07-04 02:26:47,293 - INFO - Starting HPO pipeline...
+2025-07-04 02:26:47,293 - INFO - Launching AWS SageMaker HPO job for AAPL only
+2025-07-04 02:26:47,293 - INFO - 🔗 Using pinned dataset from last_dataset_uri.txt: s3://hpo-bucket-773934887314/56_stocks/46_models/2025-07-02-03-05-02/train.csv
+2025-07-04 02:26:47,294 - INFO - 🔗 Using dataset: s3://hpo-bucket-773934887314/56_stocks/46_models/2025-07-02-03-05-02/train.csv
+2025-07-04 02:26:47,306 - INFO - Found credentials in environment variables.
+2025-07-04 02:26:47,725 - INFO - ✅ S3 URI validated: s3://hpo-bucket-773934887314/56_stocks/46_models/2025-07-02-03-05-02/train.csv
+2025-07-04 02:26:47,726 - INFO - 🧪 DRY RUN MODE - No SageMaker calls will be made
+2025-07-04 02:26:47,726 - INFO - ✅ DRY RUN: Would launch AAPL HPO job: options-hpo-aapl-1751596007-dry-run
+2025-07-04 02:26:47,727 - INFO - ✅ DRY RUN: Would use training data: s3://hpo-bucket-773934887314/56_stocks/46_models/2025-07-02-03-05-02/train.csv
+2025-07-04 02:26:47,727 - INFO - AAPL HPO job launched: options-hpo-aapl-1751596007-dry-run
+2025-07-04 02:26:47,727 - INFO - All HPO jobs completed successfully!
+2025-07-04 02:27:15,328 - INFO - Starting HPO pipeline...
+2025-07-04 02:27:15,328 - INFO - Launching AWS SageMaker HPO job for AAPL only
+2025-07-04 02:27:15,329 - INFO - 🔗 Using pinned dataset from last_dataset_uri.txt: s3://hpo-bucket-773934887314/56_stocks/46_models/2025-07-02-03-05-02/train.csv
+2025-07-04 02:27:15,329 - INFO - 🔗 Using dataset: s3://hpo-bucket-773934887314/56_stocks/46_models/2025-07-02-03-05-02/train.csv
+2025-07-04 02:27:15,343 - INFO - Found credentials in environment variables.
+2025-07-04 02:27:15,746 - INFO - ✅ S3 URI validated: s3://hpo-bucket-773934887314/56_stocks/46_models/2025-07-02-03-05-02/train.csv
+2025-07-04 02:27:17,629 - WARNING - No finished training job found associated with this estimator. Please make sure this estimator is only used for building workflow config
+2025-07-04 02:27:17,630 - INFO - Creating hyperparameter tuning job with name: hpo-aapl-1751596035
+2025-07-04 02:27:18,167 - ERROR - Failed to launch AAPL HPO job: An error occurred (ResourceLimitExceeded) when calling the CreateHyperParameterTuningJob operation: The account-level service limit 'ml.m5.4xlarge for training job usage' is 4 Instances, with current utilization of 0 Instances and a request delta of 5 Instances. Please use AWS Service Quotas to request an increase for this quota. If AWS Service Quotas is not available, contact AWS support to request an increase for this quota.
+2025-07-04 02:27:18,171 - ERROR - Failed to launch AAPL HPO job
+2025-07-04 02:28:12,167 - INFO - Starting HPO pipeline...
+2025-07-04 02:28:12,167 - INFO - Launching AWS SageMaker HPO job for AAPL only
+2025-07-04 02:28:12,168 - INFO - 🔗 Using pinned dataset from last_dataset_uri.txt: s3://hpo-bucket-773934887314/56_stocks/46_models/2025-07-02-03-05-02/train.csv
+2025-07-04 02:28:12,168 - INFO - 🔗 Using dataset: s3://hpo-bucket-773934887314/56_stocks/46_models/2025-07-02-03-05-02/train.csv
+2025-07-04 02:28:12,182 - INFO - Found credentials in environment variables.
+2025-07-04 02:28:12,559 - INFO - ✅ S3 URI validated: s3://hpo-bucket-773934887314/56_stocks/46_models/2025-07-02-03-05-02/train.csv
+2025-07-04 02:28:14,387 - WARNING - No finished training job found associated with this estimator. Please make sure this estimator is only used for building workflow config
+2025-07-04 02:28:14,388 - INFO - Creating hyperparameter tuning job with name: hpo-aapl-1751596092
+2025-07-04 02:28:17,050 - ERROR - Failed to launch AAPL HPO job: An error occurred (ValidationException) when calling the CreateHyperParameterTuningJob operation: The hyperparameter tuning job that you requested has the following untunable hyperparameters: [theta_window, event_lag, event_lead, term_slope_weight, news_threshold, theta_weight, vix_regime_thresh, vix_mom_window, sa_weight, term_slope_window, reuters_weight, iv_rank_weight, iv_rank_window, oi_weight, lookback_window, oi_window]. For the algorithm, 683313688378.dkr.ecr.us-east-1.amazonaws.com/sagemaker-xgboost:1.0-1-cpu-py3, you can tune only [colsample_bytree, num_parallel_tree, max_depth, colsample_bynode, lambda, eta, alpha, num_round, colsample_bylevel, subsample, min_child_weight, max_delta_step, gamma]. Delete untunable hyperparameters.
+2025-07-04 02:28:17,053 - ERROR - Failed to launch AAPL HPO job
+2025-07-04 02:29:10,049 - INFO - Starting HPO pipeline...
+2025-07-04 02:29:10,049 - INFO - Launching AWS SageMaker HPO job for AAPL only
+2025-07-04 02:29:10,050 - INFO - 🔗 Using pinned dataset from last_dataset_uri.txt: s3://hpo-bucket-773934887314/56_stocks/46_models/2025-07-02-03-05-02/train.csv
+2025-07-04 02:29:10,050 - INFO - 🔗 Using dataset: s3://hpo-bucket-773934887314/56_stocks/46_models/2025-07-02-03-05-02/train.csv
+2025-07-04 02:29:10,063 - INFO - Found credentials in environment variables.
+2025-07-04 02:29:10,441 - INFO - ✅ S3 URI validated: s3://hpo-bucket-773934887314/56_stocks/46_models/2025-07-02-03-05-02/train.csv
+2025-07-04 02:29:12,234 - WARNING - No finished training job found associated with this estimator. Please make sure this estimator is only used for building workflow config
+2025-07-04 02:29:12,234 - INFO - Creating hyperparameter tuning job with name: hpo-aapl-1751596150
+2025-07-04 02:32:30,128 - ERROR - Failed to launch AAPL HPO job: Error for HyperParameterTuning job hpo-aapl-1751596150: Failed. Reason: No training job succeeded after 5 attempts. For additional details, please take a look at the training job failures by listing training jobs for the hyperparameter tuning job.. Check troubleshooting guide for common errors: https://docs.aws.amazon.com/sagemaker/latest/dg/sagemaker-python-sdk-troubleshooting.html
+2025-07-04 02:32:30,133 - ERROR - Failed to launch AAPL HPO job
+2025-07-04 02:35:19,010 - INFO - Starting HPO pipeline...
+2025-07-04 02:35:19,010 - INFO - Launching AWS SageMaker HPO job for AAPL only
+2025-07-04 02:35:19,010 - INFO - 🔗 Using pinned dataset from last_dataset_uri.txt: s3://hpo-bucket-773934887314/56_stocks/46_models/2025-07-02-03-05-02/train.csv
+2025-07-04 02:35:19,010 - INFO - 🔗 Using dataset: s3://hpo-bucket-773934887314/56_stocks/46_models/2025-07-02-03-05-02/train.csv
+2025-07-04 02:35:19,022 - INFO - Found credentials in environment variables.
+2025-07-04 02:35:19,439 - INFO - ✅ S3 URI validated: s3://hpo-bucket-773934887314/56_stocks/46_models/2025-07-02-03-05-02/train.csv
+2025-07-04 02:35:19,441 - INFO - 🧪 DRY RUN MODE - No SageMaker calls will be made
+2025-07-04 02:35:19,441 - INFO - ✅ DRY RUN: Would launch AAPL HPO job: options-hpo-aapl-1751596519-dry-run
+2025-07-04 02:35:19,441 - INFO - ✅ DRY RUN: Would use training data: s3://hpo-bucket-773934887314/56_stocks/46_models/2025-07-02-03-05-02/train.csv
+2025-07-04 02:35:19,441 - INFO - AAPL HPO job launched: options-hpo-aapl-1751596519-dry-run
+2025-07-04 02:35:19,441 - INFO - All HPO jobs completed successfully!
+2025-07-04 02:47:19,016 - INFO - Starting HPO pipeline...
+2025-07-04 02:47:19,016 - INFO - Launching AWS SageMaker HPO job for AAPL only
+2025-07-04 02:47:19,016 - INFO - 🔗 Using CLI argument: s3://hpo-bucket-773934887314/56_stocks/46_models/2025-07-02-03-05-02/train.csv
+2025-07-04 02:47:19,017 - INFO - 🔗 Using dataset: s3://hpo-bucket-773934887314/56_stocks/46_models/2025-07-02-03-05-02/train.csv
+2025-07-04 02:47:19,029 - INFO - Found credentials in environment variables.
+2025-07-04 02:47:19,448 - INFO - ✅ S3 URI validated: s3://hpo-bucket-773934887314/56_stocks/46_models/2025-07-02-03-05-02/train.csv
+2025-07-04 02:47:19,450 - INFO - 🧪 DRY RUN MODE - No SageMaker calls will be made
+2025-07-04 02:47:19,450 - INFO - ✅ DRY RUN: Would launch AAPL HPO job: options-hpo-aapl-1751597239-dry-run
+2025-07-04 02:47:19,450 - INFO - ✅ DRY RUN: Would use training data: s3://hpo-bucket-773934887314/56_stocks/46_models/2025-07-02-03-05-02/train.csv
+2025-07-04 02:47:19,450 - INFO - AAPL HPO job launched: options-hpo-aapl-1751597239-dry-run
+2025-07-04 02:47:19,450 - INFO - Launching AWS SageMaker HPO job for full filtered universe
+2025-07-04 02:47:19,450 - INFO - 🔗 Using CLI argument: s3://hpo-bucket-773934887314/56_stocks/46_models/2025-07-02-03-05-02/train.csv
+2025-07-04 02:47:19,451 - INFO - 🔗 Using dataset: s3://hpo-bucket-773934887314/56_stocks/46_models/2025-07-02-03-05-02/train.csv
+2025-07-04 02:47:19,736 - INFO - ✅ S3 URI validated: s3://hpo-bucket-773934887314/56_stocks/46_models/2025-07-02-03-05-02/train.csv
+2025-07-04 02:47:19,737 - INFO - 🧪 DRY RUN MODE - No SageMaker calls will be made
+2025-07-04 02:47:19,737 - INFO - ✅ DRY RUN: Would launch full universe HPO job: options-hpo-full-universe-1751597239-dry-run
+2025-07-04 02:47:19,738 - INFO - ✅ DRY RUN: Would use training data: s3://hpo-bucket-773934887314/56_stocks/46_models/2025-07-02-03-05-02/train.csv
+2025-07-04 02:47:19,738 - INFO - Full universe HPO job launched: options-hpo-full-universe-1751597239-dry-run
+2025-07-04 02:47:19,738 - INFO - All HPO jobs completed successfully!
+2025-07-04 02:47:33,133 - INFO - Starting HPO pipeline...
+2025-07-04 02:47:33,133 - INFO - Launching AWS SageMaker HPO job for AAPL only
+2025-07-04 02:47:33,133 - INFO - 🔗 Using CLI argument: s3://hpo-bucket-773934887314/56_stocks/46_models/2025-07-02-03-05-02/train.csv
+2025-07-04 02:47:33,133 - INFO - 🔗 Using dataset: s3://hpo-bucket-773934887314/56_stocks/46_models/2025-07-02-03-05-02/train.csv
+2025-07-04 02:47:33,146 - INFO - Found credentials in environment variables.
+2025-07-04 02:47:33,573 - INFO - ✅ S3 URI validated: s3://hpo-bucket-773934887314/56_stocks/46_models/2025-07-02-03-05-02/train.csv
+2025-07-04 02:47:35,404 - WARNING - No finished training job found associated with this estimator. Please make sure this estimator is only used for building workflow config
+2025-07-04 02:47:35,404 - INFO - Creating hyperparameter tuning job with name: hpo-aapl-1751597253
+2025-07-04 02:50:52,702 - ERROR - Failed to launch AAPL HPO job: Error for HyperParameterTuning job hpo-aapl-1751597253: Failed. Reason: No training job succeeded after 5 attempts. For additional details, please take a look at the training job failures by listing training jobs for the hyperparameter tuning job.. Check troubleshooting guide for common errors: https://docs.aws.amazon.com/sagemaker/latest/dg/sagemaker-python-sdk-troubleshooting.html
+2025-07-04 02:50:52,705 - ERROR - Failed to launch AAPL HPO job
+2025-07-04 02:52:38,021 - INFO - Starting HPO pipeline...
+2025-07-04 02:52:38,022 - INFO - Launching AWS SageMaker HPO job for AAPL only
+2025-07-04 02:52:38,022 - INFO - 🔗 Using CLI argument: s3://hpo-bucket-773934887314/56_stocks/46_models/2025-07-02-03-05-02/train.csv
+2025-07-04 02:52:38,022 - INFO - 🔗 Using dataset: s3://hpo-bucket-773934887314/56_stocks/46_models/2025-07-02-03-05-02/train.csv
+2025-07-04 02:52:38,034 - INFO - Found credentials in environment variables.
+2025-07-04 02:52:38,438 - INFO - ✅ S3 URI validated: s3://hpo-bucket-773934887314/56_stocks/46_models/2025-07-02-03-05-02/train.csv
+2025-07-04 02:52:40,221 - WARNING - No finished training job found associated with this estimator. Please make sure this estimator is only used for building workflow config
+2025-07-04 02:52:40,222 - INFO - Creating hyperparameter tuning job with name: hpo-aapl-1751597558
+2025-07-04 02:55:57,627 - ERROR - Failed to launch AAPL HPO job: Error for HyperParameterTuning job hpo-aapl-1751597558: Failed. Reason: No training job succeeded after 5 attempts. For additional details, please take a look at the training job failures by listing training jobs for the hyperparameter tuning job.. Check troubleshooting guide for common errors: https://docs.aws.amazon.com/sagemaker/latest/dg/sagemaker-python-sdk-troubleshooting.html
+2025-07-04 02:55:57,631 - ERROR - Failed to launch AAPL HPO job
+2025-07-04 02:58:29,381 - INFO - Starting HPO pipeline...
+2025-07-04 02:58:29,382 - INFO - Launching AWS SageMaker HPO job for AAPL only
+2025-07-04 02:58:29,382 - INFO - 🔗 Using CLI argument: s3://hpo-bucket-773934887314/56_stocks/46_models/2025-07-02-03-05-02/train.csv
+2025-07-04 02:58:29,382 - INFO - 🔗 Using dataset: s3://hpo-bucket-773934887314/56_stocks/46_models/2025-07-02-03-05-02/train.csv
+2025-07-04 02:58:29,394 - INFO - Found credentials in environment variables.
+2025-07-04 02:58:29,839 - INFO - ✅ S3 URI validated: s3://hpo-bucket-773934887314/56_stocks/46_models/2025-07-02-03-05-02/train.csv
+2025-07-04 02:58:31,636 - WARNING - No finished training job found associated with this estimator. Please make sure this estimator is only used for building workflow config
+2025-07-04 02:58:31,636 - INFO - Creating hyperparameter tuning job with name: hpo-aapl-1751597910
+2025-07-04 03:01:59,430 - ERROR - Failed to launch AAPL HPO job: Error for HyperParameterTuning job hpo-aapl-1751597910: Failed. Reason: No training job succeeded after 5 attempts. For additional details, please take a look at the training job failures by listing training jobs for the hyperparameter tuning job.. Check troubleshooting guide for common errors: https://docs.aws.amazon.com/sagemaker/latest/dg/sagemaker-python-sdk-troubleshooting.html
+2025-07-04 03:01:59,434 - ERROR - Failed to launch AAPL HPO job
+2025-07-04 03:02:51,992 - INFO - Starting HPO pipeline...
+2025-07-04 03:02:51,992 - INFO - Launching AWS SageMaker HPO job for AAPL only
+2025-07-04 03:02:51,992 - INFO - 🔗 Using CLI argument: s3://hpo-bucket-773934887314/56_stocks/46_models/2025-07-02-03-05-02/train.csv
+2025-07-04 03:02:51,992 - INFO - 🔗 Using dataset: s3://hpo-bucket-773934887314/56_stocks/46_models/2025-07-02-03-05-02/train.csv
+2025-07-04 03:02:52,004 - INFO - Found credentials in environment variables.
+2025-07-04 03:02:52,381 - INFO - ✅ S3 URI validated: s3://hpo-bucket-773934887314/56_stocks/46_models/2025-07-02-03-05-02/train.csv
+2025-07-04 03:02:54,124 - WARNING - No finished training job found associated with this estimator. Please make sure this estimator is only used for building workflow config
+2025-07-04 03:02:54,125 - INFO - Creating hyperparameter tuning job with name: hpo-aapl-1751598172
+2025-07-04 03:06:21,782 - ERROR - Failed to launch AAPL HPO job: Error for HyperParameterTuning job hpo-aapl-1751598172: Failed. Reason: No training job succeeded after 5 attempts. For additional details, please take a look at the training job failures by listing training jobs for the hyperparameter tuning job.. Check troubleshooting guide for common errors: https://docs.aws.amazon.com/sagemaker/latest/dg/sagemaker-python-sdk-troubleshooting.html
+2025-07-04 03:06:21,785 - ERROR - Failed to launch AAPL HPO job
+2025-07-04 03:08:14,062 - INFO - Starting HPO pipeline...
+2025-07-04 03:08:14,063 - INFO - Launching AWS SageMaker HPO job for AAPL only
+2025-07-04 03:08:14,063 - INFO - 🔗 Using CLI argument: s3://hpo-bucket-773934887314/56_stocks/46_models/2025-07-02-03-05-02/train.csv
+2025-07-04 03:08:14,063 - INFO - 🔗 Using dataset: s3://hpo-bucket-773934887314/56_stocks/46_models/2025-07-02-03-05-02/train.csv
+2025-07-04 03:08:14,075 - INFO - Found credentials in environment variables.
+2025-07-04 03:08:14,522 - INFO - ✅ S3 URI validated: s3://hpo-bucket-773934887314/56_stocks/46_models/2025-07-02-03-05-02/train.csv
+2025-07-04 03:08:16,327 - WARNING - No finished training job found associated with this estimator. Please make sure this estimator is only used for building workflow config
+2025-07-04 03:08:16,328 - INFO - Creating hyperparameter tuning job with name: hpo-aapl-1751598494
+2025-07-04 03:11:56,381 - ERROR - Failed to launch AAPL HPO job: Error for HyperParameterTuning job hpo-aapl-1751598494: Failed. Reason: No objective metrics found after running 5 training jobs. Please ensure that the custom algorithm is emitting the objective metric as defined by the regular expression provided.. Check troubleshooting guide for common errors: https://docs.aws.amazon.com/sagemaker/latest/dg/sagemaker-python-sdk-troubleshooting.html
+2025-07-04 03:11:56,384 - ERROR - Failed to launch AAPL HPO job
+2025-07-04 03:12:58,421 - INFO - Starting HPO pipeline...
+2025-07-04 03:12:58,421 - INFO - Launching AWS SageMaker HPO job for AAPL only
+2025-07-04 03:12:58,421 - INFO - 🔗 Using CLI argument: s3://hpo-bucket-773934887314/56_stocks/46_models/2025-07-02-03-05-02/train.csv
+2025-07-04 03:12:58,421 - INFO - 🔗 Using dataset: s3://hpo-bucket-773934887314/56_stocks/46_models/2025-07-02-03-05-02/train.csv
+2025-07-04 03:12:58,433 - INFO - Found credentials in environment variables.
+2025-07-04 03:12:58,805 - INFO - ✅ S3 URI validated: s3://hpo-bucket-773934887314/56_stocks/46_models/2025-07-02-03-05-02/train.csv
+2025-07-04 03:13:00,589 - WARNING - No finished training job found associated with this estimator. Please make sure this estimator is only used for building workflow config
+2025-07-04 03:13:00,590 - INFO - Creating hyperparameter tuning job with name: hpo-aapl-1751598779
+2025-07-04 03:21:13,629 - INFO - Successfully launched AAPL HPO job: hpo-aapl-1751598779
+2025-07-04 03:21:13,632 - INFO - AAPL HPO job launched: hpo-aapl-1751598779
+2025-07-04 03:21:13,633 - INFO - All HPO jobs completed successfully!
