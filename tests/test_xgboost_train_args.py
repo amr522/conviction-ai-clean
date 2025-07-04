@@ -11,7 +11,7 @@ class TestXGBoostTrainArgs(unittest.TestCase):
     """Unit tests for xgboost_train.py argument parsing"""
     
     def test_parse_args_train_required(self):
-        """Test that --train argument is required when SM_CHANNEL_TRAINING not set"""
+        """Test that --train argument is required when SM_CHANNEL_TRAIN not set"""
         with patch.dict(os.environ, {}, clear=True):
             with patch.object(sys, 'argv', ['xgboost_train.py', '--model-dir', '/tmp/model']):
                 with self.assertRaises(SystemExit):

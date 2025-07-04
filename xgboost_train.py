@@ -17,7 +17,7 @@ def parse_args():
     parser = argparse.ArgumentParser()
     
     parser.add_argument('--model-dir', type=str, default=os.environ.get('SM_MODEL_DIR'))
-    parser.add_argument('--train', type=str, default=os.environ.get('SM_CHANNEL_TRAINING'))
+    parser.add_argument('--train', type=str, default=os.environ.get('SM_CHANNEL_TRAIN'))
     parser.add_argument('--validation', type=str, default=os.environ.get('SM_CHANNEL_VALIDATION'))
     
     parser.add_argument('--max_depth', type=int, default=6)
@@ -28,12 +28,34 @@ def parse_args():
     parser.add_argument('--gamma', type=float, default=0.0)
     parser.add_argument('--alpha', type=float, default=0.0)
     parser.add_argument('--reg_lambda', type=float, default=1.0)
+    parser.add_argument('--lambda', type=float, default=1.0, dest='reg_lambda')
     parser.add_argument('--num_round', type=int, default=100)
+    
+    parser.add_argument('--debug', type=bool, default=False)
+    parser.add_argument('--symbol', type=str, default='AAPL')
+    parser.add_argument('--model', type=str, default='xgb')
+    parser.add_argument('--apply_universe_filter', type=bool, default=False)
+    parser.add_argument('--iv_rank_window', type=int, default=30)
+    parser.add_argument('--iv_rank_weight', type=float, default=0.5)
+    parser.add_argument('--term_slope_window', type=int, default=15)
+    parser.add_argument('--term_slope_weight', type=float, default=0.5)
+    parser.add_argument('--oi_window', type=int, default=15)
+    parser.add_argument('--oi_weight', type=float, default=0.5)
+    parser.add_argument('--theta_window', type=int, default=15)
+    parser.add_argument('--theta_weight', type=float, default=0.5)
+    parser.add_argument('--vix_mom_window', type=int, default=10)
+    parser.add_argument('--vix_regime_thresh', type=float, default=25.0)
+    parser.add_argument('--event_lag', type=int, default=2)
+    parser.add_argument('--event_lead', type=int, default=2)
+    parser.add_argument('--news_threshold', type=float, default=0.05)
+    parser.add_argument('--lookback_window', type=int, default=5)
+    parser.add_argument('--reuters_weight', type=float, default=1.0)
+    parser.add_argument('--sa_weight', type=float, default=1.0)
     
     args = parser.parse_args()
     
-    if not args.train and not os.environ.get('SM_CHANNEL_TRAINING'):
-        parser.error("--train argument is required when SM_CHANNEL_TRAINING environment variable is not set")
+    if not args.train and not os.environ.get('SM_CHANNEL_TRAIN'):
+        parser.error("--train argument is required when SM_CHANNEL_TRAIN environment variable is not set")
     
     if not args.model_dir and not os.environ.get('SM_MODEL_DIR'):
         parser.error("--model-dir argument is required when SM_MODEL_DIR environment variable is not set")
@@ -136,6 +158,7 @@ def train_model(args):
     
     print(f"Model saved to {model_path}")
     print(f"Final validation AUC: {validation_auc:.4f}")
+    print(f"validation-auc:{validation_auc:.6f}")
     
     return validation_auc
 
