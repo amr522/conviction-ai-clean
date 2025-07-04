@@ -1,0 +1,16 @@
+{
+  "algorithm": "catboost",
+  "job_name": "catboost-hpo-46-1751615821",
+  "best_training_job": "catboost-hpo-46-1751615821-019-748f9449",
+  "objective_value": 0.5148026347160339,
+  "hyperparameters": {
+    "bagging_temperature": "0.47345395845697524",
+    "border_count": "210",
+    "depth": "7",
+    "iterations": "192",
+    "l2_leaf_reg": "9.016647213797578",
+    "learning_rate": "0.07238974848154796",
+    "random_strength": "2.081914773778232"
+  },
+  "timestamp": "1751615821"
+}
