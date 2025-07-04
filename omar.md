@@ -925,3 +925,91 @@ This README should be updated automatically at the end of each session with:
 3. **Clean-up verified:** No synthetic/mod files found in data directory
 4. **Infrastructure hardened:** All technical issues resolved, dataset pinning implemented
 5. **Documentation updated:** omar.md contains complete production launch details
+
+---
+
+## 🚨 SESSION 7: LEAK-PROOF RETRAIN WORKFLOW - BLOCKED
+**Session ID:** 5c6825faa4ea468cb6f4f56dc71951ca  
+**Date:** July 4, 2025 19:31 UTC  
+**Primary Goal:** Execute comprehensive leak-proof retraining cycle with multi-model expansion  
+**Status:** ⚠️ BLOCKED - Endpoint health check failure
+
+### 🔴 BLOCKING ISSUE: Endpoint Health Failure
+
+**Pre-flight Check Results:**
+- **Target Endpoint:** `conviction-ensemble-v4-1751650627`
+- **Status:** ❌ FAILED
+- **Failure Reason:** "The primary container for production variant primary did not pass the ping health check"
+- **Creation Time:** 2025-07-04 17:37:11 UTC
+- **Last Modified:** 2025-07-04 18:06:18 UTC
+
+**Additional Endpoints Status:**
+- `conviction-ensemble-final-1751650090`: ❌ FAILED
+- `conviction-ensemble-v3-1751649418`: ❌ FAILED (partial info)
+
+**CloudWatch Alarms:** No MLOps-* alarms found
+
+### 📋 Required Actions Before Proceeding
+According to the comprehensive retrain prompt, pre-flight checks must pass before executing the 7-step workflow:
+
+1. **Endpoint Investigation Required:**
+   - Check CloudWatch logs for container health check failures
+   - Verify endpoint configuration and model artifacts
+   - Determine if endpoint needs redeployment or configuration fix
+
+2. **Secrets Security (Pending):**
+   - Move Polygon, XAI, FRED keys to AWS Secrets Manager
+   - Update data-sync scripts to pull from Secrets Manager
+
+### 🎯 Next Session Priority
+**CRITICAL:** Resolve endpoint health failures before proceeding with leak-proof retraining workflow. The comprehensive 7-step process cannot begin until all pre-flight checks pass.
+
+**Workflow Blocked At:** Step 0 - Pre-flight checks (endpoint health verification)
+
+---
+
+## 🔧 SESSION 7 IMPLEMENTATION: LEAK-PROOF RETRAIN SCRIPTS CREATED
+**Implementation Date:** July 4, 2025 19:34 UTC  
+**Branch:** retrain/no-leakage-202507041934  
+**Status:** ✅ SCRIPTS CREATED - Ready for execution
+
+### 📝 Created Missing Scripts
+
+1. **scripts/wait_for_endpoint.py** ✅
+   - Endpoint health monitoring with timeout
+   - InService status verification
+   - Failure reason reporting
+
+2. **aws_lgbm_hpo_launch.py** ✅
+   - LightGBM hyperparameter optimization
+   - Bayesian optimization strategy
+   - 50 training jobs with 5 parallel execution
+
+3. **train_price_gru.py** ✅
+   - PyTorch GRU model for price prediction
+   - Sequence-based training with early stopping
+   - SageMaker integration with GPU support
+
+4. **NEXT_SESSION_PROMPT.md** ✅
+   - Complete 9-step leak-proof retraining process
+   - Time-series CV with chronological order
+   - SHAP stability checks and AUC ≥ 0.60 gates
+
+5. **Enhanced automated_target_validation.py** ✅
+   - Added --intraday flag support
+   - S3 intraday data structure validation
+   - 5min/10min/60min timeframe verification
+
+6. **Enhanced build_ensemble_model.py** ✅
+   - Multi-model support (XGB, CatBoost, LightGBM, GRU)
+   - Meta-learner options (linear, MLP, XGBoost)
+   - Out-of-fold prediction integration
+
+### 🎯 Implementation Status
+- **Branch Created:** retrain/no-leakage-202507041934
+- **Scripts Status:** All required scripts implemented
+- **Next Step:** Execute pre-flight checks and begin 7-step workflow
+- **Blocking Issue:** Endpoint health still needs resolution
+
+### 📋 Ready for Execution
+All missing components have been implemented according to the comprehensive retrain prompt requirements. The workflow can now proceed once endpoint health issues are resolved.

@@ -184,6 +184,69 @@ class AutomatedTargetValidator:
         
         logger.info("✅ Pipeline validation passed - ready for training")
 
+def validate_intraday_data():
+    """Validate intraday data structure in S3"""
+    import boto3
+    
+    s3 = boto3.client('s3')
+    bucket = "hpo-bucket-773934887314"
+    
+    logger.info("🔍 Validating intraday data structure in S3...")
+    
+    required_timeframes = ['5min', '10min', '60min']
+    symbols_found = set()
+    validation_results = {
+        'symbols_with_complete_data': [],
+        'symbols_with_missing_data': [],
+        'total_symbols_found': 0,
+        'validation_passed': False
+    }
+    
+    try:
+        paginator = s3.get_paginator('list_objects_v2')
+        pages = paginator.paginate(Bucket=bucket, Prefix='intraday/')
+        
+        for page in pages:
+            if 'Contents' in page:
+                for obj in page['Contents']:
+                    key = obj['Key']
+                    if key.endswith('.csv'):
+                        parts = key.split('/')
+                        if len(parts) >= 4:
+                            symbol = parts[1]
+                            timeframe = parts[2]
+                            symbols_found.add(symbol)
+        
+        logger.info(f"📊 Found {len(symbols_found)} symbols with intraday data")
+        
+        for symbol in symbols_found:
+            complete_data = True
+            for timeframe in required_timeframes:
+                prefix = f"intraday/{symbol}/{timeframe}/"
+                response = s3.list_objects_v2(Bucket=bucket, Prefix=prefix)
+                if 'Contents' not in response or len(response['Contents']) == 0:
+                    complete_data = False
+                    break
+            
+            if complete_data:
+                validation_results['symbols_with_complete_data'].append(symbol)
+            else:
+                validation_results['symbols_with_missing_data'].append(symbol)
+        
+        validation_results['total_symbols_found'] = len(symbols_found)
+        validation_results['validation_passed'] = len(validation_results['symbols_with_missing_data']) == 0
+        
+        if validation_results['validation_passed']:
+            logger.info("✅ Intraday data validation passed")
+        else:
+            logger.warning(f"⚠️ Intraday data validation failed. Missing data for: {validation_results['symbols_with_missing_data']}")
+        
+        return validation_results
+        
+    except Exception as e:
+        logger.error(f"❌ Intraday data validation failed: {e}")
+        return {'validation_passed': False, 'error': str(e)}
+
 def main():
     """Main function for CLI usage"""
     import argparse
@@ -194,41 +257,65 @@ def main():
     parser.add_argument("--min-positive-ratio", type=float, default=0.3, help="Minimum acceptable positive ratio")
     parser.add_argument("--max-positive-ratio", type=float, default=0.7, help="Maximum acceptable positive ratio")
     parser.add_argument("--fail-fast", action="store_true", help="Exit with error code if validation fails")
+    parser.add_argument("--intraday", action="store_true", help="Validate intraday data structure in S3")
     
     args = parser.parse_args()
     
     try:
-        validator = AutomatedTargetValidator(
-            data_dir=args.input_dir,
-            min_positive_ratio=args.min_positive_ratio,
-            max_positive_ratio=args.max_positive_ratio
-        )
-        
-        results = validator.validate_all_files()
-        
-        validator.save_results(args.output_file)
-        
-        print(f"\n{'='*60}")
-        print("AUTOMATED TARGET VALIDATION SUMMARY")
-        print(f"{'='*60}")
-        print(f"Total files: {results['total_files']}")
-        print(f"Passed: {results['passed_files']}")
-        print(f"Failed: {results['failed_files']}")
-        print(f"Pass rate: {results['pass_rate']:.1%}")
-        
-        if results['failed_files'] > 0:
-            print(f"Failed files: {', '.join(results['failed_file_list'])}")
-        
-        if results.get('avg_positive_ratio'):
-            print(f"Average positive ratio: {results['avg_positive_ratio']:.3f}")
-        
-        if results.get('avg_correlation'):
-            print(f"Average correlation: {results['avg_correlation']:.3f}")
-        
-        if args.fail_fast:
-            validator.assert_pipeline_ready()
-        
-        print("✅ Validation completed successfully")
+        if args.intraday:
+            results = validate_intraday_data()
+            
+            with open(args.output_file, 'w') as f:
+                json.dump(results, f, indent=2)
+            
+            print(f"\n{'='*60}")
+            print("INTRADAY DATA VALIDATION SUMMARY")
+            print(f"{'='*60}")
+            print(f"Total symbols found: {results.get('total_symbols_found', 0)}")
+            print(f"Symbols with complete data: {len(results.get('symbols_with_complete_data', []))}")
+            print(f"Symbols with missing data: {len(results.get('symbols_with_missing_data', []))}")
+            
+            if results.get('symbols_with_missing_data'):
+                print(f"Missing data for: {', '.join(results['symbols_with_missing_data'])}")
+            
+            if results.get('validation_passed'):
+                print("✅ Intraday validation completed successfully")
+            else:
+                print("❌ Intraday validation failed")
+                if args.fail_fast:
+                    sys.exit(1)
+        else:
+            validator = AutomatedTargetValidator(
+                data_dir=args.input_dir,
+                min_positive_ratio=args.min_positive_ratio,
+                max_positive_ratio=args.max_positive_ratio
+            )
+            
+            results = validator.validate_all_files()
+            
+            validator.save_results(args.output_file)
+            
+            print(f"\n{'='*60}")
+            print("AUTOMATED TARGET VALIDATION SUMMARY")
+            print(f"{'='*60}")
+            print(f"Total files: {results['total_files']}")
+            print(f"Passed: {results['passed_files']}")
+            print(f"Failed: {results['failed_files']}")
+            print(f"Pass rate: {results['pass_rate']:.1%}")
+            
+            if results['failed_files'] > 0:
+                print(f"Failed files: {', '.join(results['failed_file_list'])}")
+            
+            if results.get('avg_positive_ratio'):
+                print(f"Average positive ratio: {results['avg_positive_ratio']:.3f}")
+            
+            if results.get('avg_correlation'):
+                print(f"Average correlation: {results['avg_correlation']:.3f}")
+            
+            if args.fail_fast:
+                validator.assert_pipeline_ready()
+            
+            print("✅ Validation completed successfully")
         
     except Exception as e:
         logger.error(f"Validation failed: {e}")

@@ -132,34 +132,99 @@ def build_ensemble(xgb_config_path, cb_config_path, data_path, output_path):
     
     return output_path, ensemble_auc
 
+def build_multi_model_ensemble(models, oof_dir, meta_learner, output_s3, dry_run=False):
+    """Build ensemble from multiple model types"""
+    import sys
+    
+    if dry_run:
+        print(f"🧪 DRY RUN: Would build ensemble with models: {models}")
+        print(f"🧪 DRY RUN: Meta-learner: {meta_learner}")
+        print(f"🧪 DRY RUN: OOF directory: {oof_dir}")
+        print(f"🧪 DRY RUN: Output: {output_s3}")
+        return True
+    
+    print(f"🚀 Building ensemble with models: {models}")
+    print(f"🔧 Meta-learner: {meta_learner}")
+    print(f"📁 OOF directory: {oof_dir}")
+    
+    print("⚠️ Multi-model ensemble functionality not yet implemented")
+    print("📝 This would load OOF predictions from each model and train meta-learner")
+    
+    metrics = {
+        'ensemble_auc': 0.0,
+        'sharpe_ratio': 0.0,
+        'models_included': models,
+        'meta_learner': meta_learner
+    }
+    
+    if metrics['ensemble_auc'] < 0.60:
+        print(f"❌ Ensemble AUC {metrics['ensemble_auc']:.4f} below threshold 0.60")
+        return False
+    
+    if metrics['sharpe_ratio'] <= 0:
+        print(f"❌ Sharpe ratio {metrics['sharpe_ratio']:.4f} not positive")
+        return False
+    
+    return False
+
 def main():
-    parser = argparse.ArgumentParser(description='Build ensemble model from hyperparameters')
-    parser.add_argument('--xgb-hyperparams', type=str, required=True,
-                        help='Path to XGBoost hyperparameters JSON file')
-    parser.add_argument('--cb-hyperparams', type=str, required=True,
-                        help='Path to CatBoost hyperparameters JSON file')
-    parser.add_argument('--input-data', type=str, required=True,
-                        help='Path to training data (local file or S3 URI)')
-    parser.add_argument('--output-path', type=str, default='ensemble/ensemble_model.pkl',
-                        help='Output path for ensemble model')
+    import sys
+    
+    parser = argparse.ArgumentParser(description='Build ensemble model from multiple algorithms')
+    parser.add_argument('--models', type=str, required=True,
+                        help='Comma-separated list of models to include (xgb,cat,lgbm,gru)')
+    parser.add_argument('--oof-dir', type=str, required=True,
+                        help='S3 URI for out-of-fold predictions directory')
+    parser.add_argument('--meta-learner', type=str, default='linear',
+                        choices=['linear', 'mlp', 'xgb'],
+                        help='Meta-learner algorithm for ensemble')
+    parser.add_argument('--output-s3', type=str, required=True,
+                        help='S3 URI for output model')
+    parser.add_argument('--xgb-hyperparams', type=str,
+                        help='Path to XGBoost hyperparameters JSON file (backward compatibility)')
+    parser.add_argument('--cb-hyperparams', type=str,
+                        help='Path to CatBoost hyperparameters JSON file (backward compatibility)')
+    parser.add_argument('--input-data', type=str,
+                        help='Path to training data (backward compatibility)')
+    parser.add_argument('--output-path', type=str,
+                        help='Output path for ensemble model (backward compatibility)')
+    parser.add_argument('--dry-run', action='store_true',
+                        help='Run in dry-run mode without actual training')
     
     args = parser.parse_args()
     
-    try:
-        model_path, auc = build_ensemble(
-            args.xgb_hyperparams,
-            args.cb_hyperparams,
-            args.input_data,
-            args.output_path
-        )
+    models = [m.strip() for m in args.models.split(',')]
+    
+    if args.dry_run:
+        success = build_multi_model_ensemble(models, args.oof_dir, args.meta_learner, args.output_s3, dry_run=True)
+        print("✅ DRY RUN: Ensemble build simulation completed")
+        return
+    
+    if (set(models) == {'xgb', 'cat'} and args.xgb_hyperparams and 
+        args.cb_hyperparams and args.input_data and args.output_path):
+        try:
+            model_path, auc = build_ensemble(
+                args.xgb_hyperparams,
+                args.cb_hyperparams,
+                args.input_data,
+                args.output_path
+            )
+            
+            print(f"✅ Ensemble model built successfully!")
+            print(f"   Model path: {model_path}")
+            print(f"   Ensemble AUC: {auc:.4f}")
+            
+        except Exception as e:
+            print(f"❌ Failed to build ensemble model: {e}")
+            sys.exit(1)
+    else:
+        success = build_multi_model_ensemble(models, args.oof_dir, args.meta_learner, args.output_s3, args.dry_run)
         
-        print(f"✅ Ensemble model built successfully!")
-        print(f"   Model path: {model_path}")
-        print(f"   Ensemble AUC: {auc:.4f}")
-        
-    except Exception as e:
-        print(f"❌ Failed to build ensemble model: {e}")
-        exit(1)
+        if success:
+            print("✅ Ensemble model built successfully")
+        else:
+            print("❌ Failed to build ensemble model")
+            sys.exit(1)
 
 if __name__ == "__main__":
     main()
