@@ -15,7 +15,16 @@ import argparse
 import subprocess
 import boto3
 from datetime import datetime, timedelta
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple, Any
+import asyncio
+import sys
+import os
+
+current_dir = os.path.dirname(os.path.abspath(__file__))
+parent_dir = os.path.dirname(current_dir)
+sys.path.insert(0, parent_dir)
+
+from create_intraday_features import IntradayFeatureEngineer
 
 logging.basicConfig(
     level=logging.INFO,
@@ -26,6 +35,99 @@ logging.basicConfig(
     ]
 )
 logger = logging.getLogger(__name__)
+
+class TwitterSentimentTask:
+    """Task for Twitter sentiment data validation and processing"""
+    
+    def __init__(self, s3_bucket: str = "conviction-ai-data", region_name: str = "us-east-1"):
+        """Initialize Twitter sentiment task"""
+        self.s3_bucket = s3_bucket
+        self.region_name = region_name
+        self.engineer = None
+        
+    async def validate_sentiment_data(self, symbols: Optional[List[str]] = None) -> Dict[str, Any]:
+        """
+        Validate sentiment data availability and quality
+        
+        Args:
+            symbols: List of symbols to validate (default: all symbols)
+            
+        Returns:
+            Validation summary
+        """
+        try:
+            logger.info("🔍 Validating Twitter sentiment data...")
+            
+            self.engineer = IntradayFeatureEngineer(
+                s3_bucket=self.s3_bucket,
+                region_name=self.region_name,
+                symbols=symbols
+            )
+            
+            validation_summary = {
+                'status': 'validated',
+                'symbols_count': len(self.engineer.symbols),
+                'base_features': len(self.engineer.base_features),
+                'sentiment_features': self.engineer.sentiment_features,
+                'ready_for_processing': True
+            }
+            
+            logger.info(f"✅ Sentiment data validation completed")
+            logger.info(f"   Symbols: {validation_summary['symbols_count']}")
+            logger.info(f"   Base features: {validation_summary['base_features']}")
+            logger.info(f"   Sentiment features: {validation_summary['sentiment_features']}")
+            
+            return validation_summary
+            
+        except Exception as e:
+            logger.error(f"❌ Sentiment data validation failed: {e}")
+            return {
+                'status': 'failed',
+                'error': str(e),
+                'ready_for_processing': False
+            }
+    
+    async def process_sentiment_features(self, symbols: Optional[List[str]] = None, 
+                                       date_range: Optional[Tuple[str, str]] = None) -> Dict[str, Any]:
+        """
+        Process sentiment features for HPO training
+        
+        Args:
+            symbols: List of symbols to process
+            date_range: Optional date range for processing
+            
+        Returns:
+            Processing summary
+        """
+        try:
+            logger.info("🚀 Processing Twitter sentiment features for HPO...")
+            
+            if not self.engineer:
+                self.engineer = IntradayFeatureEngineer(
+                    s3_bucket=self.s3_bucket,
+                    region_name=self.region_name,
+                    symbols=symbols
+                )
+            
+            summary = await self.engineer.process_all_symbols(
+                date_range=date_range,
+                max_concurrent=3  # Conservative for HPO integration
+            )
+            
+            await self.engineer.update_feature_metadata()
+            
+            logger.info("✅ Sentiment feature processing completed")
+            logger.info(f"   Symbols processed: {summary.get('symbols_processed', 0)}")
+            logger.info(f"   Features created: {summary.get('total_features_created', 0)}")
+            
+            return summary
+            
+        except Exception as e:
+            logger.error(f"❌ Sentiment feature processing failed: {e}")
+            return {
+                'status': 'failed',
+                'error': str(e)
+            }
 
 class HPOOrchestrator:
     def __init__(self, region='us-east-1'):
@@ -458,6 +560,10 @@ def main():
     parser.add_argument('--endpoint-names', nargs='+', 
                         default=['conviction-hpo-fixed-1751615264'],
                         help='Endpoint names to monitor and fix')
+    parser.add_argument('--twitter-sentiment', action='store_true',
+                        help='Include Twitter sentiment features in training')
+    parser.add_argument('--include-sentiment', action='store_true',
+                        help='Include sentiment features in model training')
     
     args = parser.parse_args()
     
@@ -481,9 +587,40 @@ def main():
     logger.info(f"   Notifications: {args.notify}")
     logger.info(f"   Set-and-forget: {args.set_and_forget}")
     logger.info(f"   Dry-run: {args.dry_run}")
+    logger.info(f"   Twitter sentiment: {args.twitter_sentiment}")
+    logger.info(f"   Include sentiment: {args.include_sentiment}")
     
     if args.dry_run:
         logger.info("🧪 DRY RUN MODE - No actual operations will be performed")
+    
+    sentiment_task = None
+    if args.twitter_sentiment or args.include_sentiment:
+        sentiment_task = TwitterSentimentTask()
+        
+        validation_result = asyncio.run(sentiment_task.validate_sentiment_data())
+        
+        if not validation_result.get('ready_for_processing', False):
+            logger.error("❌ Sentiment data validation failed, cannot proceed with sentiment features")
+            if args.notify:
+                topic_arn = orchestrator.setup_notifications("conviction-hpo", args.dry_run)
+                orchestrator.send_notification("❌ Twitter sentiment validation failed", topic_arn, args.dry_run)
+            sys.exit(1)
+        
+        if not args.dry_run:
+            logger.info("🔄 Processing sentiment features for HPO training...")
+            processing_result = asyncio.run(sentiment_task.process_sentiment_features())
+            
+            if processing_result.get('status') == 'failed':
+                logger.error("❌ Sentiment feature processing failed")
+                if args.notify:
+                    topic_arn = orchestrator.setup_notifications("conviction-hpo", args.dry_run)
+                    orchestrator.send_notification("❌ Twitter sentiment processing failed", topic_arn, args.dry_run)
+                sys.exit(1)
+            
+            logger.info("✅ Sentiment features ready for HPO training")
+            if args.notify:
+                topic_arn = orchestrator.setup_notifications("conviction-hpo", args.dry_run)
+                orchestrator.send_notification("✅ Twitter sentiment features processed successfully", topic_arn, args.dry_run)
     
     if args.set_and_forget:
         run_full_automation(input_data, args.dry_run)

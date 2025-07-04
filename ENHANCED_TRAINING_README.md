@@ -11,7 +11,8 @@ The enhanced training pipeline adds several advanced features to the standard Sa
 3. **SHAP Feature Analysis**: Identifies important features and detects potential data leakage.
 4. **Time-Series Cross-Validation**: Implements walk-forward validation for more robust performance evaluation.
 5. **Per-Stock & Per-Sector Models**: Trains specialized models for individual stocks or sectors.
-6. **Detailed Logging**: Provides comprehensive logs and metrics at each step.
+6. **Twitter Sentiment Integration**: Real-time sentiment analysis from Twitter/X with multi-timeframe aggregation.
+7. **Detailed Logging**: Provides comprehensive logs and metrics at each step.
 
 ## Usage
 
@@ -23,6 +24,9 @@ Run the pipeline using the `train_models_and_prepare_56.sh` script with various 
 
 # Full usage with all options
 ./train_models_and_prepare_56.sh --enhanced --use-aws --hpo --feature-analysis --time-cv --per-stock --per-sector --deploy
+
+# Usage with Twitter sentiment features
+python scripts/orchestrate_hpo_pipeline.py --algorithm xgboost --twitter-sentiment --include-sentiment --input-data-s3 s3://conviction-ai-data/sagemaker/train.csv
 ```
 
 ### Command Line Options
@@ -34,7 +38,20 @@ Run the pipeline using the `train_models_and_prepare_56.sh` script with various 
 - `--time-cv`: Use time-series cross-validation
 - `--per-stock`: Train separate models for each stock
 - `--per-sector`: Train separate models for each sector
+- `--twitter-sentiment`: Include Twitter sentiment features in training
+- `--include-sentiment`: Include sentiment features in model training
 - `--deploy`: Deploy the model after training
+
+### Twitter Sentiment Features
+
+The pipeline now supports real-time Twitter sentiment analysis with the following new features:
+
+- `sent_5m`: 5-minute sentiment aggregation (volume-weighted)
+- `sent_10m`: 10-minute sentiment aggregation (volume-weighted)  
+- `sent_60m`: 60-minute sentiment aggregation (volume-weighted)
+- `sent_daily`: Daily sentiment aggregation (volume-weighted)
+
+These features are automatically generated from Twitter/X streaming data using FinBERT sentiment analysis and integrated into the feature matrix for enhanced prediction accuracy.
 
 ### Environment Variables
 
