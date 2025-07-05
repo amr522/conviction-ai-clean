@@ -220,7 +220,7 @@ def launch_gru_training(input_data_s3: str, epochs: int = 50, dry_run: bool = Fa
             'S3OutputPath': output_path
         },
         'ResourceConfig': {
-            'InstanceType': 'ml.p3.2xlarge',
+            'InstanceType': 'ml.m5.2xlarge',
             'InstanceCount': 1,
             'VolumeSizeInGB': 30
         },
