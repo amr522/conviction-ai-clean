@@ -25,8 +25,9 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 class FinBERTSentimentScorer:
-    def __init__(self, model_path: Optional[str] = None, dry_run: bool = False):
+    def __init__(self, model_path: Optional[str] = None, dry_run: bool = False, s3_bucket: str = "hpo-bucket-773934887314"):
         self.dry_run = dry_run
+        self.s3_bucket = s3_bucket
         self.s3_client = boto3.client('s3')
         
         if dry_run:

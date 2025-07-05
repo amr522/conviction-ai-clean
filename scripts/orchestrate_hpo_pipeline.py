@@ -39,7 +39,7 @@ logger = logging.getLogger(__name__)
 class TwitterSentimentTask:
     """Task for Twitter sentiment data validation and processing"""
     
-    def __init__(self, s3_bucket: str = "conviction-ai-data", region_name: str = "us-east-1"):
+    def __init__(self, s3_bucket: str = "hpo-bucket-773934887314", region_name: str = "us-east-1"):
         """Initialize Twitter sentiment task"""
         self.s3_bucket = s3_bucket
         self.region_name = region_name

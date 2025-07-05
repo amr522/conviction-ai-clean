@@ -30,7 +30,7 @@ python xgboost_train.py --input-data s3://bucket/train.csv --model-dir /opt/ml/m
 
 ### Training with Twitter Sentiment Features
 ```bash
-python scripts/orchestrate_hpo_pipeline.py --algorithm xgboost --twitter-sentiment --include-sentiment --input-data-s3 s3://conviction-ai-data/sagemaker/train.csv
+python scripts/orchestrate_hpo_pipeline.py --algorithm xgboost --twitter-sentiment --include-sentiment --input-data-s3 s3://hpo-bucket-773934887314/sagemaker/train.csv
 ```
 
 ## Twitter Sentiment Integration

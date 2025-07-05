@@ -33,7 +33,7 @@ class TwitterStreamIngester:
     
     def __init__(self, 
                  target_symbols: Optional[List[str]] = None,
-                 s3_bucket: str = "conviction-ai-data",
+                 s3_bucket: str = "hpo-bucket-773934887314",
                  s3_prefix: str = "twitter-sentiment/raw-tweets/",
                  region_name: str = "us-east-1"):
         """
@@ -407,7 +407,7 @@ async def main():
     parser.add_argument('--symbols', nargs='+', 
                         default=['AAPL', 'AMZN', 'GOOGL', 'TSLA', 'META', 'MSFT', 'NVDA', 'JPM', 'JNJ', 'V', 'MA'],
                         help='Stock symbols to track')
-    parser.add_argument('--s3-bucket', default='conviction-ai-data',
+    parser.add_argument('--s3-bucket', default='hpo-bucket-773934887314',
                         help='S3 bucket for storing tweets')
     parser.add_argument('--s3-prefix', default='twitter-sentiment/raw-tweets/',
                         help='S3 prefix for organizing tweet data')

@@ -37,7 +37,7 @@ class FinBERTSentimentScorer:
     def __init__(self, 
                  model_path: str = "models/finbert_onnx/finbert.onnx",
                  tokenizer_name: str = "ProsusAI/finbert",
-                 s3_bucket: str = "conviction-ai-data",
+                 s3_bucket: str = "hpo-bucket-773934887314",
                  s3_input_prefix: str = "twitter-sentiment/raw-tweets/",
                  s3_output_prefix: str = "twitter-sentiment/scored-tweets/",
                  region_name: str = "us-east-1",
@@ -504,7 +504,7 @@ async def main():
     parser = argparse.ArgumentParser(description='FinBERT Sentiment Scoring for Twitter Data')
     parser.add_argument('--model-path', default='models/finbert_onnx/finbert.onnx',
                         help='Path to ONNX model file')
-    parser.add_argument('--s3-bucket', default='conviction-ai-data',
+    parser.add_argument('--s3-bucket', default='hpo-bucket-773934887314',
                         help='S3 bucket for input/output')
     parser.add_argument('--s3-input-prefix', default='twitter-sentiment/raw-tweets/',
                         help='S3 prefix for raw tweets')

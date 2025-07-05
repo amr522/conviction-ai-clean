@@ -26,7 +26,7 @@ Run the pipeline using the `train_models_and_prepare_56.sh` script with various 
 ./train_models_and_prepare_56.sh --enhanced --use-aws --hpo --feature-analysis --time-cv --per-stock --per-sector --deploy
 
 # Usage with Twitter sentiment features
-python scripts/orchestrate_hpo_pipeline.py --algorithm xgboost --twitter-sentiment --include-sentiment --input-data-s3 s3://conviction-ai-data/sagemaker/train.csv
+python scripts/orchestrate_hpo_pipeline.py --algorithm xgboost --twitter-sentiment --include-sentiment --input-data-s3 s3://hpo-bucket-773934887314/sagemaker/train.csv
 ```
 
 ### Command Line Options

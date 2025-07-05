@@ -35,7 +35,7 @@ class FinGPTSentimentScorer:
     
     def __init__(self,
                  model_name: str = "FinGPT/fingpt-sentiment_llama2-7b_lora",
-                 s3_bucket: str = "conviction-ai-data",
+                 s3_bucket: str = "hpo-bucket-773934887314",
                  s3_input_prefix: str = "twitter-sentiment/raw-tweets/",
                  s3_output_prefix: str = "twitter-sentiment/scored-tweets-gpu/",
                  region_name: str = "us-east-1",
@@ -506,7 +506,7 @@ async def main():
     parser = argparse.ArgumentParser(description='FinGPT GPU Sentiment Scoring for Twitter Data')
     parser.add_argument('--model-name', default='FinGPT/fingpt-sentiment_llama2-7b_lora',
                         help='HuggingFace model name for FinGPT')
-    parser.add_argument('--s3-bucket', default='conviction-ai-data',
+    parser.add_argument('--s3-bucket', default='hpo-bucket-773934887314',
                         help='S3 bucket for input/output')
     parser.add_argument('--s3-input-prefix', default='twitter-sentiment/raw-tweets/',
                         help='S3 prefix for raw tweets')

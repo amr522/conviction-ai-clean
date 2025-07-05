@@ -32,7 +32,7 @@ class IntradayFeatureEngineer:
     """Intraday feature engineering with Twitter sentiment integration"""
     
     def __init__(self,
-                 s3_bucket: str = "conviction-ai-data",
+                 s3_bucket: str = "hpo-bucket-773934887314",
                  s3_sentiment_prefix: str = "twitter-sentiment/scored-tweets/",
                  s3_features_prefix: str = "processed-features/",
                  region_name: str = "us-east-1",
@@ -552,7 +552,7 @@ async def main():
     parser.add_argument('--symbols', nargs='+', help='Specific symbols to process')
     parser.add_argument('--start-date', help='Start date (YYYY-MM-DD)')
     parser.add_argument('--end-date', help='End date (YYYY-MM-DD)')
-    parser.add_argument('--s3-bucket', default='conviction-ai-data',
+    parser.add_argument('--s3-bucket', default='hpo-bucket-773934887314',
                         help='S3 bucket for data storage')
     parser.add_argument('--max-concurrent', type=int, default=5,
                         help='Maximum concurrent symbol processing')
