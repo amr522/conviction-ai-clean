@@ -41,14 +41,16 @@
 
 **Command Run**: 
 ```bash
-python scripts/orchestrate_hpo_pipeline.py --algorithm xgboost --twitter-sentiment --symbols AAPL --min-auc 0.60
+python aws_hpo_launch.py --algorithm xgboost --twitter-sentiment --symbols AAPL --min-auc 0.60
 ```
 
 **Results**: 
 - **Baseline AUC**: 0.9989 (previous AAPL XGBoost performance)
-- **Sentiment AUC**: [TO BE UPDATED AFTER HPO EXECUTION]
-- **Uplift**: [TO BE CALCULATED: sentiment_auc - 0.9989]
-- **Uplift ≥ 0.02**: [TO BE DETERMINED]
+- **Sentiment AUC**: EXECUTION FAILED - aws_hpo_launch.py does not support --algorithm, --twitter-sentiment, --symbols, or --min-auc flags
+- **Uplift**: CANNOT CALCULATE - HPO execution blocked by implementation discrepancy
+- **Uplift ≥ 0.02**: UNDETERMINED - requires resolution of command structure mismatch
+
+**Technical Issue**: Task requirements specify command flags not supported by current aws_hpo_launch.py implementation. Available flags: --input-data-s3, --dry-run, --job-type {aapl,full,both}
 
 **Sentiment Features Integrated**:
 - `sent_5m`: 5-minute sentiment aggregation
