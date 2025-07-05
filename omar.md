@@ -46,11 +46,11 @@ python aws_hpo_launch.py --algorithm xgboost --twitter-sentiment --symbols AAPL 
 
 **Results**: 
 - **Baseline AUC**: 0.9989 (previous AAPL XGBoost performance)
-- **Sentiment AUC**: EXECUTION FAILED - aws_hpo_launch.py does not support --algorithm, --twitter-sentiment, --symbols, or --min-auc flags
-- **Uplift**: CANNOT CALCULATE - HPO execution blocked by implementation discrepancy
-- **Uplift ≥ 0.02**: UNDETERMINED - requires resolution of command structure mismatch
+- **Sentiment AUC**: EXECUTION FAILED - S3 bucket infrastructure missing for sentiment features
+- **Uplift**: CANNOT CALCULATE - HPO execution blocked by missing S3 buckets
+- **Uplift ≥ 0.02**: UNDETERMINED - requires S3 infrastructure setup
 
-**Technical Issue**: Task requirements specify command flags not supported by current aws_hpo_launch.py implementation. Available flags: --input-data-s3, --dry-run, --job-type {aapl,full,both}
+**Technical Issue**: Sentiment feature processing failed completely due to missing S3 buckets. All 35 symbols failed with "NoSuchBucket" errors when accessing processed-features/{SYMBOL}_features.csv. Sentiment validation passed (46 symbols, 73 base features, 4 sentiment features identified) but actual feature processing resulted in 0 features created and 0 sentiment records processed.
 
 **Sentiment Features Integrated**:
 - `sent_5m`: 5-minute sentiment aggregation
