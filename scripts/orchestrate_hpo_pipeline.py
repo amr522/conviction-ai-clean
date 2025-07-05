@@ -128,6 +128,39 @@ class TwitterSentimentTask:
                 'status': 'failed',
                 'error': str(e)
             }
+    
+    def run_sentiment_pipeline(self, symbols: Optional[List[str]] = None, dry_run: bool = False) -> bool:
+        """Run complete sentiment pipeline: validation -> processing"""
+        try:
+            if symbols is None:
+                symbols = ['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'TSLA']
+            
+            logger.info(f"🐦 Starting Twitter sentiment pipeline for {len(symbols)} symbols")
+            
+            if dry_run:
+                logger.info("🧪 DRY RUN: Would run complete sentiment pipeline")
+                return True
+            
+            logger.info("🔍 Step 1: Validating sentiment data...")
+            validation_result = asyncio.run(self.validate_sentiment_data(symbols))
+            
+            if not validation_result.get('ready_for_processing', False):
+                logger.error("❌ Sentiment data validation failed")
+                return False
+            
+            logger.info("🚀 Step 2: Processing sentiment features...")
+            processing_result = asyncio.run(self.process_sentiment_features(symbols))
+            
+            if processing_result.get('status') == 'failed':
+                logger.error("❌ Sentiment feature processing failed")
+                return False
+            
+            logger.info("✅ Twitter sentiment pipeline completed successfully")
+            return True
+            
+        except Exception as e:
+            logger.error(f"❌ Twitter sentiment pipeline error: {e}")
+            return False
 
 class HPOOrchestrator:
     def __init__(self, region='us-east-1'):
@@ -459,70 +492,6 @@ class HPOOrchestrator:
         
         return success
 
-class TwitterSentimentTask:
-    """Twitter sentiment integration task for HPO pipeline"""
-    
-    def __init__(self, s3_bucket: str = 'hpo-bucket-773934887314'):
-        self.s3_bucket = s3_bucket
-        self.s3_client = boto3.client('s3')
-        
-    def run_sentiment_pipeline(self, symbols: List[str] = None, dry_run: bool = False) -> bool:
-        """Run complete sentiment pipeline: ingestion -> scoring -> features"""
-        try:
-            if symbols is None:
-                symbols = ['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'TSLA']
-            
-            logger.info(f"🐦 Starting Twitter sentiment pipeline for {len(symbols)} symbols")
-            
-            if dry_run:
-                logger.info("🧪 DRY RUN: Would run complete sentiment pipeline")
-                return True
-            
-            logger.info("Phase 1: Twitter stream ingestion")
-            result = subprocess.run([
-                'python', 'scripts/twitter_stream_ingest.py',
-                '--dry-run', '--duration', '60'
-            ], capture_output=True, text=True, timeout=120)
-            
-            if result.returncode != 0:
-                logger.error(f"Twitter ingestion failed: {result.stderr}")
-                return False
-            
-            logger.info("Phase 2: FinBERT sentiment scoring")
-            result = subprocess.run([
-                'python', 'score_tweets_finbert.py',
-                '--test-mode'
-            ], capture_output=True, text=True, timeout=300)
-            
-            if result.returncode != 0:
-                logger.error(f"FinBERT scoring failed: {result.stderr}")
-                return False
-            
-            logger.info("Phase 3: Sentiment feature creation")
-            success_count = 0
-            for symbol in symbols[:2]:  # Test with first 2 symbols
-                result = subprocess.run([
-                    'python', 'create_intraday_features.py',
-                    '--symbol', symbol,
-                    '--test-sentiment'
-                ], capture_output=True, text=True, timeout=180)
-                
-                if result.returncode == 0:
-                    success_count += 1
-                    logger.info(f"✅ Created sentiment features for {symbol}")
-                else:
-                    logger.warning(f"⚠️ Failed sentiment features for {symbol}")
-            
-            if success_count >= 1:
-                logger.info("✅ Twitter sentiment pipeline completed successfully")
-                return True
-            else:
-                logger.error("❌ Twitter sentiment pipeline failed")
-                return False
-                
-        except Exception as e:
-            logger.error(f"❌ Twitter sentiment pipeline error: {e}")
-            return False
 
 def run_full_automation(input_data_s3: str, dry_run: bool = False):
     """Run complete automated HPO pipeline with recovery"""
