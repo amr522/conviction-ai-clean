@@ -1,0 +1,17 @@
+{
+  "algorithm": "xgboost",
+  "hpo_job_name": "hpo-aapl-1751694776",
+  "best_training_job": "hpo-aapl-1751694776-010-b6740fce",
+  "best_auc": 0.9998909831047058,
+  "hyperparameters": {
+    "alpha": "1.7339112293312198",
+    "colsample_bytree": "0.5",
+    "eta": "0.2506466559672114",
+    "gamma": "0.6547976945192836",
+    "lambda": "3.4776952915847517",
+    "max_depth": "10",
+    "min_child_weight": "4",
+    "subsample": "0.7987068368290382"
+  },
+  "extracted_at": "2025-07-05T06:01:25.175190"
+}
