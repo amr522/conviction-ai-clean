@@ -598,6 +598,8 @@ def main():
                         help='Include Twitter sentiment features in training')
     parser.add_argument('--include-sentiment', action='store_true',
                         help='Include sentiment features in model training')
+    parser.add_argument('--sentiment-symbols', nargs='+', default=None,
+                        help='List of symbols for sentiment processing')
     
     args = parser.parse_args()
     
