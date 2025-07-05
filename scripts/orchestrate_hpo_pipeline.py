@@ -221,6 +221,32 @@ class HPOOrchestrator:
             logger.error(f"❌ Exception launching CatBoost HPO: {e}")
             return None
     
+    def launch_xgboost_hpo(self, input_data_s3: str, dry_run: bool = False) -> Optional[str]:
+        """Launch XGBoost HPO job with auto-retry logic"""
+        timestamp = int(time.time())
+        
+        if dry_run:
+            job_name = f"xgb-hpo-{timestamp}-dry"
+            logger.info(f"🧪 DRY RUN: Would launch XGBoost HPO job: {job_name}")
+            return job_name
+        
+        try:
+            import aws_hpo_launch
+            logger.info(f"🚀 Launching XGBoost HPO job with timestamp {timestamp}")
+            
+            job_name = aws_hpo_launch.launch_aapl_hpo(input_data_s3, dry_run=False)
+            
+            if job_name:
+                logger.info(f"✅ Successfully launched XGBoost HPO job: {job_name}")
+                return job_name
+            else:
+                logger.error(f"❌ Failed to launch XGBoost HPO job")
+                return None
+                
+        except Exception as e:
+            logger.error(f"❌ Exception launching XGBoost HPO: {e}")
+            return None
+    
     def monitor_endpoint_health(self, endpoint_name: str, timeout_minutes: int = 30, dry_run: bool = False) -> bool:
         """Monitor endpoint health with timeout and auto-retry"""
         if dry_run:
@@ -665,6 +691,14 @@ def main():
     active_jobs = {}
     completed_jobs = {}
     
+    if args.algorithm in ['xgboost', 'both']:
+        job_name = orchestrator.launch_xgboost_hpo(input_data, args.dry_run)
+        if job_name:
+            active_jobs['xgboost'] = job_name
+        elif args.notify:
+            topic_arn = orchestrator.setup_notifications("conviction-hpo", args.dry_run)
+            orchestrator.send_notification("❌ Failed to launch XGBoost HPO job", topic_arn, args.dry_run)
+    
     if args.algorithm in ['catboost', 'both']:
         job_name = orchestrator.launch_catboost_hpo(input_data, args.dry_run)
         if job_name:
@@ -674,7 +708,9 @@ def main():
             orchestrator.send_notification("❌ Failed to launch CatBoost HPO job", topic_arn, args.dry_run)
     
     max_retries = 3 if args.auto_recover else 1
-    retry_counts = {'catboost': 0}
+    retry_counts = {}
+    for alg in active_jobs:
+        retry_counts[alg] = 0
     
     while active_jobs and any(retry_counts[alg] < max_retries for alg in active_jobs):
         for algorithm, job_name in list(active_jobs.items()):
@@ -697,7 +733,13 @@ def main():
                     topic_arn = orchestrator.setup_notifications("conviction-hpo", args.dry_run)
                     orchestrator.send_notification(f"⚠️ {algorithm.upper()} HPO job failed, retrying ({retry_counts[algorithm]}/{max_retries})", topic_arn, args.dry_run)
                 
-                new_job_name = orchestrator.launch_catboost_hpo(input_data, args.dry_run)
+                if algorithm == 'catboost':
+                    new_job_name = orchestrator.launch_catboost_hpo(input_data, args.dry_run)
+                elif algorithm == 'xgboost':
+                    new_job_name = orchestrator.launch_xgboost_hpo(input_data, args.dry_run)
+                else:
+                    new_job_name = None
+                
                 if new_job_name:
                     active_jobs[algorithm] = new_job_name
                 else:
