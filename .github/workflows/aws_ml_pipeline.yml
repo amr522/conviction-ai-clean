@@ -1,0 +1,407 @@
+name: AWS ML Pipeline
+
+on:
+  push:
+    branches:
+      - main
+  schedule:
+    # Run daily at 03:00 UTC
+    - cron: '0 3 * * *'
+
+# Prevent overlapping runs
+concurrency:
+  group: 'aws-ml-pipeline'
+  cancel-in-progress: true
+
+jobs:
+  run-ml-pipeline:
+    name: Run ML Pipeline
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    
+    env:
+      GLUE_JOB_NAME: ConvictionAI-GlueETL
+      S3_BUCKET: convictionai-data
+      AWS_REGION: us-east-1
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+      
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+      
+      - name: Set up Python 3.9
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+      
+      # Cache Python dependencies
+      - name: Cache pip dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+      
+      - name: Install required packages
+        run: |
+          set -e
+          python -m pip install --upgrade pip
+          pip install boto3 sagemaker great_expectations awscli pandas numpy flake8
+          # Validate installation
+          python -c "import boto3; import sagemaker; import great_expectations; print('Packages installed successfully')"
+      
+      - name: Lint Python files
+        run: |
+          set -e
+          echo "Running linting with flake8..."
+          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+          # More permissive lint for complexity checks
+          flake8 . --count --max-complexity=10 --max-line-length=127 --statistics
+      
+      # Cache Python dependencies
+      - name: Cache pip packages for tests
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-test-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-test-
+      
+      - name: Run Tests
+        run: |
+          set -e
+          echo "Installing test dependencies..."
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest pytest-xdist coverage
+          
+          echo "Running tests in parallel..."
+          python -m pytest tests/ -n auto --maxfail=1 --disable-warnings -q
+          
+          echo "Running coverage analysis..."
+          coverage run -m pytest tests/ -q
+          coverage xml
+          coverage report --fail-under=80
+          
+          echo "All tests passed successfully! ✅"
+      
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v3
+        with:
+          name: coverage-report
+          path: coverage.xml
+          retention-days: 14
+      
+      - name: Notify Slack on Test Success
+        if: success()
+        uses: slackapi/slack-github-action@v1.23.0
+        with:
+          payload: |
+            {
+              "text": "✅ Tests passed in AWS ML pipeline",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*✅ Tests passed in AWS ML pipeline*\nAll tests and coverage checks have passed successfully."
+                  }
+                },
+                {
+                  "type": "section",
+                  "fields": [
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Repository:*\n${{ github.repository }}"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Workflow:*\n${{ github.workflow }}"
+                    }
+                  ]
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
+      
+      - name: Notify Slack on Test Failure
+        if: failure()
+        uses: slackapi/slack-github-action@v1.23.0
+        with:
+          payload: |
+            {
+              "text": "❌ Tests failed in AWS ML pipeline",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*❌ Tests failed in AWS ML pipeline*\nSome tests or coverage checks have failed."
+                  }
+                },
+                {
+                  "type": "section",
+                  "fields": [
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Repository:*\n${{ github.repository }}"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Workflow:*\n${{ github.workflow }}"
+                    }
+                  ]
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*Check the GitHub Actions logs for details:*\n${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+                  }
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
+      
+      - name: Make reorganize_s3_bucket.sh executable
+        run: chmod +x reorganize_s3_bucket.sh
+      
+      - name: Reorganize S3 bucket
+        run: |
+          set -e
+          echo "Running S3 bucket reorganization script..."
+          ./reorganize_s3_bucket.sh
+          echo "S3 bucket reorganization completed"
+      
+      - name: Start Glue ETL job
+        id: start-glue
+        run: |
+          set -e
+          echo "Starting Glue ETL job: $GLUE_JOB_NAME"
+          JOB_RUN_ID=$(aws glue start-job-run --job-name $GLUE_JOB_NAME --query 'JobRunId' --output text)
+          echo "job_run_id=$JOB_RUN_ID" >> $GITHUB_OUTPUT
+          echo "Started Glue job with run ID: $JOB_RUN_ID"
+      
+      - name: Poll for Glue job completion
+        id: poll-glue
+        run: |
+          set -e
+          JOB_RUN_ID=${{ steps.start-glue.outputs.job_run_id }}
+          JOB_STATUS="STARTING"
+          
+          echo "Waiting for Glue job to complete..."
+          
+          while [[ "$JOB_STATUS" == "STARTING" || "$JOB_STATUS" == "RUNNING" ]]; do
+            sleep 60
+            JOB_STATUS=$(aws glue get-job-run --job-name $GLUE_JOB_NAME --run-id $JOB_RUN_ID --query 'JobRun.JobRunState' --output text)
+            echo "Current job status: $JOB_STATUS"
+          done
+          
+          if [[ "$JOB_STATUS" != "SUCCEEDED" ]]; then
+            echo "::error::Glue job failed with status: $JOB_STATUS"
+            aws glue get-job-run --job-name $GLUE_JOB_NAME --run-id $JOB_RUN_ID
+            exit 1
+          fi
+          
+          echo "Glue job completed successfully!"
+      
+      - name: Run SageMaker Autopilot
+        id: sagemaker
+        run: |
+          set -e
+          echo "Starting SageMaker Autopilot job..."
+          python run_sagemaker_autopilot.py | tee autopilot_output.log
+          
+          # Extract job name and endpoint from the log
+          AUTOPILOT_JOB_NAME=$(grep -o "Creating AutoML job: ConvictionAI-AutoML-[0-9]*" autopilot_output.log | awk '{print $4}')
+          ENDPOINT_NAME=$(grep -o "Endpoint ConvictionAI-Endpoint-[0-9]* successfully deployed" autopilot_output.log | awk '{print $2}')
+          
+          if [[ -z "$AUTOPILOT_JOB_NAME" ]]; then
+            echo "::warning::Could not extract AutoML job name from logs"
+          else
+            echo "autopilot_job_name=$AUTOPILOT_JOB_NAME" >> $GITHUB_OUTPUT
+            echo "Successfully ran AutoML job: $AUTOPILOT_JOB_NAME"
+          fi
+          
+          if [[ -z "$ENDPOINT_NAME" ]]; then
+            echo "::warning::Could not extract endpoint name from logs"
+          else
+            echo "endpoint_name=$ENDPOINT_NAME" >> $GITHUB_OUTPUT
+            echo "Successfully deployed endpoint: $ENDPOINT_NAME"
+          fi
+      
+      - name: Run Stacking Pipeline
+        id: stacking
+        run: |
+          set -e
+          echo "Starting Stacking Pipeline..."
+          chmod +x ./aws_pipeline/stacking_pipeline.sh
+          ./aws_pipeline/stacking_pipeline.sh \
+            --autopilot-job-name ${{ steps.sagemaker.outputs.autopilot_job_name }} \
+            --deep-model-oof-prefix s3://${{ env.S3_BUCKET }}/conviction-ai/deep-oof/ \
+            --stacking-data-prefix s3://${{ env.S3_BUCKET }}/conviction-ai/stacking-data/ \
+            --iam-role-arn ${{ secrets.SAGEMAKER_ROLE_ARN }} \
+            --s3-bucket ${{ env.S3_BUCKET }} \
+            --region ${{ env.AWS_REGION }} \
+            --instance-type ml.m5.xlarge
+          
+          # Extract stacked endpoint name from the output JSON file
+          if [ -f stacked_endpoint_info.json ]; then
+            STACKED_ENDPOINT_NAME=$(grep -o '"endpoint_name": "[^"]*' stacked_endpoint_info.json | cut -d'"' -f4)
+            echo "stacked_endpoint_name=$STACKED_ENDPOINT_NAME" >> $GITHUB_OUTPUT
+            echo "Successfully deployed stacked model endpoint: $STACKED_ENDPOINT_NAME"
+          else
+            echo "::error::Stacked endpoint info not found. Stacking pipeline may have failed."
+            exit 1
+          fi
+      
+      - name: Test Stacking Pipeline
+        run: |
+          set -e
+          echo "Testing Stacking Pipeline..."
+          python -m pytest tests/test_stacking_pipeline.py -v
+          echo "Stacking Pipeline tests passed successfully! ✅"
+      
+      - name: Log pipeline results
+        id: results
+        run: |
+          set -e
+          echo "AWS ML Pipeline Completed Successfully!"
+          echo "-----------------------------------"
+          echo "Glue ETL Job: $GLUE_JOB_NAME (Run ID: ${{ steps.start-glue.outputs.job_run_id }})"
+          echo "AutoML Job: ${{ steps.sagemaker.outputs.autopilot_job_name }}"
+          echo "Deployed Endpoint: ${{ steps.sagemaker.outputs.endpoint_name }}"
+          echo "Stacked Model Endpoint: ${{ steps.stacking.outputs.stacked_endpoint_name }}"
+          echo "-----------------------------------"
+          ENDPOINT_URL="https://${{ env.AWS_REGION }}.console.aws.amazon.com/sagemaker/home?region=${{ env.AWS_REGION }}#/endpoints/${{ steps.sagemaker.outputs.endpoint_name }}"
+          STACKED_ENDPOINT_URL="https://${{ env.AWS_REGION }}.console.aws.amazon.com/sagemaker/home?region=${{ env.AWS_REGION }}#/endpoints/${{ steps.stacking.outputs.stacked_endpoint_name }}"
+          echo "Endpoint URL: $ENDPOINT_URL"
+          echo "Stacked Endpoint URL: $STACKED_ENDPOINT_URL"
+          echo "endpoint_url=$ENDPOINT_URL" >> $GITHUB_OUTPUT
+          echo "stacked_endpoint_url=$STACKED_ENDPOINT_URL" >> $GITHUB_OUTPUT
+      
+      - name: Clean up temporary files
+        if: always()
+        run: |
+          set -e
+          echo "Cleaning up temporary files..."
+          rm -f autopilot_output.log
+          
+          # Optional: You can add commands to clean up any other temporary files
+          # that might be created during the pipeline execution
+          
+          echo "Cleanup completed"
+          
+      # Slack notification for successful runs
+      - name: Notify Slack on Success
+        if: success()
+        uses: slackapi/slack-github-action@v1.23.0
+        with:
+          payload: |
+            {
+              "text": "✅ AWS ML Pipeline completed successfully!",
+              "blocks": [
+                {
+                  "type": "header",
+                  "text": {
+                    "type": "plain_text",
+                    "text": "✅ AWS ML Pipeline Successful",
+                    "emoji": true
+                  }
+                },
+                {
+                  "type": "section",
+                  "fields": [
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Repository:*\n${{ github.repository }}"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Workflow:*\n${{ github.workflow }}"
+                    }
+                  ]
+                },
+                {
+                  "type": "section",
+                  "fields": [
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Glue Job:*\n${{ env.GLUE_JOB_NAME }}"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*AutoML Job:*\n${{ steps.sagemaker.outputs.autopilot_job_name }}"
+                    }
+                  ]
+                },
+                {
+                  "type": "section",
+                  "fields": [
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Endpoint:* ${{ steps.sagemaker.outputs.endpoint_name }}\n*URL:* ${{ steps.results.outputs.endpoint_url }}"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Stacked Endpoint:* ${{ steps.stacking.outputs.stacked_endpoint_name }}\n*URL:* ${{ steps.results.outputs.stacked_endpoint_url }}"
+                    }
+                  ]
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+      # Slack notification for failed runs
+      - name: Notify Slack on Failure
+        if: failure()
+        uses: slackapi/slack-github-action@v1.23.0
+        with:
+          payload: |
+            {
+              "text": "❌ AWS ML Pipeline failed!",
+              "blocks": [
+                {
+                  "type": "header",
+                  "text": {
+                    "type": "plain_text",
+                    "text": "❌ AWS ML Pipeline Failed",
+                    "emoji": true
+                  }
+                },
+                {
+                  "type": "section",
+                  "fields": [
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Repository:*\n${{ github.repository }}"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Workflow:*\n${{ github.workflow }}"
+                    }
+                  ]
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*Check the GitHub Actions logs for details:*\n${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+                  }
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
