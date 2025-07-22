@@ -1,0 +1,162 @@
+name: Publish Release
+
+# Trigger workflow on push of any Git tag matching v*.*.*
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+jobs:
+  test-and-release:
+    name: Test, Build, and Release
+    runs-on: ubuntu-latest
+    steps:
+      # Check out the repository code at the tagged commit
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0  # Fetch all history for proper versioning
+
+      # Set up Python 3.10 environment
+      - name: Set up Python 3.10
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+          cache: 'pip'
+
+      # Install dependencies for testing and building
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest build twine wheel
+
+      # Extract version from the tag (removes 'v' prefix)
+      - name: Extract version from tag
+        id: get_version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_ENV
+
+      # Update version.py with the version from the tag
+      - name: Update version.py
+        run: |
+          echo "\"\"\"
+          Conviction-AI version information.
+          \"\"\"
+
+          __version__ = '${VERSION}'" > version.py
+
+      # Run the full test suite to ensure everything works
+      - name: Run tests
+        run: |
+          pytest tests/
+
+      # Build both sdist (source distribution) and wheel packages
+      - name: Build package
+        run: |
+          python -m build --sdist --wheel
+          ls -l dist/
+
+      # Upload build artifacts for debugging and auditing
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: dist
+          path: dist/
+
+      # Publish the built packages to PyPI using the PyPI API token
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          user: __token__
+          password: ${{ secrets.PYPI_API_TOKEN }}
+          skip-existing: true
+          verbose: true
+
+      # Extract content from CHANGELOG.md for the release notes
+      - name: Extract release notes
+        id: changelog
+        run: |
+          # Extract the section for the current version from CHANGELOG.md
+          VERSION_HEADER="## [${VERSION}]"
+          NEXT_VERSION_PATTERN="## \["
+          
+          # Use awk to extract the content between the current version header and the next version header
+          RELEASE_NOTES=$(awk -v version="$VERSION_HEADER" -v next_pattern="$NEXT_VERSION_PATTERN" '
+            BEGIN { found=0; }
+            $0 ~ version { found=1; print; next; }
+            found && $0 ~ next_pattern { found=0; exit; }
+            found { print }
+          ' CHANGELOG.md)
+          
+          # If there's no next version, extract until the end of the file
+          if [ -z "$RELEASE_NOTES" ]; then
+            RELEASE_NOTES=$(awk -v version="$VERSION_HEADER" '
+              BEGIN { found=0; }
+              $0 ~ version { found=1; print; next; }
+              found { print }
+            ' CHANGELOG.md)
+          fi
+          
+          # Save to file and to output
+          echo "$RELEASE_NOTES" > release_notes.md
+          echo "RELEASE_NOTES<<EOF" >> $GITHUB_ENV
+          echo "$RELEASE_NOTES" >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
+
+      # Create or update the GitHub Release with content from CHANGELOG.md
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          name: "Conviction-AI v${VERSION}"
+          body_path: release_notes.md
+          files: |
+            dist/*
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # Post a success notification to Slack with release details
+      - name: Notify Slack
+        if: success()
+        uses: slackapi/slack-github-action@v1.24.0
+        with:
+          payload: |
+            {
+              "text": "🚀 New Release Published! 🚀",
+              "blocks": [
+                {
+                  "type": "header",
+                  "text": {
+                    "type": "plain_text",
+                    "text": "🚀 Conviction-AI v${VERSION} Released!"
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*<${{ github.event.repository.html_url }}/releases/tag/v${VERSION}|View Release>*"
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "Successfully published to PyPI and GitHub Releases."
+                  }
+                },
+                {
+                  "type": "context",
+                  "elements": [
+                    {
+                      "type": "mrkdwn",
+                      "text": "Triggered by: <${{ github.event.sender.html_url }}|${{ github.event.sender.login }}>"
+                    }
+                  ]
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
