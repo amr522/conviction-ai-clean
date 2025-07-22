@@ -11,55 +11,77 @@ jobs:
     name: Build and Publish Release
     runs-on: ubuntu-latest
     steps:
-      # Step 1: Check out the repository code
+      # ----------------------------------------
+      # SETUP ENVIRONMENT
+      # ----------------------------------------
+      
+      # Checkout code with full history for changelog extraction
       - name: Checkout code
         uses: actions/checkout@v3
         with:
-          fetch-depth: 0  # Fetch all history for proper changelog generation
+          fetch-depth: 0
 
-      # Step 2: Set up Python environment
+      # Set up Python 3.10 environment
       - name: Set up Python 3.10
         uses: actions/setup-python@v4
         with:
           python-version: '3.10'
           cache: 'pip'
 
-      # Step 3: Install dependencies
+      # Install dependencies for testing and building
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
           pip install pytest build twine wheel
 
-      # Step 4: Run tests to ensure everything is working
+      # ----------------------------------------
+      # TEST VALIDATION
+      # ----------------------------------------
+      
+      # Run the test suite to ensure everything is working
       - name: Run tests
         run: |
           pytest tests/
 
-      # Step 5: Build package distributions (sdist and wheel)
+      # ----------------------------------------
+      # BUILD PACKAGE
+      # ----------------------------------------
+      
+      # Build both sdist and wheel packages
       - name: Build package
         run: |
           python -m build --sdist --wheel
           ls -l dist/
 
-      # Step 6: Upload built packages as artifacts
+      # Upload the built packages as artifacts for auditing
       - name: Upload build artifacts
         uses: actions/upload-artifact@v3
         with:
           name: dist
           path: dist/
 
-      # Step 7: Extract version from tag (without 'v' prefix)
+      # ----------------------------------------
+      # VERSION AND CHANGELOG EXTRACTION
+      # ----------------------------------------
+      
+      # Extract version from tag (without 'v' prefix)
       - name: Extract version from tag
-        id: get_version
-        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_ENV
+        id: extract-version
+        run: |
+          # Strip the 'v' prefix from the tag
+          VERSION=${GITHUB_REF#refs/tags/v}
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+          echo "Extracted version: $VERSION"
 
-      # Step 8: Extract changelog section for the current version
+      # Extract changelog section for the current version
       - name: Extract changelog section
         run: |
           # Create a pattern to extract content between current version header and the next header
-          VERSION_HEADER="## \[${VERSION}\]"
-          NEXT_VERSION_PATTERN="## \["
+          VERSION_HEADER="## \\[${VERSION}\\]"
+          NEXT_VERSION_PATTERN="## \\["
+          
+          echo "Looking for section starting with: $VERSION_HEADER"
           
           # Use awk to extract the changelog section
           awk -v version="$VERSION_HEADER" -v next_pattern="$NEXT_VERSION_PATTERN" '
@@ -71,6 +93,7 @@ jobs:
           
           # If no next version header was found, extract until end of file
           if [ ! -s release_notes.md ]; then
+            echo "No content found with pattern match, trying until end of file"
             awk -v version="$VERSION_HEADER" '
               BEGIN { found=0; }
               $0 ~ version { found=1; print; next; }
@@ -82,7 +105,11 @@ jobs:
           echo "Extracted release notes:"
           cat release_notes.md
 
-      # Step 9: Publish package to PyPI
+      # ----------------------------------------
+      # PUBLISH TO PYPI
+      # ----------------------------------------
+      
+      # Publish package to PyPI
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@v1.4.2
         with:
@@ -91,11 +118,15 @@ jobs:
           skip_existing: true
           verbose: true
 
-      # Step 10: Create GitHub Release
+      # ----------------------------------------
+      # CREATE GITHUB RELEASE
+      # ----------------------------------------
+      
+      # Create or update GitHub Release
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
         with:
-          name: "Conviction-AI v${VERSION}"
+          name: "Conviction-AI v${{ steps.extract-version.outputs.VERSION }}"
           body_path: release_notes.md
           files: |
             dist/*
@@ -104,7 +135,11 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # Step 11: Send Slack notification (optional, only runs on success)
+      # ----------------------------------------
+      # NOTIFY SLACK
+      # ----------------------------------------
+      
+      # Send Slack notification on successful release
       - name: Notify Slack
         if: success()
         uses: slackapi/slack-github-action@v1.24.0
@@ -115,12 +150,11 @@ jobs:
                 {
                   "color": "#36a64f",
                   "pretext": "🚀 *New Release Published!*",
-                  "title": "Conviction-AI v${VERSION}",
-                  "title_link": "${{ github.event.repository.html_url }}/releases/tag/v${VERSION}",
+                  "title": "Conviction-AI v${{ steps.extract-version.outputs.VERSION }}",
+                  "title_link": "${{ github.event.repository.html_url }}/releases/tag/v${{ steps.extract-version.outputs.VERSION }}",
                   "text": "Successfully published to PyPI and GitHub Releases.",
                   "footer": "GitHub Actions",
-                  "footer_icon": "https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png",
-                  "ts": "${{ github.event.repository.updated_at }}"
+                  "footer_icon": "https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png"
                 }
               ]
             }
