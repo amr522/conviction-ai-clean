@@ -34,6 +34,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
           pip install pytest build twine wheel
+          pip install pyspark>=3.4.0  # For ETL scripts and tests using SparkSession
 
       # ----------------------------------------
       # TEST VALIDATION

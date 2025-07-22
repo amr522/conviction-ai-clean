@@ -31,6 +31,8 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r requirements.txt
         pip install pytest nbconvert papermill
+        pip install arch>=6.1.0 lightgbm>=4.0.0 flask>=2.3.0
+        pip install pyspark>=3.4.0  # For ETL scripts and tests using SparkSession
     
     - name: Run tests
       run: |
@@ -39,12 +41,80 @@ jobs:
     - name: Execute tutorial notebook in dry mode
       run: |
         papermill Autopilot_V2_TimeSeries_Split_Tutorial.ipynb \
-                 /tmp/out.ipynb \
+                 /tmp/autopilot_out.ipynb \
                  -p run_autopilot False
     
-    - name: Upload notebook run artifact
+    - name: Execute volatility targets notebook in dry mode
+      run: |
+        papermill volatility_targets_demo.ipynb \
+                 /tmp/volatility_out.ipynb \
+                 -p run_full_training False
+    
+    - name: Upload notebook run artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: notebook-run-result
-        path: /tmp/out.ipynb
+        name: notebook-run-results
+        path: |
+          /tmp/autopilot_out.ipynb
+          /tmp/volatility_out.ipynb
+        retention-days: 7
+        
+    - name: Test multi-target inference (dry run)
+      run: |
+        # Create sample data for inference
+        mkdir -p data
+        echo "timestamp,symbol,open,high,low,close,volume" > data/test_input.csv
+        echo "2023-01-01,AAPL,150,155,148,153,1000000" >> data/test_input.csv
+        echo "2023-01-02,AAPL,153,158,152,157,1200000" >> data/test_input.csv
+        
+        # Dry run the multi-target inference script
+        python inference_from_sagemaker.py \
+          --endpoint-name test-endpoint \
+          --input-file data/test_input.csv \
+          --target-columns iv_change_5d,spread_change_5d,vrp_change_5d \
+          --output-file /tmp/multi_target_test.csv
+    
+    - name: Test multi-target evaluation (dry run)
+      run: |
+        # Create directories for output files
+        mkdir -p tmp
+        
+        # Create a simple holdout CSV for testing
+        mkdir -p data
+        echo "feature1,feature2,iv_change_5d,spread_change_5d,vrp_change_5d" > data/holdout.csv
+        echo "1.2,2.3,0.05,0.03,0.02" >> data/holdout.csv
+        echo "2.1,3.2,0.07,0.04,0.01" >> data/holdout.csv
+        
+        # Run the multi-target evaluation script
+        python evaluate_endpoint_rmse.py \
+          --holdout-csv data/holdout.csv \
+          --target-columns iv_change_5d,spread_change_5d,vrp_change_5d \
+          --endpoint-name dummy-endpoint \
+          --output-file tmp/preds.csv \
+          --output-json tmp/metrics.json
+          
+        # Verify that metrics.json exists and contains keys for each target
+        echo "Verifying metrics.json content:"
+        cat tmp/metrics.json
+        
+        # Check for required keys using jq
+        apt-get update && apt-get install -y jq
+        echo "Checking for iv_change_5d in metrics.json:"
+        jq '.iv_change_5d' tmp/metrics.json
+        echo "Checking for spread_change_5d in metrics.json:"
+        jq '.spread_change_5d' tmp/metrics.json
+        echo "Checking for vrp_change_5d in metrics.json:"
+        jq '.vrp_change_5d' tmp/metrics.json
+        
+        # Fail if any target is missing
+        test -n "$(jq '.iv_change_5d' tmp/metrics.json)" && \
+          test -n "$(jq '.spread_change_5d' tmp/metrics.json)" && \
+          test -n "$(jq '.vrp_change_5d' tmp/metrics.json)" || \
+          (echo "Missing target metrics in metrics.json" && exit 1)
+    
+    - name: Upload evaluation metrics artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: evaluation-metrics
+        path: tmp/metrics.json
         retention-days: 7
