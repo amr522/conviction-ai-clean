@@ -23,8 +23,30 @@ We've implemented a comprehensive framework for validating data quality and prev
 - Feature validation with Spark Window functions and pandas
 - Great Expectations integration for ETL validation
 - Time-series split and early stopping for all training scripts
+- **Raw data fallback & schema enforcement** - automatic fallback to backup data sources
 
 For details, see [DATA_VALIDATION.md](DATA_VALIDATION.md).
+
+### Raw Data Fallback & Schema Enforcement
+
+Every `clean_*.py` script now includes automatic fallback to backup raw data with schema validation:
+
+1. **Primary Path**: Scripts first attempt to load from canonical raw data location
+2. **Schema Validation**: Raw data is validated against JSON schemas in `schemas/`
+3. **Automatic Fallback**: If primary fails, scripts automatically fall back to `data/Parquet_data/Raw/`
+4. **Logging**: Fallback events are logged as warnings for monitoring
+
+**Environment Variables:**
+- `RAW_BACKUP_DIR`: Override default backup directory (default: `data/Parquet_data/Raw`)
+
+**Example Usage:**
+```bash
+# Set custom backup directory
+export RAW_BACKUP_DIR=/path/to/backup/data
+
+# Run cleaning script - will automatically fallback if needed
+python src/clean_options_daily.py --date 2025-01-15
+```
 
 ## 📈 Volatility Prediction Features
 
@@ -246,7 +268,7 @@ Tests must meet a minimum of 80% code coverage to pass.
    - Create a Telegram bot via @BotFather
    - Get your bot token and chat ID
    - Add the bot token and chat ID to your `.env` file
-   
+
    ```bash
    export TELEGRAM_BOT_TOKEN="1234567890:ABCdefGHIjklMNOpqrsTUVwxyz"
    export TELEGRAM_CHAT_ID="-1001234567890"
@@ -1088,7 +1110,7 @@ python src/register_schema.py \
 ### Schema Compatibility
 
 - **BACKWARD**: New schema can read data written with previous schema
-- **FORWARD**: Previous schema can read data written with new schema  
+- **FORWARD**: Previous schema can read data written with new schema
 - **FULL**: Both backward and forward compatibility
 - **NONE**: No compatibility checking
 
