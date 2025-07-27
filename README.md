@@ -384,6 +384,16 @@ The script also creates a CSV file with the original data plus prediction column
 
 The project includes a comprehensive test suite to validate functionality. To run tests locally:
 
+### Local Validation
+
+You can run every test locally with:
+
+```bash
+./scripts/run-all-validations.sh
+```
+
+This executes all CI jobs (schema, feature, performance, signal validation) in sequence and exits non-zero on any failure.
+
 ### Install test dependencies:
 
 ```bash
