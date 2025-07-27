@@ -1,0 +1,41 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: "{{ include "conviction-ai-pipeline.fullname" . }}-test-autoscaling"
+  labels:
+    {{- include "conviction-ai-pipeline.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": test
+    "helm.sh/hook-weight": "2"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+spec:
+  restartPolicy: Never
+  containers:
+    - name: test-hpa
+      image: bitnami/kubectl:latest
+      command: ["/bin/bash"]
+      args:
+        - -c
+        - |
+          echo "Testing HPA configuration..."
+          {{- if .Values.autoscaling.enabled }}
+          kubectl get hpa {{ include "conviction-ai-pipeline.fullname" . }}-hpa
+          if [ $? -eq 0 ]; then
+            echo "✅ Main HPA found"
+          else
+            echo "❌ Main HPA not found"
+            exit 1
+          fi
+          {{- end }}
+          
+          {{- if and .Values.backfill.enabled .Values.autoscaling.backfill.enabled }}
+          kubectl get hpa {{ include "conviction-ai-pipeline.fullname" . }}-backfill-hpa
+          if [ $? -eq 0 ]; then
+            echo "✅ Backfill HPA found"
+          else
+            echo "❌ Backfill HPA not found"
+            exit 1
+          fi
+          {{- end }}
+          
+          echo "✅ Autoscaling tests passed"

@@ -1,0 +1,19 @@
+{{- if .Values.alertmanager.slackApiUrl }}
+apiVersion: monitoring.coreos.com/v1alpha1
+kind: AlertmanagerConfig
+metadata:
+  name: {{ include "conviction-ai-pipeline.fullname" . }}-amcfg
+  labels:
+    {{- include "conviction-ai-pipeline.labels" . | nindent 4 }}
+    release: prometheus
+spec:
+  route:
+    receiver: slack-receiver
+  receivers:
+    - name: slack-receiver
+      slackConfigs:
+        - apiURL: {{ .Values.alertmanager.slackApiUrl | quote }}
+          channel: {{ .Values.alertmanager.slackChannel | quote }}
+          title: '{{ "{{ .CommonLabels.alertname }}" }} - {{ "{{ .CommonLabels.severity }}" }}'
+          text: '{{ "{{ range .Alerts }}\n*{{ .Annotations.summary }}*\n{{ .Annotations.description }}\n{{ end }}" }}'
+{{- end }}

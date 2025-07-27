@@ -1,0 +1,99 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "conviction-ai-pipeline.fullname" . }}
+  labels:
+    {{- include "conviction-ai-pipeline.labels" . | nindent 4 }}
+    component: pipeline
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "conviction-ai-pipeline.selectorLabels" . | nindent 6 }}
+      component: pipeline
+  template:
+    metadata:
+      labels:
+        {{- include "conviction-ai-pipeline.selectorLabels" . | nindent 8 }}
+        component: pipeline
+    spec:
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: {{ include "conviction-ai-pipeline.image" . }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command: ["/bin/bash", "-c"]
+          args:
+            - |
+              echo "Starting Conviction AI Pipeline..."
+              echo "Date: {{ .Values.runDate | default (now | date "2006-01-02") }}"
+              echo "Trials: {{ .Values.nTrials }}"
+              echo "Jobs: {{ .Values.nJobs }}"
+              /app/scripts/run_and_train.sh {{ .Values.runDate | default (now | date "2006-01-02") }} {{ .Values.nTrials }} {{ .Values.nJobs }}
+          env:
+            {{- include "conviction-ai-pipeline.env" . | nindent 12 }}
+          {{- if .Values.prometheus.enabled }}
+          ports:
+            - name: metrics
+              containerPort: 9090
+              protocol: TCP
+          {{- end }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          {{- if .Values.persistence.enabled }}
+          volumeMounts:
+            - name: data-storage
+              mountPath: {{ .Values.persistence.mountPath }}
+            - name: models-storage
+              mountPath: /app/models
+            - name: metrics-storage
+              mountPath: /app/metrics
+          {{- end }}
+          {{- if .Values.healthCheck.enabled }}
+          livenessProbe:
+            exec:
+              command:
+                - /bin/bash
+                - -c
+                - "ps aux | grep -v grep | grep python"
+            initialDelaySeconds: {{ .Values.healthCheck.initialDelaySeconds }}
+            periodSeconds: {{ .Values.healthCheck.periodSeconds }}
+            timeoutSeconds: {{ .Values.healthCheck.timeoutSeconds }}
+            failureThreshold: {{ .Values.healthCheck.failureThreshold }}
+          readinessProbe:
+            exec:
+              command:
+                - /bin/bash
+                - -c
+                - "test -f /app/src/run_full_pipeline.py"
+            initialDelaySeconds: 10
+            periodSeconds: 5
+          {{- end }}
+      {{- if .Values.persistence.enabled }}
+      volumes:
+        - name: data-storage
+          persistentVolumeClaim:
+            claimName: {{ include "conviction-ai-pipeline.fullname" . }}-data
+        - name: models-storage
+          persistentVolumeClaim:
+            claimName: {{ include "conviction-ai-pipeline.fullname" . }}-models
+        - name: metrics-storage
+          persistentVolumeClaim:
+            claimName: {{ include "conviction-ai-pipeline.fullname" . }}-metrics
+      {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      restartPolicy: Always

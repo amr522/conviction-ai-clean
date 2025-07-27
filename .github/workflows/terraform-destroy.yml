@@ -1,0 +1,92 @@
+name: Terraform Destroy
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to destroy'
+        required: true
+        default: 'dev'
+        type: choice
+        options:
+          - dev
+          - staging
+          - prod
+      confirm_destroy:
+        description: 'Type "destroy" to confirm'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  destroy:
+    runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.environment }}
+    
+    steps:
+      - name: Validate Confirmation
+        if: github.event.inputs.confirm_destroy != 'destroy'
+        run: |
+          echo "❌ Confirmation failed. You must type 'destroy' to proceed."
+          exit 1
+      
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ vars.AWS_REGION || 'us-east-1' }}
+      
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.6.0
+      
+      - name: Terraform Init
+        run: |
+          terraform init \
+            -backend-config="bucket=${{ vars.TFSTATE_BUCKET }}" \
+            -backend-config="key=conviction-ai/terraform.tfstate" \
+            -backend-config="region=${{ vars.AWS_REGION || 'us-east-1' }}" \
+            -input=false
+        working-directory: infra/terraform
+      
+      - name: Terraform Plan Destroy
+        id: plan
+        run: |
+          terraform plan \
+            -var="tfstate_bucket=${{ vars.TFSTATE_BUCKET }}" \
+            -var="s3_bucket_name=${{ vars.S3_BUCKET_NAME }}" \
+            -var="environment=${{ github.event.inputs.environment }}" \
+            -destroy \
+            -input=false \
+            -out=destroy-plan
+        working-directory: infra/terraform
+      
+      - name: Terraform Destroy
+        id: destroy
+        run: terraform apply -input=false destroy-plan
+        working-directory: infra/terraform
+      
+      - name: Notify Slack
+        if: always()
+        uses: 8398a7/action-slack@v3
+        with:
+          status: ${{ job.status }}
+          channel: '#infrastructure'
+          text: |
+            🗑️ *Terraform Destroy ${{ job.status == 'success' && 'Completed' || 'Failed' }}*
+            
+            Environment: ${{ github.event.inputs.environment }}
+            Status: ${{ job.status }}
+            
+            *Repository:* ${{ github.repository }}
+            *Actor:* ${{ github.actor }}
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}

@@ -1,0 +1,28 @@
+{{- if and .Values.lineage.enabled .Values.prometheus.enabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ include "conviction-ai-pipeline.fullname" . }}-lineage-sm
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "conviction-ai-pipeline.labels" . | nindent 4 }}
+    component: lineage
+    release: prometheus
+spec:
+  selector:
+    matchLabels:
+      {{- include "conviction-ai-pipeline.selectorLabels" . | nindent 6 }}
+      component: lineage
+  namespaceSelector:
+    matchNames:
+      - {{ .Release.Namespace }}
+  endpoints:
+    - port: metrics
+      path: /metrics
+      interval: 30s
+      scrapeTimeout: 10s
+      metricRelabelings:
+        - sourceLabels: [__name__]
+          regex: 'lineage_.*'
+          action: keep
+{{- end }}

@@ -1,0 +1,57 @@
+{{- if .Values.alerts.enabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: {{ include "conviction-ai-pipeline.fullname" . }}-alerts
+  labels:
+    {{- include "conviction-ai-pipeline.labels" . | nindent 4 }}
+    release: prometheus
+spec:
+  groups:
+    - name: conviction-ai-pipeline.rules
+      rules:
+        - alert: PipelineETLFailure
+          expr: increase(pipeline_etl_errors_total[5m]) > 0
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: "ETL pipeline errors detected"
+            description: "pipeline_etl_errors_total increased in the last 5m."
+
+        - alert: ModelTrainingFailure
+          expr: increase(pipeline_training_errors_total[5m]) > 0
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Model training errors detected"
+            description: "pipeline_training_errors_total increased in the last 5m."
+
+        - alert: DataDriftDetected
+          expr: increase(data_drift_events_total[1h]) > 0
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Data drift detected"
+            description: "data_drift_events_total has increased in the last hour."
+
+        - alert: DataDriftHigh
+          expr: data_drift_max_score > 0.1
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Data drift exceeded threshold"
+            description: "Max feature drift_score > 0.1 over last run"
+
+        - alert: InferenceLatencyHigh
+          expr: histogram_quantile(0.95, sum(rate(prediction_latency_seconds_bucket[5m])) by (le)) > 1
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: "High inference latency"
+            description: "95th percentile of prediction latency > 1s."
+{{- end }}

@@ -1,81 +1,44 @@
 # Raw data
+data/Parquet_data/Raw/
 data/
-Parquet_data/
+datasets/
+raw/
 
-# Python
+# Python caches and bytecode
 __pycache__/
-*.py[cod]
-*$py.class
-*.so
+*.pyc
+*.pyo
+*.pyd
 .Python
-env/
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-*.egg-info/
-.installed.cfg
-*.egg
-.pytest_cache/
 
-# Environment variables
-.env
-.venv
-env/
-venv/
-ENV/
-env.bak/
-venv.bak/
+# Node modules and build artifacts
+node_modules/
+ui/lineage-explorer/dist/
 
-# AWS
-.aws/
-.aws-credentials
-*.aws
-aws.txt
+# Docker and CI artifacts
+docker/
+metrics/
+reports/
 
-# Data files
-sample_input.csv
-sample_input.json
-candidates.json
-endpoint_info.json
-
-# SageMaker
-.sagemaker/
-
-# Jupyter Notebook
-.ipynb_checkpoints
-*.ipynb
-
-# Logs
-logs/
-*.log
-pip-log.txt
-pip-delete-this-directory.txt
-
-# OS specific files
+# IDE and OS files
 .DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
-Thumbs.db
-
-# Editor files
-.idea/
 .vscode/
 *.swp
 *.swo
 
-# Temporary files
-tmp/
-/tmp/
-temp/
-*.tmp
+# Environment files
+.env
+.env.local
+
+# Build artifacts
+build/
+dist/
+*.egg-info/
+
+# Coverage reports
+.coverage
+htmlcov/
+
+# Logs
+*.log
+logs/

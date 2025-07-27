@@ -1,0 +1,58 @@
+{{- if .Values.rollout.enabled }}
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
+metadata:
+  name: {{ include "conviction-ai-pipeline.fullname" . }}-inference
+  labels:
+    {{- include "conviction-ai-pipeline.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  strategy:
+    canary:
+      steps:
+        - setWeight: {{ .Values.rollout.canary.initialWeight }}
+        - pause: {duration: 1m}
+        {{- if .Values.rollout.canary.analysis.enabled }}
+        - analysis:
+            templates:
+              - templateName: {{ include "conviction-ai-pipeline.fullname" . }}-autoscale-analysis
+            args: []
+        {{- end }}
+        - setWeight: 50
+        - pause: {duration: 2m}
+        {{- if .Values.rollout.canary.analysis.enabled }}
+        - analysis:
+            templates:
+              - templateName: {{ include "conviction-ai-pipeline.fullname" . }}-autoscale-analysis
+            args: []
+        {{- end }}
+        - setWeight: {{ .Values.rollout.canary.maxWeight }}
+  selector:
+    matchLabels:
+      {{- include "conviction-ai-pipeline.selectorLabels" . | nindent 6 }}
+      component: inference
+  template:
+    metadata:
+      labels:
+        {{- include "conviction-ai-pipeline.selectorLabels" . | nindent 8 }}
+        component: inference
+    spec:
+      containers:
+        - name: inference
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 8000
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+{{- end }}

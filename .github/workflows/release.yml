@@ -1,0 +1,58 @@
+name: Production Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_name:
+        description: 'Helm release name'
+        required: false
+        default: 'conviction-ai-pipeline'
+      namespace:
+        description: 'Target namespace'
+        required: false
+        default: 'production'
+      date:
+        description: 'Run date (YYYY-MM-DD)'
+        required: false
+        default: ''
+
+jobs:
+  production-deploy:
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Configure kubectl
+        uses: azure/k8s-set-context@v1
+        with:
+          method: kubeconfig
+          kubeconfig: ${{ secrets.KUBE_CONFIG }}
+      
+      - name: Install Helm
+        uses: azure/setup-helm@v3
+        with:
+          version: '3.12.0'
+      
+      - name: Make promotion script executable
+        run: chmod +x scripts/promote-production.sh
+      
+      - name: Promote to production
+        run: |
+          DATE="${{ github.event.inputs.date }}"
+          if [ -z "$DATE" ]; then
+            DATE=$(date -v-1d +%Y-%m-%d)
+          fi
+          ./scripts/promote-production.sh \
+            "${{ github.event.inputs.release_name }}" \
+            "${{ github.event.inputs.namespace }}" \
+            "$DATE"
+      
+      - name: Notify Slack
+        if: always()
+        uses: 8398a7/action-slack@v3
+        with:
+          status: ${{ job.status }}
+          channel: '#deployments'
+          webhook_url: ${{ secrets.SLACK_WEBHOOK_URL }}
+          fields: repo,message,commit,author,action,eventName,ref,workflow

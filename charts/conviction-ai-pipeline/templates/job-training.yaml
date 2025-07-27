@@ -1,0 +1,72 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "conviction-ai-pipeline.fullname" . }}-training-{{ .Values.runDate | default (now | date "2006-01-02") | replace "-" "" }}
+  labels:
+    {{- include "conviction-ai-pipeline.labels" . | nindent 4 }}
+    component: training
+spec:
+  template:
+    metadata:
+      labels:
+        {{- include "conviction-ai-pipeline.selectorLabels" . | nindent 8 }}
+        component: training
+    spec:
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: training
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: {{ include "conviction-ai-pipeline.image" . }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command: ["/bin/bash", "-c"]
+          args:
+            - |
+              echo "Starting training job..."
+              echo "Date: {{ .Values.runDate | default (now | date "2006-01-02") }}"
+              echo "Trials: {{ .Values.nTrials }}"
+              echo "Jobs: {{ .Values.nJobs }}"
+              python src/train_and_evaluate.py \
+                --start-date {{ .Values.runDate | default (now | date "2006-01-02") }} \
+                --end-date {{ .Values.runDate | default (now | date "2006-01-02") }} \
+                --tune --n-trials {{ .Values.nTrials }} --n-jobs {{ .Values.nJobs }}
+          env:
+            {{- include "conviction-ai-pipeline.env" . | nindent 12 }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          {{- if .Values.persistence.enabled }}
+          volumeMounts:
+            - name: data-storage
+              mountPath: {{ .Values.persistence.mountPath }}
+            - name: models-storage
+              mountPath: /app/models
+            - name: metrics-storage
+              mountPath: /app/metrics
+          {{- end }}
+      {{- if .Values.persistence.enabled }}
+      volumes:
+        - name: data-storage
+          persistentVolumeClaim:
+            claimName: {{ include "conviction-ai-pipeline.fullname" . }}-data
+        - name: models-storage
+          persistentVolumeClaim:
+            claimName: {{ include "conviction-ai-pipeline.fullname" . }}-models
+        - name: metrics-storage
+          persistentVolumeClaim:
+            claimName: {{ include "conviction-ai-pipeline.fullname" . }}-metrics
+      {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      restartPolicy: Never
+  backoffLimit: 3

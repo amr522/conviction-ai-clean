@@ -1,0 +1,27 @@
+{{- if and .Values.chaos.enabled .Values.chaos.network.enabled }}
+apiVersion: litmuschaos.io/v1alpha1
+kind: ChaosEngine
+metadata:
+  name: {{ include "conviction-ai-pipeline.fullname" . }}-chaos-network
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "conviction-ai-pipeline.labels" . | nindent 4 }}
+spec:
+  engineState: "active"
+  appinfo:
+    appns: "{{ .Release.Namespace }}"
+    applabel: "app.kubernetes.io/name=conviction-ai-pipeline"
+    appkind: "Deployment"
+  chaosServiceAccount: litmus-admin
+  experiments:
+    - name: network-latency
+      spec:
+        components:
+          env:
+            - name: TOTAL_CHAOS_DURATION
+              value: "{{ .Values.chaos.network.duration }}"
+            - name: TARGET_PODS_PERCENTAGE
+              value: "{{ .Values.chaos.network.percentAffected }}"
+            - name: NETWORK_LATENCY
+              value: "{{ .Values.chaos.network.latency }}"
+{{- end }}

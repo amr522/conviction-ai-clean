@@ -1,0 +1,71 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: "{{ include "conviction-ai-pipeline.fullname" . }}-test-rollout"
+  labels:
+    {{- include "conviction-ai-pipeline.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": test
+    "helm.sh/hook-weight": "2"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+spec:
+  restartPolicy: Never
+  containers:
+    - name: rollout-test
+      image: curlimages/curl:latest
+      command: ['sh', '-c']
+      args:
+        - |
+          set -e
+          echo "Testing rollout configuration..."
+          
+          {{- if .Values.rollout.enabled }}
+          echo "✓ Rollout is enabled"
+          
+          # Test if rollout exists
+          if kubectl get rollout {{ include "conviction-ai-pipeline.fullname" . }}-inference; then
+            echo "✓ Rollout resource exists"
+          else
+            echo "✗ Rollout resource not found"
+            exit 1
+          fi
+          
+          # Test if services exist
+          if kubectl get service {{ include "conviction-ai-pipeline.fullname" . }}-inference-stable; then
+            echo "✓ Stable service exists"
+          else
+            echo "✗ Stable service not found"
+            exit 1
+          fi
+          
+          if kubectl get service {{ include "conviction-ai-pipeline.fullname" . }}-inference-canary; then
+            echo "✓ Canary service exists"
+          else
+            echo "✗ Canary service not found"
+            exit 1
+          fi
+          
+          {{- if .Values.rollout.canary.analysis.enabled }}
+          # Test if analysis template exists
+          if kubectl get analysistemplate {{ include "conviction-ai-pipeline.fullname" . }}-success-rate; then
+            echo "✓ AnalysisTemplate exists"
+          else
+            echo "✗ AnalysisTemplate not found"
+            exit 1
+          fi
+          {{- end }}
+          
+          echo "✓ All rollout resources validated successfully"
+          {{- else }}
+          echo "✓ Rollout is disabled, using standard deployment"
+          
+          # Test if deployment exists
+          if kubectl get deployment {{ include "conviction-ai-pipeline.fullname" . }}-inference; then
+            echo "✓ Deployment resource exists"
+          else
+            echo "✗ Deployment resource not found"
+            exit 1
+          fi
+          {{- end }}
+          
+          echo "✓ Rollout configuration test passed"

@@ -1,0 +1,37 @@
+{{- if .Values.chaos.exporter.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "conviction-ai-pipeline.fullname" . }}-chaos-exporter
+  namespace: {{ .Release.Namespace }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: chaos-exporter
+  template:
+    metadata:
+      labels:
+        app: chaos-exporter
+    spec:
+      containers:
+      - name: exporter
+        image: {{ .Values.chaos.exporter.image }}
+        ports:
+        - containerPort: {{ .Values.chaos.exporter.port }}
+        args:
+        - "--port"
+        - "{{ .Values.chaos.exporter.port }}"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "conviction-ai-pipeline.fullname" . }}-chaos-exporter
+  namespace: {{ .Release.Namespace }}
+spec:
+  selector:
+    app: chaos-exporter
+  ports:
+  - port: {{ .Values.chaos.exporter.port }}
+    name: metrics
+{{- end }}

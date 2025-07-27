@@ -1,0 +1,22 @@
+apiVersion: v2
+name: conviction-ai-pipeline
+description: A Helm chart for Conviction AI ETL and ML Training Pipeline with Argo Rollouts canary deployments
+type: application
+version: 0.3.0
+appVersion: "1.0.0"
+home: https://github.com/your-organization/conviction-ai-clean
+sources:
+  - https://github.com/your-organization/conviction-ai-clean
+maintainers:
+  - name: Conviction AI Team
+    email: team@conviction-ai.com
+keywords:
+  - ml
+  - etl
+  - trading
+  - options
+  - kubernetes
+  - argo-rollouts
+  - canary
+annotations:
+  "argo-rollouts.argoproj.io/version": ">=1.0.0"

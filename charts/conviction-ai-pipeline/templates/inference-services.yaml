@@ -1,0 +1,94 @@
+{{- if .Values.rollout.enabled }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "conviction-ai-pipeline.fullname" . }}-inference-stable
+  labels:
+    {{- include "conviction-ai-pipeline.labels" . | nindent 4 }}
+    component: inference
+    service-type: stable
+spec:
+  type: {{ .Values.inference.service.type }}
+  ports:
+    - port: {{ .Values.inference.service.port }}
+      targetPort: http
+      protocol: TCP
+      name: http
+    - port: 9090
+      targetPort: metrics
+      protocol: TCP
+      name: metrics
+  selector:
+    {{- include "conviction-ai-pipeline.selectorLabels" . | nindent 4 }}
+    component: inference
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "conviction-ai-pipeline.fullname" . }}-inference-canary
+  labels:
+    {{- include "conviction-ai-pipeline.labels" . | nindent 4 }}
+    component: inference
+    service-type: canary
+spec:
+  type: {{ .Values.inference.service.type }}
+  ports:
+    - port: {{ .Values.inference.service.port }}
+      targetPort: http
+      protocol: TCP
+      name: http
+    - port: 9090
+      targetPort: metrics
+      protocol: TCP
+      name: metrics
+  selector:
+    {{- include "conviction-ai-pipeline.selectorLabels" . | nindent 4 }}
+    component: inference
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "conviction-ai-pipeline.fullname" . }}-inference
+  labels:
+    {{- include "conviction-ai-pipeline.labels" . | nindent 4 }}
+    component: inference
+    service-type: active
+spec:
+  type: {{ .Values.inference.service.type }}
+  ports:
+    - port: {{ .Values.inference.service.port }}
+      targetPort: http
+      protocol: TCP
+      name: http
+    - port: 9090
+      targetPort: metrics
+      protocol: TCP
+      name: metrics
+  selector:
+    {{- include "conviction-ai-pipeline.selectorLabels" . | nindent 4 }}
+    component: inference
+{{- else }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "conviction-ai-pipeline.fullname" . }}-inference
+  labels:
+    {{- include "conviction-ai-pipeline.labels" . | nindent 4 }}
+    component: inference
+spec:
+  type: {{ .Values.inference.service.type }}
+  ports:
+    - port: {{ .Values.inference.service.port }}
+      targetPort: http
+      protocol: TCP
+      name: http
+    - port: 9090
+      targetPort: metrics
+      protocol: TCP
+      name: metrics
+  selector:
+    {{- include "conviction-ai-pipeline.selectorLabels" . | nindent 4 }}
+    component: inference
+{{- end }}
