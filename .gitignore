@@ -22,7 +22,6 @@ reports/
 
 # IDE and OS files
 .DS_Store
-.vscode/
 *.swp
 *.swo
 

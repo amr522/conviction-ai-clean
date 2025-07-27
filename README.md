@@ -145,6 +145,19 @@ Then you can run:
 ./scripts/evaluate_pipeline.sh 2025-07-27
 ```
 
+### DevContainer Development Environment
+
+We provide a VS Code DevContainer with all dependencies installed.
+
+1. Open this project in VS Code.
+2. When prompted, reopen in DevContainer.
+3. The `scripts/setup-env.sh` will run automatically to create a virtualenv and install dependencies.
+
+You'll have:
+- A consistent Python environment (`.venv`)
+- Recommended extensions installed automatically
+- AutoSave and FormatOnSave enabled
+
 ### Prerequisites
 
 - Python 3.9+

@@ -1,0 +1,20 @@
+{
+  "name": "Conviction AI Dev",
+  "dockerFile": "../Dockerfile",
+  "context": "..",
+  "extensions": [
+    "ms-python.python",
+    "ms-azuretools.vscode-docker",
+    "esbenp.prettier-vscode",
+    "ms-vscode.cpptools",
+    "njpwerner.autodocstring"
+  ],
+  "settings": {
+    "python.pythonPath": "/workspaces/conviction-ai-clean/.venv/bin/python",
+    "editor.formatOnSave": true,
+    "files.autoSave": "afterDelay",
+    "files.autoSaveDelay": 500
+  },
+  "postCreateCommand": "scripts/setup-env.sh",
+  "remoteUser": "vscode"
+}
