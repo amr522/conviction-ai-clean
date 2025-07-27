@@ -1,182 +1,130 @@
 # Troubleshooting Guide
 
-## Feature Correlation Failures
+This guide provides step-by-step troubleshooting procedures for common issues in the Conviction AI pipeline.
 
-### Understanding Correlation Test Failures
+## Risk Assessment
 
-The pipeline includes automated tests to detect highly correlated features that may indicate redundancy or data leakage.
+We compute three risk scores to ensure pipeline health and reliability:
 
-**Error Message:**
-```
-AssertionError: Features feature1 and feature2 too highly correlated: 0.987
-```
+### 1. Data Gaps (Threshold: 0.95)
+**Description**: Fraction of rows with non-null core features  
+**Calculation**: Complete rows / Total rows across `optd_`, `opt30_`, `stock_` columns  
+**Risk**: Data quality issues, incomplete feature sets
 
-**Interpretation:**
-- Features with correlation > 0.95 (absolute value) are flagged
-- High correlation may indicate:
-  - Duplicate features with different names
-  - Features derived from the same underlying data
-  - Potential data leakage
-  - Multicollinearity issues for model training
+### 2. Signal Noise (Threshold: 0.90)
+**Description**: Average of signal-quality metrics  
+**Calculation**: Mean of gamma coverage, flow accuracy, volume spike detection  
+**Risk**: Poor signal quality, unreliable predictions
 
-### Resolution Steps
+### 3. Performance (Threshold: 0.50)
+**Description**: Inverse scaled latency score  
+**Calculation**: max(0, 1 - (latency_ms / 1000))  
+**Risk**: System performance degradation, timeout issues
 
-1. **Investigate Feature Definitions**
-   ```bash
-   # Check feature calculation logic
-   grep -r "feature1\|feature2" src/calculate_features.py
-   ```
+### Running Risk Assessment
 
-2. **Analyze Feature Distributions**
-   ```python
-   import polars as pl
-   df = pl.read_parquet("data/Parquet_data/features_test.parquet")
-   print(df.select(["feature1", "feature2"]).describe())
-   ```
-
-3. **Remove Redundant Features**
-   - Update `docs/features_list.md` to remove one of the correlated features
-   - Modify feature calculation logic in `src/calculate_features.py`
-   - Re-run validation tests
-
-4. **Adjust Correlation Threshold**
-   - If correlation is expected (e.g., related but distinct features)
-   - Modify threshold in `tests/test_feature_correlations.py`
-   - Document the decision in feature documentation
-
-## Cleanup Behavior
-
-### Automatic Cleanup on Failures
-
-All validation scripts include automatic cleanup on failure using bash traps:
+Run locally to assess current pipeline health:
 
 ```bash
-trap 'echo "💥 Failure detected, cleaning up..."; rm -f temp_files; exit 1' ERR
+./src/risk_assessment.py \
+  --parquet data/Parquet_data/daily_master.parquet \
+  --signal-metrics results/signal_metrics.json \
+  --latency-ms 150 \
+  --output-path risk_report.json
 ```
 
-**Cleaned Files:**
-- `data/Parquet_data/features_test.parquet`
-- `data/Parquet_data/features_validation.parquet`
-- `data/Parquet_data/daily_master.parquet`
-- `data/Parquet_data/intraday_master.parquet`
-- `staged/` directory contents
+### Risk Report Format
 
-### Manual Cleanup
-
-If cleanup fails or you need to clean manually:
-
-```bash
-# Remove test artifacts
-rm -f data/Parquet_data/features_*.parquet
-rm -f data/Parquet_data/*_master.parquet
-rm -rf staged/
-
-# Reset to clean state
-git clean -fd data/Parquet_data/
+```json
+{
+  "scores": {
+    "data_gaps": 0.96,
+    "signal_noise": 0.91,
+    "performance": 0.85
+  },
+  "risks": {},
+  "thresholds": {
+    "data_gaps": 0.95,
+    "signal_noise": 0.90,
+    "performance": 0.50
+  }
+}
 ```
+
+### Remediation Actions
+
+**Data Gaps < 0.95**:
+- Check data ingestion pipeline
+- Validate upstream data sources
+- Review ETL transformation logic
+
+**Signal Noise < 0.90**:
+- Run signal validation diagnostics
+- Check anomaly detection accuracy
+- Review feature engineering pipeline
+
+**Performance < 0.50**:
+- Optimize query performance
+- Scale compute resources
+- Review system bottlenecks
 
 ## Common Issues
 
-### Low Variance Features
+### Pipeline Failures
 
-**Error:**
-```
-AssertionError: Features with low variance: ['feature_name (var=1.23e-07)']
-```
+1. **Check CI status**: Review GitHub Actions for failed jobs
+2. **Validate data**: Run `./scripts/run-all-validations.sh`
+3. **Check logs**: Review application and system logs
+4. **Run diagnostics**: Execute risk assessment module
 
-**Resolution:**
-- Check if feature is constant across all samples
-- Verify feature calculation logic
-- Consider removing constant features from feature list
+### Signal Quality Issues
 
-### Missing Features in Correlation Test
+1. **Gamma Coverage Low**: Check options data completeness
+2. **Flow Accuracy Poor**: Validate flow calculation logic
+3. **Volume Spikes Missed**: Review spike detection thresholds
 
-**Error:**
-```
-SKIPPED: Features feature1 or feature2 not found in dataframe
-```
+### Performance Issues
 
-**Resolution:**
-- Ensure feature calculation generates all expected features
-- Check `docs/features_list.md` for typos
-- Verify feature names match between calculation and validation
+1. **High Latency**: Check database query performance
+2. **Memory Usage**: Monitor resource consumption
+3. **Timeout Errors**: Review timeout configurations
 
-### Null Correlation Values
+## Emergency Procedures
 
-**Error:**
-```
-SKIPPED: Cannot compute correlation between feature1 and feature2 (constant features)
-```
+### Critical System Failure
 
-**Resolution:**
-- One or both features have zero variance
-- Check for constant values or missing data
-- Review feature engineering logic
+1. **Immediate**: Stop data ingestion
+2. **Assess**: Run full validation suite
+3. **Isolate**: Identify failing components
+4. **Restore**: Rollback to last known good state
+5. **Monitor**: Continuous health checks
 
-## Performance Issues
+### Data Quality Emergency
 
-### Slow Correlation Tests
+1. **Quarantine**: Isolate affected data
+2. **Validate**: Run schema and quality checks
+3. **Notify**: Alert stakeholders
+4. **Remediate**: Fix data quality issues
+5. **Verify**: Confirm resolution
 
-For large feature sets, correlation tests may be slow due to pairwise combinations:
+## Monitoring and Alerts
 
-**Optimization Options:**
-1. **Reduce Feature Set**: Remove unnecessary features from `docs/features_list.md`
-2. **Parallel Testing**: Use pytest-xdist for parallel execution
-3. **Sampling**: Test correlations on data subset for CI
+### Key Metrics to Monitor
 
-### Memory Issues
+- Risk assessment scores
+- Signal quality metrics
+- System performance indicators
+- Data completeness rates
 
-**Symptoms:**
-- Out of memory errors during correlation calculation
-- Slow test execution
+### Alert Thresholds
 
-**Solutions:**
-```bash
-# Use smaller test dataset
-export TEST_SAMPLE_SIZE=1000
+- **Critical**: Any risk score below threshold
+- **Warning**: Degrading trend in risk scores
+- **Info**: Successful risk assessment completion
 
-# Increase available memory
-export POLARS_MAX_THREADS=4
-```
+## Contact Information
 
-## Debugging Tips
-
-### Enable Verbose Output
-
-```bash
-# Run correlation tests with verbose output
-pytest tests/test_feature_correlations.py -v -s
-
-# Check specific feature pair
-pytest tests/test_feature_correlations.py -k "feature1 and feature2" -v
-```
-
-### Inspect Feature Data
-
-```python
-import polars as pl
-
-# Load and inspect features
-df = pl.read_parquet("data/Parquet_data/features_test.parquet")
-
-# Check feature statistics
-print(df.describe())
-
-# Check for null values
-print(df.null_count())
-
-# Compute correlation matrix
-corr_matrix = df.corr()
-print(corr_matrix)
-```
-
-### Test Individual Features
-
-```python
-# Test specific feature pair
-from tests.test_feature_correlations import test_low_correlation
-import polars as pl
-
-df = pl.read_parquet("data/Parquet_data/features_test.parquet")
-test_low_correlation(df, "feature1", "feature2")
-```
+For escalation and support:
+- **On-call Engineer**: [Contact details]
+- **Team Lead**: [Contact details]
+- **System Admin**: [Contact details]
