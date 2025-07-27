@@ -27,7 +27,7 @@ spec:
             exit 1
           fi
           {{- end }}
-          
+
           {{- if and .Values.backfill.enabled .Values.autoscaling.backfill.enabled }}
           kubectl get hpa {{ include "conviction-ai-pipeline.fullname" . }}-backfill-hpa
           if [ $? -eq 0 ]; then
@@ -37,5 +37,5 @@ spec:
             exit 1
           fi
           {{- end }}
-          
+
           echo "✅ Autoscaling tests passed"

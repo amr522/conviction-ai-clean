@@ -22,21 +22,21 @@ jobs:
     environment: production
     steps:
       - uses: actions/checkout@v3
-      
+
       - name: Configure kubectl
         uses: azure/k8s-set-context@v1
         with:
           method: kubeconfig
           kubeconfig: ${{ secrets.KUBE_CONFIG }}
-      
+
       - name: Install Helm
         uses: azure/setup-helm@v3
         with:
           version: '3.12.0'
-      
+
       - name: Make promotion script executable
         run: chmod +x scripts/promote-production.sh
-      
+
       - name: Promote to production
         run: |
           DATE="${{ github.event.inputs.date }}"
@@ -47,7 +47,7 @@ jobs:
             "${{ github.event.inputs.release_name }}" \
             "${{ github.event.inputs.namespace }}" \
             "$DATE"
-      
+
       - name: Notify Slack
         if: always()
         uses: 8398a7/action-slack@v3

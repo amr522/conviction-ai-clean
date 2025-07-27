@@ -16,7 +16,7 @@ spec:
         prometheus:
           address: http://prometheus-operated.monitoring.svc:9090
           query: |
-            sum(rate(prediction_success_total{job="{{ include "conviction-ai-pipeline.fullname" . }}-inference"}[1m])) 
+            sum(rate(prediction_success_total{job="{{ include "conviction-ai-pipeline.fullname" . }}-inference"}[1m]))
             / sum(rate(prediction_total{job="{{ include "conviction-ai-pipeline.fullname" . }}-inference"}[1m]))
     - name: error-rate
       interval: 1m
@@ -27,7 +27,7 @@ spec:
         prometheus:
           address: http://prometheus-operated.monitoring.svc:9090
           query: |
-            sum(rate(prediction_errors_total{job="{{ include "conviction-ai-pipeline.fullname" . }}-inference"}[1m])) 
+            sum(rate(prediction_errors_total{job="{{ include "conviction-ai-pipeline.fullname" . }}-inference"}[1m]))
             / sum(rate(prediction_total{job="{{ include "conviction-ai-pipeline.fullname" . }}-inference"}[1m]))
     - name: latency-p95
       interval: 1m

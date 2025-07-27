@@ -32,15 +32,15 @@ if python src/run_full_pipeline.py --date "$DATE" \
     --raw-vix-json "$RAW_VIX_JSON" \
     --raw-dxy-csv "$RAW_DXY_CSV" \
     --raw-news-dir "$RAW_NEWS_DIR" 2>&1 | tee logs/pipeline_${DATE}.log; then
-    
+
     echo "✅ Pipeline completed successfully"
-    
+
     # Features are calculated within run_full_pipeline.py
     FEATURES_PATH="datasets/features_${DATE}.parquet"
-    
+
     if [[ -f "$FEATURES_PATH" ]]; then
         echo "✅ Features available for training"
-        
+
         # Run training with drift monitoring using feature matrix
         echo "📊 Running training and evaluation with engineered features..."
         if python src/train_and_evaluate.py \
@@ -50,59 +50,59 @@ if python src/run_full_pipeline.py --date "$DATE" \
             --tune \
             --n-trials "$N_TRIALS" \
             --n-jobs "$N_JOBS" 2>&1 | tee logs/training_${DATE}.log; then
-            
+
             echo "✅ Training completed successfully"
-    
+
             # Check for data drift in logs
             DRIFT=$(grep -c "Drift detected: True" logs/evidently_log.txt 2>/dev/null || echo "0")
-            
+
             if [[ "$DRIFT" -gt 0 ]]; then
                 echo "⚠️ Data drift detected!"
                 DRIFT_REPORT="metrics/data_drift_report_${DATE}.html"
-                
+
                 # Send Slack alert for drift
                 if [[ -n "${SECURITY_SLACK_WEBHOOK:-}" ]]; then
                     notify_security "DRIFT DETECTED" "Data drift found for $DATE. Report: $DRIFT_REPORT"
                 fi
-                
+
                 echo "📄 Drift report available at: $DRIFT_REPORT"
             else
                 echo "✅ No data drift detected"
-                
+
                 # Send success notification
                 if [[ -n "${SECURITY_SLACK_WEBHOOK:-}" ]]; then
                     notify_security "TRAINING SUCCESS" "Training completed for $DATE. No drift detected."
                 fi
             fi
-            
+
         else
             echo "❌ Training failed"
-            
+
             # Send failure notification
             if [[ -n "${SECURITY_SLACK_WEBHOOK:-}" ]]; then
                 notify_security "TRAINING FAILED" "Training pipeline failed for $DATE. Check logs/training_${DATE}.log"
             fi
-            
+
             exit 1
         fi
     else
         echo "❌ Features file not found: $FEATURES_PATH"
-        
+
         # Send failure notification
         if [[ -n "${SECURITY_SLACK_WEBHOOK:-}" ]]; then
             notify_security "FEATURES MISSING" "Features file not found for $DATE: $FEATURES_PATH"
         fi
-        
+
         exit 1
     fi
 else
     echo "❌ Pipeline failed"
-    
+
     # Send failure notification
     if [[ -n "${SECURITY_SLACK_WEBHOOK:-}" ]]; then
         notify_security "PIPELINE FAILED" "Full pipeline failed for $DATE. Check logs/pipeline_${DATE}.log"
     fi
-    
+
     exit 1
 fi
 

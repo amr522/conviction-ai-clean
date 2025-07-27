@@ -27,7 +27,7 @@ spec:
         prometheus:
           address: {{ .Values.rollout.canary.analysis.prometheus.address }}
           query: |
-            histogram_quantile(0.95, 
+            histogram_quantile(0.95,
               sum(rate(prediction_latency_seconds_bucket{service="{{`{{.args.service-name}}`}}"}[2m])) by (le)
             )
     - name: error-rate

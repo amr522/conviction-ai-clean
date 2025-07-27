@@ -1,0 +1,97 @@
+{
+  "dashboard": {
+    "id": null,
+    "title": "Vol Pipeline Monitoring",
+    "tags": ["vol-pipeline", "etl"],
+    "timezone": "browser",
+    "panels": [
+      {
+        "id": 1,
+        "title": "Pipeline Status",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "vol_pipeline_last_run_status",
+            "legendFormat": "Last Run Status"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "mappings": [
+              {"options": {"0": {"text": "SUCCESS", "color": "green"}}},
+              {"options": {"1": {"text": "FAILED", "color": "red"}}},
+              {"options": {"-1": {"text": "UNKNOWN", "color": "yellow"}}}
+            ]
+          }
+        },
+        "gridPos": {"h": 8, "w": 6, "x": 0, "y": 0}
+      },
+      {
+        "id": 2,
+        "title": "Data Freshness (Hours)",
+        "type": "gauge",
+        "targets": [
+          {
+            "expr": "vol_pipeline_data_age_hours",
+            "legendFormat": "Data Age"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "min": 0,
+            "max": 48,
+            "thresholds": {
+              "steps": [
+                {"color": "green", "value": 0},
+                {"color": "yellow", "value": 24},
+                {"color": "red", "value": 36}
+              ]
+            }
+          }
+        },
+        "gridPos": {"h": 8, "w": 6, "x": 6, "y": 0}
+      },
+      {
+        "id": 3,
+        "title": "File Counts by Directory",
+        "type": "bargauge",
+        "targets": [
+          {
+            "expr": "vol_pipeline_files_total",
+            "legendFormat": "{{ directory }}"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0}
+      },
+      {
+        "id": 4,
+        "title": "Pipeline Runtime (Minutes)",
+        "type": "timeseries",
+        "targets": [
+          {
+            "expr": "vol_pipeline_runtime_seconds / 60",
+            "legendFormat": "Runtime"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8}
+      },
+      {
+        "id": 5,
+        "title": "Storage Usage (MB)",
+        "type": "timeseries",
+        "targets": [
+          {
+            "expr": "vol_pipeline_size_mb",
+            "legendFormat": "{{ directory }}"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8}
+      }
+    ],
+    "time": {
+      "from": "now-24h",
+      "to": "now"
+    },
+    "refresh": "30s"
+  }
+}

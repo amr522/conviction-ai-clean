@@ -18,10 +18,10 @@ spec:
         - |
           set -e
           echo "Testing rollout configuration..."
-          
+
           {{- if .Values.rollout.enabled }}
           echo "✓ Rollout is enabled"
-          
+
           # Test if rollout exists
           if kubectl get rollout {{ include "conviction-ai-pipeline.fullname" . }}-inference; then
             echo "✓ Rollout resource exists"
@@ -29,7 +29,7 @@ spec:
             echo "✗ Rollout resource not found"
             exit 1
           fi
-          
+
           # Test if services exist
           if kubectl get service {{ include "conviction-ai-pipeline.fullname" . }}-inference-stable; then
             echo "✓ Stable service exists"
@@ -37,14 +37,14 @@ spec:
             echo "✗ Stable service not found"
             exit 1
           fi
-          
+
           if kubectl get service {{ include "conviction-ai-pipeline.fullname" . }}-inference-canary; then
             echo "✓ Canary service exists"
           else
             echo "✗ Canary service not found"
             exit 1
           fi
-          
+
           {{- if .Values.rollout.canary.analysis.enabled }}
           # Test if analysis template exists
           if kubectl get analysistemplate {{ include "conviction-ai-pipeline.fullname" . }}-success-rate; then
@@ -54,11 +54,11 @@ spec:
             exit 1
           fi
           {{- end }}
-          
+
           echo "✓ All rollout resources validated successfully"
           {{- else }}
           echo "✓ Rollout is disabled, using standard deployment"
-          
+
           # Test if deployment exists
           if kubectl get deployment {{ include "conviction-ai-pipeline.fullname" . }}-inference; then
             echo "✓ Deployment resource exists"
@@ -67,5 +67,5 @@ spec:
             exit 1
           fi
           {{- end }}
-          
+
           echo "✓ Rollout configuration test passed"

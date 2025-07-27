@@ -1,0 +1,47 @@
+# AWS Configuration
+aws_region = "us-east-1"
+environment = "dev"
+
+# Project Configuration
+project_name = "conviction-ai"
+
+# S3 Configuration
+tfstate_bucket = "conviction-ai-terraform-state"
+s3_bucket_name = "conviction-ai-ml-artifacts"
+
+# Networking
+vpc_cidr = "10.0.0.0/16"
+
+# EKS Configuration
+cluster_name = "conviction-ai-cluster"
+cluster_version = "1.28"
+
+# Node Groups
+enable_gpu_nodes = true
+cpu_node_instance_type = "m6i.large"
+gpu_node_instance_type = "g4dn.xlarge"
+cpu_node_desired_capacity = 2
+gpu_node_desired_capacity = 1
+
+# Glue Configuration
+glue_database_name = "conviction_ai"
+
+# Monitoring
+enable_monitoring = true
+
+# Cost Management
+monthly_budget_amount = 500
+budget_email = "admin@conviction-ai.com"
+slack_budget_webhook_url = "https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK"
+enable_cost_management = true
+
+# Compliance and Config
+enable_config = true
+desired_eks_version = "1.28"
+
+# Additional Tags
+tags = {
+  Owner = "ml-team"
+  CostCenter = "engineering"
+  Project = "conviction-ai"
+}

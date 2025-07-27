@@ -4,10 +4,11 @@ FastAPI microservice for live ML predictions with GPU support and feature store 
 """
 # Initialize Sentry before other imports
 import os
+
 import sentry_sdk
 from sentry_sdk.integrations.fastapi import FastApiIntegration
-from sentry_sdk.integrations.sqlalchemy import SqlAlchemyIntegration
 from sentry_sdk.integrations.logging import LoggingIntegration
+from sentry_sdk.integrations.sqlalchemy import SqlAlchemyIntegration
 
 # Configure Sentry
 sentry_logging = LoggingIntegration(
@@ -31,41 +32,40 @@ sentry_sdk.init(
     max_breadcrumbs=50,
 )
 
-import sys
 import logging
 import pickle
+import sys
 from datetime import datetime
 from typing import Dict, List, Optional, Union
-import pandas as pd
+
 import numpy as np
+import pandas as pd
 
 # Add src to path for imports
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 
-from fastapi import FastAPI, HTTPException, BackgroundTasks, Depends, Request
+import uvicorn
+# X-Ray tracing for FastAPI
+from aws_xray_sdk.core import patch_all, xray_recorder
+from aws_xray_sdk.ext.fastapi import XRayMiddleware
+from fastapi import BackgroundTasks, Depends, FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field, validator
+# Sentry imports
+from sentry_sdk import (capture_exception, capture_message, set_context,
+                        set_tag, start_span)
 from slowapi import Limiter, _rate_limit_exceeded_handler
-from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
-import uvicorn
-
-# Sentry imports
-from sentry_sdk import capture_exception, capture_message, start_span, set_tag, set_context
-
-# X-Ray tracing for FastAPI
-from aws_xray_sdk.core import xray_recorder
-from aws_xray_sdk.core import patch_all
-from aws_xray_sdk.ext.fastapi import XRayMiddleware
+from slowapi.util import get_remote_address
 
 # Authentication and metrics
-from app.auth import verify_token, verify_predict_permission, verify_batch_permission, get_user_info, TokenData
-from app.metrics import (
-    track_predictions, track_batch_predictions, metrics_middleware, get_metrics,
-    track_feature_store_request, update_model_info
-)
+from app.auth import (TokenData, get_user_info, verify_batch_permission,
+                      verify_predict_permission, verify_token)
+from app.metrics import (get_metrics, metrics_middleware,
+                         track_batch_predictions, track_feature_store_request,
+                         track_predictions, update_model_info)
 
 # Patch AWS services
 patch_all()
@@ -121,21 +121,21 @@ class InferenceRequest(BaseModel):
     """Request model for predictions"""
     ticker: str = Field(..., description="Stock ticker symbol", example="AAPL")
     timestamp: Optional[str] = Field(
-        default=None, 
-        description="ISO8601 timestamp for point-in-time features", 
+        default=None,
+        description="ISO8601 timestamp for point-in-time features",
         example="2025-01-16T15:30:00Z"
     )
     features: Optional[Dict[str, Union[float, int, bool]]] = Field(
         default=None,
         description="Optional manual feature override"
     )
-    
+
     @validator('ticker')
     def validate_ticker(cls, v):
         if not v or len(v) > 10:
             raise ValueError('Ticker must be 1-10 characters')
         return v.upper()
-    
+
     @validator('timestamp')
     def validate_timestamp(cls, v):
         if v:
@@ -177,20 +177,20 @@ class BatchInferenceResponse(BaseModel):
 def load_model():
     """Load the trained model"""
     global _model, _model_metadata
-    
+
     with start_span(op="model_loading", description="Load ML model from disk"):
         try:
             model_path = os.getenv('MODEL_PATH', 'models/latest.pkl')
-            
+
             if not os.path.exists(model_path):
                 error_msg = f"Model file not found: {model_path}"
                 logger.error(error_msg)
                 capture_message(error_msg, level="error")
                 return False
-            
+
             with open(model_path, 'rb') as f:
                 _model = pickle.load(f)
-            
+
             # Load model metadata if available
             metadata_path = model_path.replace('.pkl', '_metadata.json')
             if os.path.exists(metadata_path):
@@ -203,7 +203,7 @@ def load_model():
                     'created_at': datetime.now().isoformat(),
                     'features': []
                 }
-            
+
             # Set Sentry context
             set_context("model", {
                 "path": model_path,
@@ -211,10 +211,10 @@ def load_model():
                 "type": type(_model).__name__,
                 "features_count": len(_model_metadata.get('features', []))
             })
-            
+
             logger.info(f"Model loaded successfully from {model_path}")
             return True
-            
+
         except Exception as e:
             logger.error(f"Failed to load model: {str(e)}")
             capture_exception(e)
@@ -227,54 +227,54 @@ def get_features_from_store(ticker: str, timestamp: Optional[str] = None) -> Dic
             # Set span data
             span.set_data("ticker", ticker)
             span.set_data("timestamp", timestamp or "current")
-            
+
             # Import here to avoid startup dependency
             from feast_materialize import get_online_features
-        
-        # Use current time if no timestamp provided
-        if not timestamp:
-            timestamp = datetime.now().isoformat()
-        
-        # Define feature names to fetch
-        feature_names = [
-            "stocks_30min:close",
-            "stocks_30min:volume", 
-            "stocks_30min:returns",
-            "stocks_30min:volatility",
-            "options_30min:opt30_close",
-            "options_30min:opt30_volume",
-            "options_30min:opt30_gamma_squeeze",
-            "options_30min:opt30_implied_volatility",
-            "stocks_daily:close",
-            "stocks_daily:rsi_14",
-            "options_daily:optd_iv30",
-            "options_daily:optd_vrp_30d"
-        ]
-        
-        # Fetch features from online store
-        features_dict = get_online_features(
-            entity_rows=[{"ticker": ticker}],
-            feature_names=feature_names
-        )
-        
-        if features_dict and len(features_dict.get('ticker', [])) > 0:
-            # Convert to flat dictionary
-            features = {}
-            for key, values in features_dict.items():
-                if key != 'ticker' and len(values) > 0:
-                    features[key] = values[0]
-            
-            return features
-        else:
-            warning_msg = f"No features found for ticker {ticker}"
-            logger.warning(warning_msg)
-            capture_message(warning_msg, level="warning")
+
+            # Use current time if no timestamp provided
+            if not timestamp:
+                timestamp = datetime.now().isoformat()
+
+            # Define feature names to fetch
+            feature_names = [
+                "stocks_30min:close",
+                "stocks_30min:volume",
+                "stocks_30min:returns",
+                "stocks_30min:volatility",
+                "options_30min:opt30_close",
+                "options_30min:opt30_volume",
+                "options_30min:opt30_gamma_squeeze",
+                "options_30min:opt30_implied_volatility",
+                "stocks_daily:close",
+                "stocks_daily:rsi_14",
+                "options_daily:optd_iv30",
+                "options_daily:optd_vrp_30d"
+            ]
+
+            # Fetch features from online store
+            features_dict = get_online_features(
+                entity_rows=[{"ticker": ticker}],
+                feature_names=feature_names
+            )
+
+            if features_dict and len(features_dict.get('ticker', [])) > 0:
+                # Convert to flat dictionary
+                features = {}
+                for key, values in features_dict.items():
+                    if key != 'ticker' and len(values) > 0:
+                        features[key] = values[0]
+
+                return features
+            else:
+                warning_msg = f"No features found for ticker {ticker}"
+                logger.warning(warning_msg)
+                capture_message(warning_msg, level="warning")
+                return {}
+
+        except Exception as e:
+            logger.error(f"Failed to fetch features from store: {str(e)}")
+            capture_exception(e)
             return {}
-            
-    except Exception as e:
-        logger.error(f"Failed to fetch features from store: {str(e)}")
-        capture_exception(e)
-        return {}
 
 def check_gpu_availability() -> bool:
     """Check if GPU is available"""
@@ -297,28 +297,28 @@ def check_feature_store_connection() -> bool:
 async def startup_event():
     """Initialize the service on startup"""
     logger.info("Starting Conviction AI Inference API...")
-    
+
     # Set Sentry tags for this instance
     set_tag("service", "conviction-ai-inference")
     set_tag("version", "1.0.0")
     set_tag("environment", os.getenv("ENVIRONMENT", "production"))
-    
+
     # Load model
     if not load_model():
         error_msg = "Failed to load model on startup"
         logger.error(error_msg)
         capture_message(error_msg, level="error")
-    
+
     # Check GPU availability
     gpu_available = check_gpu_availability()
     logger.info(f"GPU available: {gpu_available}")
     set_tag("gpu_available", str(gpu_available))
-    
+
     # Check feature store connection
     fs_connected = check_feature_store_connection()
     logger.info(f"Feature store connected: {fs_connected}")
     set_tag("feature_store_connected", str(fs_connected))
-    
+
     # Update model info metrics
     if _model is not None:
         update_model_info(
@@ -326,7 +326,7 @@ async def startup_event():
             version=_model_metadata.get('version', '1.0.0'),
             features_count=len(_model_metadata.get('features', []))
         )
-    
+
     capture_message("Conviction AI Inference API started successfully", level="info")
 
 # Add global exception handler for Sentry
@@ -335,10 +335,10 @@ async def global_exception_handler(request: Request, exc: Exception):
     """Global exception handler with Sentry integration"""
     # Capture exception in Sentry
     capture_exception(exc)
-    
+
     # Log the error
     logger.error(f"Unhandled exception: {str(exc)}", exc_info=True)
-    
+
     # Return generic error response
     return JSONResponse(
         status_code=500,
@@ -364,16 +364,16 @@ async def health_check():
 async def predict(request: Request, inference_request: InferenceRequest, token_data: TokenData = Depends(verify_predict_permission)):
     """Single prediction endpoint"""
     start_time = datetime.now()
-    
+
     # Check if model is loaded
     if _model is None:
         raise HTTPException(status_code=503, detail="Model not loaded")
-    
+
     try:
         # Add trace annotations
         xray_recorder.put_annotation('ticker', request.ticker)
         xray_recorder.put_annotation('has_manual_features', request.features is not None)
-        
+
         # Get features
         if inference_request.features:
             # Use provided features
@@ -389,48 +389,48 @@ async def predict(request: Request, inference_request: InferenceRequest, token_d
             except Exception as e:
                 track_feature_store_request(False)
                 raise
-            
+
             if not features:
                 track_feature_store_request(False)
                 raise HTTPException(
-                    status_code=404, 
+                    status_code=404,
                     detail=f"No features found for ticker {inference_request.ticker}"
                 )
-        
+
         # Add feature metadata to trace
         xray_recorder.put_metadata('features_count', len(features))
         xray_recorder.put_metadata('feature_names', list(features.keys()))
-        
+
         # Prepare input DataFrame
         df = pd.DataFrame([features])
-        
+
         # Handle missing features with defaults
         expected_features = _model_metadata.get('features', [])
         if expected_features:
             for feature in expected_features:
                 if feature not in df.columns:
                     df[feature] = 0.0  # Default value for missing features
-            
+
             # Reorder columns to match training
             df = df.reindex(columns=expected_features, fill_value=0.0)
-        
+
         # Run prediction
         with xray_recorder.capture('model_inference'):
             prediction = _model.predict(df)
-            
+
             # Handle different prediction formats
             if hasattr(prediction, '__len__') and len(prediction) > 0:
                 pred_value = float(prediction[0])
             else:
                 pred_value = float(prediction)
-        
+
         # Calculate processing time
         processing_time = (datetime.now() - start_time).total_seconds() * 1000
-        
+
         # Add performance metadata
         xray_recorder.put_annotation('processing_time_ms', processing_time)
         xray_recorder.put_annotation('prediction_value', pred_value)
-        
+
         return InferenceResponse(
             ticker=inference_request.ticker,
             prediction=pred_value,
@@ -440,7 +440,7 @@ async def predict(request: Request, inference_request: InferenceRequest, token_d
             timestamp=datetime.now().isoformat(),
             processing_time_ms=processing_time
         )
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -456,17 +456,17 @@ async def predict(request: Request, inference_request: InferenceRequest, token_d
 async def predict_internal(inference_request: InferenceRequest) -> InferenceResponse:
     """Internal prediction function without auth"""
     start_time = datetime.now()
-    
+
     # Set Sentry context for this prediction
     set_context("prediction_request", {
         "ticker": inference_request.ticker,
         "has_manual_features": inference_request.features is not None,
         "timestamp": inference_request.timestamp
     })
-    
+
     with start_span(op="prediction", description="Complete prediction workflow") as span:
         span.set_data("ticker", inference_request.ticker)
-        
+
         # Get features
         if inference_request.features:
             features = inference_request.features
@@ -481,15 +481,15 @@ async def predict_internal(inference_request: InferenceRequest) -> InferenceResp
                 track_feature_store_request(False)
                 capture_exception(e)
                 raise
-            
+
             if not features:
                 track_feature_store_request(False)
                 error_msg = f"No features found for ticker {inference_request.ticker}"
                 capture_message(error_msg, level="error")
                 raise HTTPException(status_code=404, detail=error_msg)
-        
+
         span.set_data("features_count", len(features))
-        
+
         # Prepare and run prediction
         with start_span(op="inference", description="Run model prediction") as inference_span:
             df = pd.DataFrame([features])
@@ -499,17 +499,17 @@ async def predict_internal(inference_request: InferenceRequest) -> InferenceResp
                     if feature not in df.columns:
                         df[feature] = 0.0
                 df = df.reindex(columns=expected_features, fill_value=0.0)
-            
+
             inference_span.set_data("input_shape", df.shape)
-            
+
             prediction = _model.predict(df)
             pred_value = float(prediction[0]) if hasattr(prediction, '__len__') else float(prediction)
-            
+
             inference_span.set_data("prediction_value", pred_value)
-        
+
         processing_time = (datetime.now() - start_time).total_seconds() * 1000
         span.set_data("processing_time_ms", processing_time)
-        
+
         return InferenceResponse(
             ticker=inference_request.ticker,
             prediction=pred_value,
@@ -523,13 +523,13 @@ async def predict_batch(request: Request, batch_request: BatchInferenceRequest, 
     """Batch prediction endpoint"""
     if _model is None:
         raise HTTPException(status_code=503, detail="Model not loaded")
-    
+
     predictions = []
     successful = 0
     failed = 0
-    
+
     xray_recorder.put_annotation('batch_size', len(batch_request.requests))
-    
+
     for req in batch_request.requests:
         try:
             pred_response = await predict_internal(req)
@@ -547,10 +547,10 @@ async def predict_batch(request: Request, batch_request: BatchInferenceRequest, 
                 timestamp=datetime.now().isoformat(),
                 processing_time_ms=0.0
             ))
-    
+
     xray_recorder.put_annotation('successful_predictions', successful)
     xray_recorder.put_annotation('failed_predictions', failed)
-    
+
     return BatchInferenceResponse(
         predictions=predictions,
         total_requests=len(batch_request.requests),
@@ -573,7 +573,7 @@ async def model_info():
     """Get model information"""
     if _model is None:
         raise HTTPException(status_code=503, detail="Model not loaded")
-    
+
     return {
         "model_loaded": True,
         "model_type": type(_model).__name__,
@@ -593,7 +593,7 @@ async def readyz():
     """Kubernetes readiness probe"""
     model_ok = _model is not None
     fs_ok = check_feature_store_connection()
-    
+
     if model_ok and fs_ok:
         return {"status": "ready", "model": "ok", "feature_store": "ok"}
     else:

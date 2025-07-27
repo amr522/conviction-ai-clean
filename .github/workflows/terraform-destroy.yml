@@ -25,29 +25,29 @@ jobs:
   destroy:
     runs-on: ubuntu-latest
     environment: ${{ github.event.inputs.environment }}
-    
+
     steps:
       - name: Validate Confirmation
         if: github.event.inputs.confirm_destroy != 'destroy'
         run: |
           echo "❌ Confirmation failed. You must type 'destroy' to proceed."
           exit 1
-      
+
       - name: Checkout
         uses: actions/checkout@v4
-      
+
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ vars.AWS_REGION || 'us-east-1' }}
-      
+
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: 1.6.0
-      
+
       - name: Terraform Init
         run: |
           terraform init \
@@ -56,7 +56,7 @@ jobs:
             -backend-config="region=${{ vars.AWS_REGION || 'us-east-1' }}" \
             -input=false
         working-directory: infra/terraform
-      
+
       - name: Terraform Plan Destroy
         id: plan
         run: |
@@ -68,12 +68,12 @@ jobs:
             -input=false \
             -out=destroy-plan
         working-directory: infra/terraform
-      
+
       - name: Terraform Destroy
         id: destroy
         run: terraform apply -input=false destroy-plan
         working-directory: infra/terraform
-      
+
       - name: Notify Slack
         if: always()
         uses: 8398a7/action-slack@v3
@@ -82,10 +82,10 @@ jobs:
           channel: '#infrastructure'
           text: |
             🗑️ *Terraform Destroy ${{ job.status == 'success' && 'Completed' || 'Failed' }}*
-            
+
             Environment: ${{ github.event.inputs.environment }}
             Status: ${{ job.status }}
-            
+
             *Repository:* ${{ github.repository }}
             *Actor:* ${{ github.actor }}
         env:

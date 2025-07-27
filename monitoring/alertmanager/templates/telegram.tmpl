@@ -1,0 +1,6 @@
+{{ define "telegram.default.message" }}
+*Alert:* {{ .CommonLabels.alertname }}
+*Severity:* {{ .CommonLabels.severity }}
+*Description:* {{ .CommonAnnotations.description }}
+*Time:* {{ .StartsAt }}
+{{ end }}

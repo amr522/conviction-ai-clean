@@ -19,9 +19,9 @@ INFERENCE_PID=$!
 sleep 5
 
 echo "3️⃣ Run full evaluation in staging"
-export S3_BUCKET=""   
-export SLACK_WEBHOOK_URL=""  
-export MLFLOW_TRACKING_URI="" 
+export S3_BUCKET=""
+export SLACK_WEBHOOK_URL=""
+export MLFLOW_TRACKING_URI=""
 ./scripts/evaluate_pipeline.sh $DATE
 
 echo "4️⃣ Generate test JWT token"

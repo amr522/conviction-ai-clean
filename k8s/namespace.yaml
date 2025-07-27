@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: data-processing
+  labels:
+    name: data-processing
+    purpose: etl-pipeline

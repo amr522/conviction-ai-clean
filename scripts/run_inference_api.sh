@@ -23,7 +23,7 @@ export ENVIRONMENT=${ENVIRONMENT:-"development"}
 if [ ! -f "$MODEL_PATH" ]; then
     echo "⚠️ Model file not found at $MODEL_PATH"
     echo "Creating a dummy model for testing..."
-    
+
     mkdir -p models
     python -c "
 import pickle
@@ -82,24 +82,24 @@ case $MODE in
             --host 127.0.0.1 \
             --port $PORT \
             --log-level debug &
-        
+
         API_PID=$!
         sleep 5
-        
+
         # Test the API
         echo "Testing API endpoints..."
-        
+
         # Health check
         curl -f http://localhost:$PORT/health || echo "❌ Health check failed"
-        
+
         # Root endpoint
         curl -f http://localhost:$PORT/ || echo "❌ Root endpoint failed"
-        
+
         # Test prediction (will likely fail without proper model/features)
         curl -X POST http://localhost:$PORT/predict \
             -H "Content-Type: application/json" \
             -d '{"ticker":"AAPL"}' || echo "⚠️ Prediction test failed (expected)"
-        
+
         # Test Sentry integration if DSN is set
         if [ -n "$SENTRY_DSN" ]; then
             echo "Testing Sentry integration..."
@@ -107,7 +107,7 @@ case $MODE in
                 -H "Content-Type: application/json" \
                 -d '{"ticker":"INVALID_TICKER_FOR_SENTRY_TEST"}' || echo "✅ Sentry error test completed"
         fi
-        
+
         # Stop the API
         kill $API_PID
         echo "✅ Test completed"

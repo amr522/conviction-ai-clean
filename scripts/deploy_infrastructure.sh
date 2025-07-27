@@ -57,7 +57,7 @@ case $ACTION in
     "apply")
         echo "🚀 Applying Terraform configuration..."
         terraform apply -var="environment=$ENVIRONMENT" -auto-approve
-        
+
         # Output important information
         echo ""
         echo "✅ Infrastructure deployment completed!"

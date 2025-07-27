@@ -34,7 +34,7 @@ fi
 
 if [ ! -f "$XRAY_DAEMON" ]; then
     echo "📥 Downloading X-Ray daemon..."
-    
+
     if [[ "$OSTYPE" == "darwin"* ]]; then
         curl -o xray_daemon_darwin.zip https://s3.us-east-2.amazonaws.com/aws-xray-assets.us-east-2/xray-daemon/aws-xray-daemon-macos-3.x.zip
         unzip -o xray_daemon_darwin.zip

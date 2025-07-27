@@ -31,7 +31,7 @@ for ds in stocks_daily options_daily stocks_30min options_30min; do
     echo "⚠️  Warning: $path not found, skipping schema inspection for $ds" >&2
     continue
   fi
-  
+
   echo "Schema for $ds:"
   python -c "
 import pyarrow.parquet as pq

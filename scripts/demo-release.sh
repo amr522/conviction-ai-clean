@@ -24,11 +24,11 @@ if [[ $COMMITS_SINCE_TAG -eq 0 ]]; then
     echo "  ⚠️  No commits since last tag - nothing to release"
 else
     echo "  📊 Commits since $OLD_TAG: $COMMITS_SINCE_TAG"
-    
+
     # Analyze commit types
     echo "  📝 Recent commits:"
     git log ${OLD_TAG}..HEAD --oneline --max-count=5 | sed 's/^/    /'
-    
+
     # Determine version bump
     if git log ${OLD_TAG}..HEAD --oneline | grep -q "^feat\|BREAKING CHANGE"; then
         BUMP_TYPE="minor (feature added)"
@@ -40,7 +40,7 @@ else
         BUMP_TYPE="patch (default)"
         NEXT_TAG=$(echo $OLD_TAG | awk -F. '{$3++; print $1"."$2"."$3}' | sed 's/^v/v/')
     fi
-    
+
     echo "  🎯 Suggested version: $OLD_TAG → $NEXT_TAG ($BUMP_TYPE)"
 fi
 

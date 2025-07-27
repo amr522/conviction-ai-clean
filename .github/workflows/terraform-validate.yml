@@ -13,28 +13,28 @@ on:
 jobs:
   validate:
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      
+
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: 1.6.0
-      
+
       - name: Terraform Format Check
         run: terraform fmt -check -recursive
         working-directory: infra/terraform
-      
+
       - name: Terraform Init (without backend)
         run: terraform init -backend=false
         working-directory: infra/terraform
-      
+
       - name: Terraform Validate
         run: terraform validate
         working-directory: infra/terraform
-      
+
       - name: Check for Budget Resources
         run: |
           echo "Checking for required cost management resources..."
@@ -44,21 +44,21 @@ jobs:
             echo "❌ Budget resources not found"
             exit 1
           fi
-          
+
           if grep -q "aws_sns_topic.*budget" infra/terraform/*.tf; then
             echo "✅ SNS topic for budget alerts found"
           else
             echo "❌ SNS topic for budget alerts not found"
             exit 1
           fi
-          
+
           if grep -q "aws_ce_anomaly_detector" infra/terraform/*.tf; then
             echo "✅ Cost anomaly detector found"
           else
             echo "❌ Cost anomaly detector not found"
             exit 1
           fi
-      
+
       - name: Check for Config Resources
         run: |
           echo "Checking for AWS Config compliance resources..."
@@ -68,21 +68,21 @@ jobs:
             echo "❌ Config recorder not found"
             exit 1
           fi
-          
+
           if grep -q "aws_config_config_rule" infra/terraform/*.tf; then
             echo "✅ Config rules found"
           else
             echo "❌ Config rules not found"
             exit 1
           fi
-          
+
           if grep -q "aws_config_remediation_configuration" infra/terraform/*.tf; then
             echo "✅ Config remediation found"
           else
             echo "❌ Config remediation not found"
             exit 1
           fi
-      
+
       - name: Terraform Security Scan
         uses: aquasecurity/tfsec-action@v1.0.3
         with:

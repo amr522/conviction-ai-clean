@@ -18,7 +18,7 @@ spec:
         - -c
         - |
           echo "Testing monitoring configuration..."
-          
+
           {{- if .Values.prometheus.enabled }}
           echo "Checking ServiceMonitor..."
           kubectl get servicemonitor {{ include "conviction-ai-pipeline.fullname" . }}-sm
@@ -28,7 +28,7 @@ spec:
             echo "❌ ServiceMonitor not found"
             exit 1
           fi
-          
+
           echo "Checking metrics service port..."
           kubectl get service {{ include "conviction-ai-pipeline.fullname" . }} -o jsonpath='{.spec.ports[?(@.name=="metrics")].port}'
           if [ $? -eq 0 ]; then
@@ -38,7 +38,7 @@ spec:
             exit 1
           fi
           {{- end }}
-          
+
           {{- if .Values.grafana.dashboard.enabled }}
           echo "Checking GrafanaDashboard..."
           kubectl get grafanadashboard {{ include "conviction-ai-pipeline.fullname" . }}-dashboard
@@ -49,5 +49,5 @@ spec:
             exit 1
           fi
           {{- end }}
-          
+
           echo "✅ Monitoring tests passed"

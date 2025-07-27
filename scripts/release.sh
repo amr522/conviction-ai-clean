@@ -37,7 +37,7 @@ if [[ $# -eq 0 ]]; then
         log_warn "No commits since last tag. Nothing to release."
         exit 0
     fi
-    
+
     # Simple semantic versioning based on commit messages
     if git log ${OLD_TAG}..HEAD --oneline | grep -q "^feat\|BREAKING CHANGE"; then
         # Minor version bump for features

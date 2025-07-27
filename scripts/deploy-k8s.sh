@@ -19,23 +19,23 @@ log_error() { echo -e "${RED}[ERROR]${NC} $1"; }
 # Check prerequisites
 check_prerequisites() {
     log_info "Checking prerequisites..."
-    
+
     if ! command -v kubectl &> /dev/null; then
         log_error "kubectl not found. Please install kubectl."
         exit 1
     fi
-    
+
     if ! command -v helm &> /dev/null; then
         log_error "helm not found. Please install Helm 3.0+."
         exit 1
     fi
-    
+
     # Check cluster connectivity
     if ! kubectl cluster-info &> /dev/null; then
         log_error "Cannot connect to Kubernetes cluster."
         exit 1
     fi
-    
+
     log_info "Prerequisites check passed"
 }
 
@@ -48,13 +48,13 @@ create_namespace() {
 # Create secrets
 create_secrets() {
     log_info "Creating pipeline secrets..."
-    
+
     # Check if secrets already exist
     if kubectl get secret pipeline-secrets -n "$NAMESPACE" &> /dev/null; then
         log_warn "Secret 'pipeline-secrets' already exists. Skipping creation."
         return
     fi
-    
+
     # Prompt for required values
     read -p "AWS Access Key ID: " AWS_ACCESS_KEY_ID
     read -s -p "AWS Secret Access Key: " AWS_SECRET_ACCESS_KEY
@@ -62,7 +62,7 @@ create_secrets() {
     read -p "S3 Bucket: " S3_BUCKET
     read -p "Slack Webhook URL (optional): " SLACK_WEBHOOK_URL
     read -p "MLflow Tracking URI (optional): " MLFLOW_TRACKING_URI
-    
+
     kubectl create secret generic pipeline-secrets \
         --from-literal=aws-access-key-id="$AWS_ACCESS_KEY_ID" \
         --from-literal=aws-secret-access-key="$AWS_SECRET_ACCESS_KEY" \
@@ -70,17 +70,17 @@ create_secrets() {
         --from-literal=slack-webhook-url="${SLACK_WEBHOOK_URL:-}" \
         --from-literal=mlflow-tracking-uri="${MLFLOW_TRACKING_URI:-}" \
         -n "$NAMESPACE"
-    
+
     log_info "Secrets created successfully"
 }
 
 # Deploy chart
 deploy_chart() {
     log_info "Deploying Helm chart..."
-    
+
     # Get current date for default run date
     RUN_DATE=${RUN_DATE:-$(date +%Y-%m-%d)}
-    
+
     helm upgrade --install "$RELEASE_NAME" "$CHART_PATH" \
         --namespace "$NAMESPACE" \
         --set runDate="$RUN_DATE" \
@@ -89,24 +89,24 @@ deploy_chart() {
         --set image.tag="${IMAGE_TAG:-latest}" \
         --wait \
         --timeout=10m
-    
+
     log_info "Chart deployed successfully"
 }
 
 # Show status
 show_status() {
     log_info "Deployment status:"
-    
+
     echo "Namespace: $NAMESPACE"
     echo "Release: $RELEASE_NAME"
     echo
-    
+
     kubectl get all -n "$NAMESPACE" -l app.kubernetes.io/name=conviction-ai-pipeline
-    
+
     echo
     log_info "To view logs:"
     echo "kubectl logs -n $NAMESPACE -l component=pipeline -f"
-    
+
     echo
     log_info "To run tests:"
     echo "helm test $RELEASE_NAME -n $NAMESPACE"
@@ -115,13 +115,13 @@ show_status() {
 # Main execution
 main() {
     log_info "🚀 Deploying Conviction AI Pipeline to Kubernetes"
-    
+
     check_prerequisites
     create_namespace
     create_secrets
     deploy_chart
     show_status
-    
+
     log_info "✅ Deployment completed successfully!"
 }
 

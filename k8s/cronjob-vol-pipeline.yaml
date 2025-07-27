@@ -1,0 +1,80 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: vol-pipeline-daily
+  namespace: data-processing
+  labels:
+    app: vol-pipeline
+    component: etl
+spec:
+  schedule: "0 18 * * *"  # 18:00 UTC daily
+  timeZone: "UTC"
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 1
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      template:
+        metadata:
+          labels:
+            app: vol-pipeline
+            component: etl
+        spec:
+          containers:
+          - name: vol-pipeline
+            image: your-docker-registry/vol-pipeline:latest
+            imagePullPolicy: Always
+            env:
+            - name: START_DATE
+              value: "$(date -d 'yesterday' '+%Y-%m-%d')"
+            - name: END_DATE
+              value: "$(date -d 'yesterday' '+%Y-%m-%d')"
+            - name: AWS_DEFAULT_REGION
+              value: "us-east-1"
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: aws-credentials
+                  key: access-key-id
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: aws-credentials
+                  key: secret-access-key
+            - name: SLACK_WEBHOOK_URL
+              valueFrom:
+                secretKeyRef:
+                  name: slack-webhook
+                  key: url
+                  optional: true
+            resources:
+              requests:
+                memory: "2Gi"
+                cpu: "1000m"
+              limits:
+                memory: "4Gi"
+                cpu: "2000m"
+            volumeMounts:
+            - name: parquet-data
+              mountPath: /app/data/Parquet_data
+            - name: staged
+              mountPath: /app/staged
+            - name: master
+              mountPath: /app/master
+            - name: datasets
+              mountPath: /app/datasets
+          restartPolicy: OnFailure
+          volumes:
+          - name: parquet-data
+            persistentVolumeClaim:
+              claimName: pvc-parquet-data
+          - name: staged
+            persistentVolumeClaim:
+              claimName: pvc-staged-data
+          - name: master
+            persistentVolumeClaim:
+              claimName: pvc-master-data
+          - name: datasets
+            persistentVolumeClaim:
+              claimName: pvc-datasets

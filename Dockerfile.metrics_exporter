@@ -1,0 +1,16 @@
+FROM python:3.10-slim
+
+WORKDIR /app
+
+# Install Flask
+RUN pip install --no-cache-dir flask
+
+# Copy metrics exporter
+COPY src/metrics_exporter.py .
+
+# Create directories for monitoring
+RUN mkdir -p datasets master staged logs
+
+EXPOSE 8000
+
+CMD ["python", "metrics_exporter.py"]

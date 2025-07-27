@@ -34,7 +34,7 @@ echo "======================"
 check_rule_compliance() {
     local rule_name=$1
     local display_name=$2
-    
+
     if aws configservice get-compliance-details-by-config-rule \
         --config-rule-name "$rule_name" \
         --region "$REGION" \

@@ -14,7 +14,7 @@ import numpy as np
 
 for ds in ['stocks_daily', 'options_daily', 'stocks_30min', 'options_30min']:
     df = pd.DataFrame({
-        'test_col': [1, 2, 3], 
+        'test_col': [1, 2, 3],
         'string_col': ['a', 'b', 'c'],
         'float_col': [1.1, 2.2, 3.3]
     })

@@ -14,29 +14,29 @@ permissions:
 jobs:
   plan:
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      
+
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ vars.AWS_REGION || 'us-east-1' }}
-      
+
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: 1.6.0
-      
+
       - name: Terraform Format Check
         id: fmt
         run: terraform fmt -check -recursive
         working-directory: infra/terraform
         continue-on-error: true
-      
+
       - name: Terraform Init
         id: init
         run: |
@@ -46,12 +46,12 @@ jobs:
             -backend-config="region=${{ vars.AWS_REGION || 'us-east-1' }}" \
             -input=false
         working-directory: infra/terraform
-      
+
       - name: Terraform Validate
         id: validate
         run: terraform validate -no-color
         working-directory: infra/terraform
-      
+
       - name: Terraform Plan
         id: plan
         run: |
@@ -65,14 +65,14 @@ jobs:
             -out=tfplan
         working-directory: infra/terraform
         continue-on-error: true
-      
+
       - name: Upload Plan Artifact
         uses: actions/upload-artifact@v4
         with:
           name: tfplan-${{ github.event.number }}
           path: infra/terraform/tfplan
           retention-days: 5
-      
+
       - name: Comment PR
         uses: actions/github-script@v7
         if: github.event_name == 'pull_request'
@@ -93,24 +93,24 @@ jobs:
             </details>
 
             #### Terraform Plan 📖\`${{ steps.plan.outcome }}\`
-            
+
             <details><summary>Show Plan</summary>
-            
+
             \`\`\`terraform\n
             ${process.env.PLAN}
             \`\`\`
-            
+
             </details>
-            
+
             *Pusher: @${{ github.actor }}, Action: \`${{ github.event_name }}\`, Working Directory: \`infra/terraform\`, Workflow: \`${{ github.workflow }}\`*`;
-            
+
             github.rest.issues.createComment({
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
               body: output
             })
-      
+
       - name: Terraform Plan Status
         if: steps.plan.outcome == 'failure'
         run: exit 1

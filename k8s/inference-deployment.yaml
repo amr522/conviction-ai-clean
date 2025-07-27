@@ -1,0 +1,179 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: conviction-ai-inference
+  namespace: default
+  labels:
+    app: conviction-ai-inference
+    version: v1
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: conviction-ai-inference
+  template:
+    metadata:
+      labels:
+        app: conviction-ai-inference
+        version: v1
+    spec:
+      serviceAccountName: conviction-ai-service-account
+      containers:
+      - name: inference-api
+        image: conviction-ai-inference:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8000
+          name: http
+        env:
+        - name: MODEL_PATH
+          value: "/app/models/latest.pkl"
+        - name: FEAST_REPO_PATH
+          value: "/app/feature_repo"
+        - name: AWS_REGION
+          value: "us-east-1"
+        - name: AWS_XRAY_TRACING_DISABLED
+          value: "false"
+        - name: AWS_XRAY_DAEMON_ADDRESS
+          value: "xray-daemon:2000"
+        - name: SENTRY_DSN
+          valueFrom:
+            secretKeyRef:
+              name: api-secrets
+              key: sentry-dsn
+        - name: SENTRY_TRACES_SAMPLE_RATE
+          value: "0.1"
+        - name: SENTRY_PROFILES_SAMPLE_RATE
+          value: "0.1"
+        - name: ENVIRONMENT
+          value: "production"
+        - name: RELEASE
+          value: "v1.0.0"
+        - name: SENTRY_DSN
+          valueFrom:
+            secretKeyRef:
+              name: api-secrets
+              key: sentry-dsn
+        - name: SENTRY_TRACES_SAMPLE_RATE
+          value: "0.05"
+        - name: SENTRY_PROFILES_SAMPLE_RATE
+          value: "0.05"
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "2Gi"
+            cpu: "1000m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+        volumeMounts:
+        - name: model-storage
+          mountPath: /app/models
+          readOnly: true
+        - name: feature-repo
+          mountPath: /app/feature_repo
+          readOnly: true
+      volumes:
+      - name: model-storage
+        persistentVolumeClaim:
+          claimName: model-storage-pvc
+      - name: feature-repo
+        configMap:
+          name: feast-config
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: conviction-ai-inference-gpu
+  namespace: default
+  labels:
+    app: conviction-ai-inference-gpu
+    version: v1
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: conviction-ai-inference-gpu
+  template:
+    metadata:
+      labels:
+        app: conviction-ai-inference-gpu
+        version: v1
+    spec:
+      serviceAccountName: conviction-ai-service-account
+      nodeSelector:
+        role: gpu
+      tolerations:
+      - key: nvidia.com/gpu
+        operator: Exists
+        effect: NoSchedule
+      containers:
+      - name: inference-api-gpu
+        image: conviction-ai-inference:gpu
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8000
+          name: http
+        env:
+        - name: MODEL_PATH
+          value: "/app/models/latest.pkl"
+        - name: FEAST_REPO_PATH
+          value: "/app/feature_repo"
+        - name: AWS_REGION
+          value: "us-east-1"
+        - name: CUDA_VISIBLE_DEVICES
+          value: "0"
+        resources:
+          requests:
+            memory: "1Gi"
+            cpu: "500m"
+            nvidia.com/gpu: 1
+          limits:
+            memory: "4Gi"
+            cpu: "2000m"
+            nvidia.com/gpu: 1
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 60
+          periodSeconds: 15
+          timeoutSeconds: 10
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        volumeMounts:
+        - name: model-storage
+          mountPath: /app/models
+          readOnly: true
+        - name: feature-repo
+          mountPath: /app/feature_repo
+          readOnly: true
+      volumes:
+      - name: model-storage
+        persistentVolumeClaim:
+          claimName: model-storage-pvc
+      - name: feature-repo
+        configMap:
+          name: feast-config
