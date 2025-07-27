@@ -69,7 +69,7 @@ jupyter notebook volatility_targets_demo.ipynb
 
 The notebook provides:
 - Data loading and exploration of volatility features
-- Training workflows for multi-target models 
+- Training workflows for multi-target models
 - Visualization of feature importance for volatility prediction
 - Performance evaluation across different volatility targets
 
@@ -121,7 +121,7 @@ jupyter notebook volatility_targets_demo.ipynb
 
 The notebook provides:
 - Data loading and exploration of volatility features
-- Training workflows for multi-target models 
+- Training workflows for multi-target models
 - Visualization of feature importance for volatility prediction
 - Performance evaluation across different volatility targets
 
@@ -158,6 +158,17 @@ You'll have:
 - Recommended extensions installed automatically
 - AutoSave and FormatOnSave enabled
 
+### Code Quality Setup
+
+Pre-commit hooks enforce code quality standards:
+
+```bash
+pip install pre-commit
+pre-commit install
+```
+
+This enables automatic code formatting, import sorting, type checking, and commit message validation on every commit.
+
 ### Prerequisites
 
 - Python 3.9+
@@ -181,17 +192,17 @@ You'll have:
    ```
 
 3. Configure environment variables:
-   
+
    Create a `.env` file with the following required variables:
    ```
    # AWS credentials (or use IAM roles)
    AWS_ACCESS_KEY_ID=your_key_id
    AWS_SECRET_ACCESS_KEY=your_secret_key
    AWS_REGION=us-east-1
-   
+
    # S3 bucket for data storage
    S3_BUCKET_NAME=your-bucket-name
-   
+
    # Slack webhook for notifications
    SLACK_WEBHOOK_URL=https://hooks.slack.com/services/your/webhook/url
    ```
@@ -366,7 +377,7 @@ The validation suite performs the following checks:
 3. **Null Value Checks**: Validates null percentages are within acceptable limits (<5% error threshold, <1% warning threshold)
 4. **Range Validation**: Ensures financial features are within realistic bounds:
    - Delta: [-1.0, 1.0]
-   - IV Percentile: [0.0, 1.0] 
+   - IV Percentile: [0.0, 1.0]
    - Time to Expiry: [0.0, 365.0] days
    - Sentiment: [-1.0, 1.0]
 5. **Lag Integrity**: Verifies that lagged features have proper temporal structure
@@ -491,7 +502,7 @@ The pipeline runs automatically:
 
 The pipeline includes the following key steps:
 
-1. **Setup Environment**: 
+1. **Setup Environment**:
    - Checkout code
    - Configure AWS credentials
    - Set up Python 3.9
