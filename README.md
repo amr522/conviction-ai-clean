@@ -182,6 +182,10 @@ mypy --config-file=mypy.ini src/
 Run tests with coverage measurement:
 
 ```bash
+# Install test dependencies first
+./scripts/install-test-deps.sh
+
+# Run tests with coverage
 coverage run -m pytest
 coverage report --fail-under=80
 ```
