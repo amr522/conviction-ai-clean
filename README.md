@@ -177,6 +177,23 @@ Run mypy locally for comprehensive type checking:
 mypy --config-file=mypy.ini src/
 ```
 
+### Test Coverage
+
+Run tests with coverage measurement:
+
+```bash
+coverage run -m pytest
+coverage report --fail-under=80
+```
+
+Generate HTML coverage report:
+
+```bash
+coverage html
+```
+
+Tests must meet a minimum of 80% code coverage to pass.
+
 ### Prerequisites
 
 - Python 3.9+
