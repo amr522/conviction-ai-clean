@@ -1,0 +1,13 @@
+{
+  "type": "object", 
+  "properties": {
+    "ticker": {"type": "string"},
+    "open": {"type": "number"},
+    "high": {"type": "number"},
+    "low": {"type": "number"},
+    "close": {"type": "number"},
+    "volume": {"type": "integer"},
+    "timestamp": {"type": "string"}
+  },
+  "required": ["ticker", "close", "volume"]
+}

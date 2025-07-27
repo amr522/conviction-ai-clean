@@ -1,0 +1,13 @@
+{
+  "type": "object",
+  "properties": {
+    "ticker": {"type": "string"},
+    "underlying": {"type": "string"},
+    "option_type": {"type": "string"},
+    "strike": {"type": "number"},
+    "close": {"type": "number"},
+    "volume": {"type": "integer"},
+    "timestamp": {"type": "string"}
+  },
+  "required": ["ticker", "close", "volume"]
+}
