@@ -4,10 +4,22 @@ import os
 from datetime import datetime
 from typing import List, Optional
 
-from openlineage.client import OpenLineageClient
-from openlineage.client.dataset import Dataset
-from openlineage.client.facet import SourceCodeLocationJobFacet, SqlJobFacet
-from openlineage.client.run import Job, Run, RunEvent, RunState
+try:
+    from openlineage.client import OpenLineageClient
+    from openlineage.client.dataset import Dataset
+    from openlineage.client.facet import (SourceCodeLocationJobFacet,
+                                          SqlJobFacet)
+    from openlineage.client.run import Job, Run, RunEvent, RunState
+
+    OPENLINEAGE_AVAILABLE = True
+except ImportError:
+    OPENLINEAGE_AVAILABLE = False
+    OpenLineageClient = None
+    Dataset = None
+    Job = None
+    Run = None
+    RunEvent = None
+    RunState = None
 
 
 class LineageTracker:
@@ -16,7 +28,7 @@ class LineageTracker:
     def __init__(self, namespace: str = "conviction_ai"):
         self.client = (
             OpenLineageClient.from_environment()
-            if os.getenv("OPENLINEAGE_URL")
+            if OPENLINEAGE_AVAILABLE and os.getenv("OPENLINEAGE_URL")
             else None
         )
         self.namespace = namespace
