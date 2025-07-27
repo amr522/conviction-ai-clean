@@ -1,0 +1,21 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "date": { "type": "string" },
+    "ticker": { "type": "string" },
+    "fred_fed_funds_rate": { "type": ["number", "null"] },
+    "vix_index": { "type": ["number", "null"] },
+    "opt30_call_flow": { "type": ["number", "null"] },
+    "opt30_put_flow": { "type": ["number", "null"] },
+    "opt30_flow_divergence": { "type": ["number", "null"] },
+    "opt30_net_gamma": { "type": ["number", "null"] },
+    "opt30_gamma_squeeze": { "type": ["boolean", "null"] },
+    "vol_zscore": { "type": ["number", "null"] },
+    "stockd_return_1d": { "type": ["number", "null"] },
+    "optd_iv30": { "type": ["number", "null"] },
+    "optd_volume": { "type": ["number", "null"] }
+  },
+  "required": ["date", "ticker"],
+  "additionalProperties": true
+}
