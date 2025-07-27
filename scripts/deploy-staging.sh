@@ -2,24 +2,67 @@
 set -euo pipefail
 
 NAMESPACE=${1:-staging}
-RELEASE_NAME=${2:-conviction-ai-pipeline}
-DATE=${3:-$(date -v-1d +%Y-%m-%d)}
 
-echo "🔧 Creating namespace $NAMESPACE (if missing)…"
-kubectl get ns $NAMESPACE || kubectl create ns $NAMESPACE
+echo "🚀 Deploying to $NAMESPACE namespace..."
 
-echo "🚀 Deploying to $NAMESPACE with minimal chaos…"
-helm upgrade --install $RELEASE_NAME charts/conviction-ai-pipeline \
-  --namespace $NAMESPACE \
-  --set chaos.enabled=true \
-  --set chaos.etl.duration=10 \
-  --set chaos.etl.percentAffected=1 \
-  --set chaos.inference.duration=10 \
-  --set chaos.inference.percentAffected=1 \
-  --set runDate=$DATE \
-  --set backfill.enabled=false
+# Create namespace if it doesn't exist
+kubectl create namespace $NAMESPACE --dry-run=client -o yaml | kubectl apply -f -
 
-echo "📡 Waiting for pods to be ready…"
-kubectl rollout status deployment/$RELEASE_NAME -n $NAMESPACE
+# Apply staging configuration
+kubectl apply -n $NAMESPACE -f - <<EOF
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: conviction-ai-config
+data:
+  ENVIRONMENT: "staging"
+  LOG_LEVEL: "INFO"
+  PYTHONPATH: "/app/src"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: conviction-ai-pipeline
+  labels:
+    app: conviction-ai-pipeline
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: conviction-ai-pipeline
+  template:
+    metadata:
+      labels:
+        app: conviction-ai-pipeline
+    spec:
+      containers:
+      - name: pipeline
+        image: conviction-ai-pipeline:latest
+        imagePullPolicy: Never
+        ports:
+        - containerPort: 8000
+        envFrom:
+        - configMapRef:
+            name: conviction-ai-config
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: conviction-ai-pipeline
+spec:
+  selector:
+    app: conviction-ai-pipeline
+  ports:
+  - port: 8000
+    targetPort: 8000
+    name: http
+EOF
 
-echo "✅ Staging deployment complete. Monitor chaos experiments via LitmusChaos dashboard."
+echo "✅ Deployment to $NAMESPACE completed"

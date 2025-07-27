@@ -1,0 +1,53 @@
+#!/bin/bash
+# Conviction-AI CLI wrapper script
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
+
+case "${1:-}" in
+    "summary")
+        shift
+        python "$PROJECT_ROOT/src/conviction_ai_summary.py" "$@"
+        ;;
+    "features")
+        shift
+        python "$PROJECT_ROOT/src/calculate_features.py" "$@"
+        ;;
+    "train")
+        shift
+        python "$PROJECT_ROOT/src/train_and_evaluate.py" "$@"
+        ;;
+    "validate")
+        shift
+        python "$PROJECT_ROOT/src/validate_signals.py" "$@"
+        ;;
+    "drift")
+        shift
+        python "$PROJECT_ROOT/src/check_data_drift.py" "$@"
+        ;;
+    "alert")
+        shift
+        python "$PROJECT_ROOT/src/slack_alerts.py" "$@"
+        ;;
+    *)
+        echo "Conviction-AI CLI"
+        echo ""
+        echo "Usage: conviction-ai <command> [options]"
+        echo ""
+        echo "Commands:"
+        echo "  summary --date YYYY-MM-DD    Show pipeline status for date"
+        echo "  features --date YYYY-MM-DD   Calculate features for date"
+        echo "  train --start-date --end-date Train model"
+        echo "  validate --threshold 0.9     Validate signals"
+        echo "  drift --reference --current   Check data drift"
+        echo "  alert --type drift|signal     Test Slack alerts"
+        echo ""
+        echo "Examples:"
+        echo "  conviction-ai summary --date 2025-01-15"
+        echo "  conviction-ai features --date 2025-01-15 --use-gpu"
+        echo "  conviction-ai train --start-date 2025-01-01 --end-date 2025-01-15 --tune"
+        exit 1
+        ;;
+esac

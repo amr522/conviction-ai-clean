@@ -1,6 +1,13 @@
 #!/usr/bin/env bash
 set -e
 
+# Telegram notification helper
+send_telegram_alert() {
+    local status="$1"
+    local payload="$2"
+    python -c "from src.telegram_alerts import send_message; send_message('$status','$payload')" 2>/dev/null || echo "⚠️ Telegram alert failed"
+}
+
 # Raw macro data paths
 RAW_FRED_CSV="/Users/amroheidak/Desktop/conviction-ai-clean/data/Parquet_data/Raw/FRED.csv"
 RAW_VIX_JSON="/Users/amroheidak/Desktop/conviction-ai-clean/data/Parquet_data/Raw/vix_data.json"

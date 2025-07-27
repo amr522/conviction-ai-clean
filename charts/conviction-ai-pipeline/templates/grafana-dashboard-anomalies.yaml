@@ -1,0 +1,55 @@
+{{- if and .Values.grafana.dashboard.anomalies.enabled .Values.anomalyCron.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "conviction-ai-pipeline.fullname" . }}-anomalies-dashboard
+  labels:
+    {{- include "conviction-ai-pipeline.labels" . | nindent 4 }}
+    grafana_dashboard: "1"
+data:
+  anomalies.json: |
+    {
+      "dashboard": {
+        "id": null,
+        "title": "Anomaly Injection Results",
+        "tags": ["conviction-ai", "anomalies"],
+        "timezone": "browser",
+        "panels": [
+          {
+            "id": 1,
+            "type": "stat",
+            "title": "Last Anomaly Test Success",
+            "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0},
+            "targets": [
+              {
+                "expr": "signal_validation_passed{job=\"anomaly-test\"}",
+                "legendFormat": "Test Status"
+              }
+            ],
+            "fieldConfig": {
+              "defaults": {
+                "mappings": [
+                  {"options": {"0": {"text": "FAILED"}}, "type": "value"},
+                  {"options": {"1": {"text": "PASSED"}}, "type": "value"}
+                ]
+              }
+            }
+          },
+          {
+            "id": 2,
+            "type": "stat",
+            "title": "Anomaly Detection Rate",
+            "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0},
+            "targets": [
+              {
+                "expr": "vol_spike_detection{job=\"anomaly-test\"}",
+                "legendFormat": "Spike Detection"
+              }
+            ]
+          }
+        ],
+        "time": {"from": "now-1h", "to": "now"},
+        "refresh": "30s"
+      }
+    }
+{{- end }}

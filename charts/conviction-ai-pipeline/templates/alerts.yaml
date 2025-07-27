@@ -38,13 +38,13 @@ spec:
             description: "data_drift_events_total has increased in the last hour."
 
         - alert: DataDriftHigh
-          expr: data_drift_max_score > 0.1
+          expr: data_drift_max_score > {{ .Values.drift.threshold }}
           for: 10m
           labels:
             severity: warning
           annotations:
-            summary: "Data drift exceeded threshold"
-            description: "Max feature drift_score > 0.1 over last run"
+            summary: "Data drift exceeded {{ .Values.drift.threshold }}"
+            description: "Max feature drift is {{`{{ $value }}`}}"
 
         - alert: InferenceLatencyHigh
           expr: histogram_quantile(0.95, sum(rate(prediction_latency_seconds_bucket[5m])) by (le)) > 1
@@ -54,4 +54,15 @@ spec:
           annotations:
             summary: "High inference latency"
             description: "95th percentile of prediction latency > 1s."
+
+        - alert: FeatureImportanceChange
+          expr: |
+            sum by(feature) (changes(shap_mean_abs{job="model_explain"}[1h])) 
+            > {{ .Values.explainability.threshold }}
+          for: 15m
+          labels:
+            severity: warning
+          annotations:
+            summary: "SHAP importance drift detected"
+            description: "Feature {{`{{ $labels.feature }}`}} importance changed significantly"
 {{- end }}

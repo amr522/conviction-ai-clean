@@ -1,42 +1,40 @@
 #!/bin/bash
-
-# Complete production rollout workflow
-set -e
-
-RELEASE_NAME=${1:-conviction-ai-pipeline}
-NAMESPACE=${2:-production}
-RUN_DATE=${3:-2025-07-27}
+set -euo pipefail
 
 echo "🚀 Starting complete production rollout..."
-echo "=================================="
 
-# Step 1: Run production promotion
-echo "Step 1: Promoting to production..."
-./scripts/promote-production.sh $RELEASE_NAME $NAMESPACE $RUN_DATE
+# Check prerequisites
+if ! command -v kubectl &> /dev/null; then
+    echo "❌ kubectl not found. Please install kubectl."
+    exit 1
+fi
 
-# Step 2: Verify deployment
-echo "Step 2: Verifying deployment..."
-./scripts/verify-production.sh $NAMESPACE $RELEASE_NAME
+if ! command -v helm &> /dev/null; then
+    echo "❌ helm not found. Please install helm."
+    exit 1
+fi
 
-# Step 3: Run smoke tests
-echo "Step 3: Running smoke tests..."
-./scripts/production-smoke-test.sh $RUN_DATE
+# Deploy to production
+# Verify kubectl can reach the cluster
+if ! kubectl version --short >/dev/null 2>&1; then
+  echo "❌ ERROR: Kubernetes cluster unreachable. Please set KUBECONFIG or ensure cluster is running." >&2
+  exit 1
+fi
+echo "📦 Deploying to production namespace..."
+helm upgrade --install conviction-ai-pipeline charts/conviction-ai-pipeline \
+    --namespace production \
+    --create-namespace \
+    --set image.tag="${IMAGE_TAG:-latest}" \
+    --set environment=production \
+    --wait --timeout=10m
 
-# Step 4: Monitor alerts & metrics
-echo "Step 4: Checking monitoring..."
-./scripts/monitor-production.sh $NAMESPACE
+# Wait for rollout
+echo "⏳ Waiting for rollout to complete..."
+kubectl rollout status deployment/conviction-ai-pipeline -n production --timeout=600s
 
-# Step 5: Celebrate!
-echo "=================================="
-echo "🎉 Production rollout complete and validated! 🚀"
-echo ""
-echo "Access points:"
-echo "- Lineage Explorer: https://lineage.prod.conviction-ai.com"
-echo "- Grafana: kubectl port-forward -n monitoring svc/grafana 3000:80"
-echo "- Prometheus: kubectl port-forward -n monitoring svc/prometheus 9090:9090"
-echo ""
-echo "Next steps:"
-echo "- Monitor Grafana dashboards for ETL/training metrics"
-echo "- Ensure Prometheus alerts aren't firing"
-echo "- Check lineage explorer functionality"
-echo "=================================="
+# Verify services
+echo "🔍 Verifying services..."
+kubectl get pods -n production -l app=conviction-ai-pipeline
+kubectl get svc -n production
+
+echo "✅ Production rollout completed successfully!"

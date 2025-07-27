@@ -1,23 +1,15 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ include "conviction-ai-pipeline.fullname" . }}
+  name: {{ include "conviction-ai.fullname" . }}
   labels:
-    {{- include "conviction-ai-pipeline.labels" . | nindent 4 }}
-    component: service
+    {{- include "conviction-ai.labels" . | nindent 4 }}
 spec:
   type: {{ .Values.service.type }}
   ports:
     - port: {{ .Values.service.port }}
-      targetPort: 8080
+      targetPort: http
       protocol: TCP
       name: http
-    {{- if .Values.prometheus.enabled }}
-    - name: metrics
-      port: 9090
-      targetPort: metrics
-      protocol: TCP
-    {{- end }}
   selector:
-    {{- include "conviction-ai-pipeline.selectorLabels" . | nindent 4 }}
-    component: pipeline
+    {{- include "conviction-ai.selectorLabels" . | nindent 4 }}

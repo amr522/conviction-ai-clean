@@ -1,20 +1,35 @@
 #!/usr/bin/env python3
 
-# AWS X-Ray tracing setup
-from aws_xray_sdk.core import patch_all, xray_recorder
-
-# Patch AWS services and HTTP libraries
-patch_all()
-xray_recorder.configure(
-    service="conviction-ai-pipeline",
-    plugins=("EC2Plugin", "ECSPlugin"),
-    daemon_address="127.0.0.1:2000",
-)
-
 import argparse
 import os
 import subprocess
 import sys
+
+# Optionally disable XRay if not configured
+if os.getenv("AWS_XRAY_DAEMON_ADDRESS") in (None, "none") or os.getenv("AWS_XRAY_SDK_ENABLED") == "false":
+    os.environ["AWS_XRAY_SDK_ENABLED"] = "false"
+    # Mock XRay components
+    class MockXRayRecorder:
+        def configure(self, **kwargs): pass
+        def capture(self, name): return lambda f: f
+        def begin_subsegment(self, name): return self
+        def end_subsegment(self): pass
+        def put_annotation(self, key, value): pass
+        def put_metadata(self, key, value): pass
+    
+    xray_recorder = MockXRayRecorder()
+    def patch_all(): pass
+else:
+    # AWS X-Ray tracing setup
+    from aws_xray_sdk.core import patch_all, xray_recorder
+    
+    # Patch AWS services and HTTP libraries
+    patch_all()
+    xray_recorder.configure(
+        service="conviction-ai-pipeline",
+        plugins=("EC2Plugin", "ECSPlugin"),
+        daemon_address="127.0.0.1:2000",
+    )
 
 # Add src to path for imports
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))

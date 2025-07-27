@@ -14,11 +14,26 @@ def process_date_chunk(date_str: str, tickers: List[str]) -> dict:
     """Process a single date chunk with given tickers."""
     print(f"Processing {date_str} for {len(tickers)} tickers")
     
+    import os
+    
+    # Check for options 30min data path
+    raw_base = "data/Parquet_data"
+    opts_30min_path = os.path.join(raw_base, "options_30min_clean.parquet")
+    
+    # Fallback raw path if default missing
+    if not os.path.exists(opts_30min_path):
+        opts_30min_path = os.path.join(raw_base, "Raw", "options_30min.parquet")
+        if not os.path.exists(opts_30min_path):
+            opts_30min_path = os.path.join(raw_base, "option_minute")
+    
+    print(f"Using options 30min path: {opts_30min_path}")
+    
     # Simulate data processing
     results = {
         "date": date_str,
         "tickers_processed": len(tickers),
         "features_generated": len(tickers) * 100,  # Mock feature count
+        "options_path": opts_30min_path,
         "status": "completed"
     }
     

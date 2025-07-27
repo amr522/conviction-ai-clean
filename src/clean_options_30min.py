@@ -53,6 +53,28 @@ def run(
 
         print(f"Input path: {input_path}")
         print(f"Output path: {output_path}")
+        
+        # Verify input exists, else fallback or skip
+        if not os.path.exists(input_path):
+            print(f"Input path '{input_path}' not found, skipping options 30min clean.")
+            # Return empty DataFrame schema to allow downstream joins
+            return {
+                "status": "skipped",
+                "date": date,
+                "rows_processed": 0,
+                "output_path": None,
+                "reason": "input_path_missing",
+                "statistics": {
+                    "input_rows": 0,
+                    "output_rows": 0,
+                    "unique_tickers": 0,
+                    "unique_strikes": 0,
+                    "flow_window": flow_window,
+                    "gamma_squeeze_multiplier": gamma_squeeze_multiplier,
+                    "target_date": date,
+                    "timestamp_range": [None, None],
+                },
+            }
 
         if not dry_run:
             # Create output directory if it doesn't exist

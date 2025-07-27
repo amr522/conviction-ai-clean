@@ -237,15 +237,28 @@ Tests must meet a minimum of 80% code coverage to pass.
    # S3 bucket for data storage
    S3_BUCKET_NAME=your-bucket-name
 
-   # Slack webhook for notifications
-   SLACK_WEBHOOK_URL=https://hooks.slack.com/services/your/webhook/url
+   # Telegram bot for notifications
+   TELEGRAM_BOT_TOKEN=your_bot_token_here
+   TELEGRAM_CHAT_ID=your_chat_id_here
    ```
 
-4. For Slack notifications integration:
-   - Create a Slack App in your workspace
-   - Enable Incoming Webhooks
-   - Create a webhook for your desired channel
-   - Add the webhook URL to your `.env` file
+4. For Telegram notifications integration:
+   - Create a Telegram bot via @BotFather
+   - Get your bot token and chat ID
+   - Add the bot token and chat ID to your `.env` file
+   
+   ```bash
+   export TELEGRAM_BOT_TOKEN="1234567890:ABCdefGHIjklMNOpqrsTUVwxyz"
+   export TELEGRAM_CHAT_ID="-1001234567890"
+   ```
+
+   **Testing Locally:**
+   ```bash
+   # Test with dummy credentials (dry-run mode)
+   export TELEGRAM_BOT_TOKEN="dummy"
+   export TELEGRAM_CHAT_ID="dummy"
+   python -c "from src.telegram_alerts import send_message; send_message('TEST','Hello from Conviction-AI!')"
+   ```
 
 ## 📁 Repository Structure
 
@@ -1320,9 +1333,37 @@ Each validation stage has a dedicated script in `scripts/`:
 ./scripts/run-performance-utils-test.sh
 ```
 
-## 💬 Slack Notifications
+## 📱 Telegram Notifications
 
-The pipeline integrates with Slack to provide real-time notifications about pipeline status.
+The pipeline integrates with Telegram to provide real-time notifications about pipeline status.
+
+### Testing Telegram Alerts
+
+You can test the Telegram alert system locally using dummy credentials:
+
+```bash
+# Set dummy credentials for testing
+export TELEGRAM_BOT_TOKEN="dummy"
+export TELEGRAM_CHAT_ID="dummy"
+
+# Test direct message sending
+python -c "from src.telegram_alerts import send_message; send_message('TEST STATUS','Test message payload')"
+
+# Test shell script integration
+bash -c 'send_telegram_alert() { local status="$1"; local payload="$2"; python -c "from src.telegram_alerts import send_message; send_message(\"$status\",\"$payload\")" 2>/dev/null || echo "⚠️ Telegram alert failed"; }; send_telegram_alert "PIPELINE TEST" "Testing shell script integration"'
+```
+
+**Sample Output (Dry Run):**
+```
+📱 [DRY RUN] Would send Telegram message:
+Status: TEST STATUS
+Payload: Test message payload
+```
+
+**Sample Output (Production):**
+```
+✅ Alert sent successfully
+```
 
 ### Notification Types
 

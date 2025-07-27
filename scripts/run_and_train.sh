@@ -22,8 +22,12 @@ echo "🚀 Starting training pipeline for $DATE to $END_DATE"
 # Create logs directory
 mkdir -p logs
 
-# Source Slack notification helper
-source "$(dirname "$0")/slack_notify.sh"
+# Telegram notification helper
+send_telegram_alert() {
+    local status="$1"
+    local payload="$2"
+    python -c "from src.telegram_alerts import send_message; send_message('$status','$payload')" 2>/dev/null || echo "⚠️ Telegram alert failed"
+}
 
 # First run full pipeline with macro data and feature calculation
 echo "🔄 Running full pipeline with macro data and feature calculation..."
@@ -35,8 +39,31 @@ if python src/run_full_pipeline.py --date "$DATE" \
 
     echo "✅ Pipeline completed successfully"
 
-    # Features are calculated within run_full_pipeline.py
-    FEATURES_PATH="datasets/features_${DATE}.parquet"
+    # Generate feature parquet
+    echo "👉 Generating feature Parquet for $DATE…"
+    if python src/calculate_features.py --date "$DATE"; then
+        echo "✅ Feature parquet generated"
+    else
+        echo "❌ Feature parquet generation failed"
+        exit 1
+    fi
+    
+    FEATURES_PATH="data/Parquet_data/features_${DATE}.parquet"
+    LABELS_PATH="data/Parquet_data/labels_${DATE}.parquet"
+    TRAIN_PATH="data/Parquet_data/train_dataset_${DATE}.parquet"
+    
+    # Generate training dataset if labels exist
+    if [[ -f "$LABELS_PATH" ]]; then
+        echo "🔗 Generating training dataset..."
+        if ./scripts/generate-training-dataset.sh "$FEATURES_PATH" "$LABELS_PATH" "$TRAIN_PATH"; then
+            echo "✅ Training dataset generated"
+            FEATURES_PATH="$TRAIN_PATH"  # Use training dataset for training
+        else
+            echo "❌ Training dataset generation failed, using features only"
+        fi
+    else
+        echo "⚠️ Labels file not found: $LABELS_PATH, using features only"
+    fi
 
     if [[ -f "$FEATURES_PATH" ]]; then
         echo "✅ Features available for training"
@@ -52,6 +79,31 @@ if python src/run_full_pipeline.py --date "$DATE" \
             --n-jobs "$N_JOBS" 2>&1 | tee logs/training_${DATE}.log; then
 
             echo "✅ Training completed successfully"
+            
+            # Compute SHAP explanations
+            echo "🔍 Computing SHAP explanations..."
+            if [[ -f "models/latest.pkl" && -f "$FEATURES_PATH" ]]; then
+                python -c "
+import sys, os
+sys.path.insert(0, 'src')
+from inference import explain_predictions, load_model
+import polars as pl
+
+try:
+    model = load_model('models/latest.pkl')
+    feats = pl.read_parquet('$FEATURES_PATH')
+    pushgateway_url = os.getenv('PUSHGATEWAY_URL')
+    shap_summary = explain_predictions(model, feats, pushgateway_url)
+    print(f'✅ SHAP summary computed for {len(shap_summary)} features')
+    if shap_summary:
+        top_features = sorted(shap_summary.items(), key=lambda x: x[1], reverse=True)[:3]
+        print('Top 3 features:', [f'{k}: {v:.4f}' for k, v in top_features])
+except Exception as e:
+    print(f'⚠️ SHAP computation failed: {e}')
+"
+            else
+                echo "⚠️ Model or features not found, skipping SHAP explanations"
+            fi
 
             # Check for data drift in logs
             DRIFT=$(grep -c "Drift detected: True" logs/evidently_log.txt 2>/dev/null || echo "0")
@@ -60,28 +112,22 @@ if python src/run_full_pipeline.py --date "$DATE" \
                 echo "⚠️ Data drift detected!"
                 DRIFT_REPORT="metrics/data_drift_report_${DATE}.html"
 
-                # Send Slack alert for drift
-                if [[ -n "${SECURITY_SLACK_WEBHOOK:-}" ]]; then
-                    notify_security "DRIFT DETECTED" "Data drift found for $DATE. Report: $DRIFT_REPORT"
-                fi
+                # Send Telegram alert for drift
+                send_telegram_alert "DRIFT DETECTED" "Data drift found for $DATE. Report: $DRIFT_REPORT"
 
                 echo "📄 Drift report available at: $DRIFT_REPORT"
             else
                 echo "✅ No data drift detected"
 
                 # Send success notification
-                if [[ -n "${SECURITY_SLACK_WEBHOOK:-}" ]]; then
-                    notify_security "TRAINING SUCCESS" "Training completed for $DATE. No drift detected."
-                fi
+                send_telegram_alert "TRAINING SUCCESS" "Training completed for $DATE. No drift detected."
             fi
 
         else
             echo "❌ Training failed"
 
             # Send failure notification
-            if [[ -n "${SECURITY_SLACK_WEBHOOK:-}" ]]; then
-                notify_security "TRAINING FAILED" "Training pipeline failed for $DATE. Check logs/training_${DATE}.log"
-            fi
+            send_telegram_alert "TRAINING FAILED" "Training pipeline failed for $DATE. Check logs/training_${DATE}.log"
 
             exit 1
         fi
@@ -89,9 +135,7 @@ if python src/run_full_pipeline.py --date "$DATE" \
         echo "❌ Features file not found: $FEATURES_PATH"
 
         # Send failure notification
-        if [[ -n "${SECURITY_SLACK_WEBHOOK:-}" ]]; then
-            notify_security "FEATURES MISSING" "Features file not found for $DATE: $FEATURES_PATH"
-        fi
+        send_telegram_alert "FEATURES MISSING" "Features file not found for $DATE: $FEATURES_PATH"
 
         exit 1
     fi
@@ -99,9 +143,7 @@ else
     echo "❌ Pipeline failed"
 
     # Send failure notification
-    if [[ -n "${SECURITY_SLACK_WEBHOOK:-}" ]]; then
-        notify_security "PIPELINE FAILED" "Full pipeline failed for $DATE. Check logs/pipeline_${DATE}.log"
-    fi
+    send_telegram_alert "PIPELINE FAILED" "Full pipeline failed for $DATE. Check logs/pipeline_${DATE}.log"
 
     exit 1
 fi

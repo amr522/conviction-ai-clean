@@ -21,7 +21,7 @@ import os
 import pickle
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, Tuple
+from typing import Dict, Tuple, Optional, List, Any
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -52,8 +52,8 @@ logger = logging.getLogger(__name__)
 
 
 def monitor_feature_importance(
-    model, feature_names: list, top_n: int = 20, n_jobs: int = 1
-) -> Dict:
+    model: Any, feature_names: List[str], top_n: int = 20, n_jobs: int = 1
+) -> Dict[str, Any]:
     """
     Monitor and log feature importance from trained model.
 
@@ -412,6 +412,7 @@ def run(
     tune: bool = False,
     n_trials: int = 50,
     n_jobs: int = None,
+    **kwargs
 ) -> int:
     """
     Main training and evaluation pipeline.
@@ -459,18 +460,32 @@ def run(
         Path(model_path).parent.mkdir(parents=True, exist_ok=True)
         Path(metrics_path).mkdir(parents=True, exist_ok=True)
 
-        # Load data
-        logger.info("Loading intraday data...")
-        intraday_df = load_partitioned_data(
-            "datasets/intraday_30m", start_date, end_date
-        )
+        # Load data - use feature parquet if provided
+        feature_path = kwargs.get('feature_path')
+        if feature_path:
+            logger.info(f"Loading features from {feature_path}")
+            import polars as pl
+            feats = pl.read_parquet(feature_path)
+            # Convert to pandas for compatibility
+            features_df = feats.to_pandas()
+            # Create dummy target for compatibility
+            target_series = features_df.get('target', pd.Series([0.02] * len(features_df)))
+        else:
+            # Load data
+            logger.info("Loading intraday data...")
+            intraday_df = load_partitioned_data(
+                "datasets/intraday_30m", start_date, end_date
+            )
 
-        logger.info("Loading daily data...")
-        daily_df = load_partitioned_data("datasets/daily", start_date, end_date)
+            logger.info("Loading daily data...")
+            daily_df = load_partitioned_data("datasets/daily", start_date, end_date)
+            
+            # Prepare features and target
+            logger.info("Preparing features and target...")
+            features_df, target_series = prepare_features_and_target(intraday_df, daily_df)
 
-        # Prepare features and target
-        logger.info("Preparing features and target...")
-        features, target = prepare_features_and_target(intraday_df, daily_df)
+        # Features and target already prepared above
+        features, target = features_df, target_series
 
         # Train/validation split
         X_train, X_val, y_train, y_val = train_validation_split(features, target)
@@ -704,6 +719,11 @@ def main():
         default=None,
         help="Number of parallel workers (defaults to os.cpu_count())",
     )
+    parser.add_argument(
+        "--feature-path",
+        type=str,
+        help="Path to feature Parquet file (optional, overrides data loading)",
+    )
 
     args = parser.parse_args()
 
@@ -716,6 +736,7 @@ def main():
         tune=args.tune,
         n_trials=args.n_trials,
         n_jobs=args.n_jobs,
+        feature_path=args.feature_path,
     )
 
     exit(exit_code)

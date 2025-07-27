@@ -1,34 +1,33 @@
-#!/bin/bash
+#!/usr/bin/env bash
+set -euo pipefail
 
-# Production promotion script
-set -e
+NAMESPACE=${NAMESPACE:-production}
+RELEASE=${RELEASE:-conviction-ai-pipeline}
 
-RELEASE_NAME=${1:-conviction-ai-pipeline}
-NAMESPACE=${2:-production}
-RUN_DATE=${3:-$(date -d "yesterday" +%Y-%m-%d)}
+echo "🚀 Promoting to production: $RELEASE"
 
-echo "🚀 Promoting to production..."
-echo "Release: $RELEASE_NAME"
-echo "Namespace: $NAMESPACE"
-echo "Date: $RUN_DATE"
+# Check if production namespace exists
+if ! kubectl get namespace $NAMESPACE &>/dev/null; then
+    echo "📦 Creating production namespace..."
+    kubectl create namespace $NAMESPACE
+fi
 
-# Create namespace if it doesn't exist
-kubectl create namespace $NAMESPACE --dry-run=client -o yaml | kubectl apply -f -
+# Deploy to production
+echo "🔄 Deploying to production..."
+helm upgrade $RELEASE charts/conviction-ai-pipeline \
+    --install \
+    --namespace $NAMESPACE \
+    --set image.tag=latest \
+    --set autoscaling.enabled=true \
+    --set drift.enabled=true \
+    --wait
 
-# Deploy to production with full resources
-helm upgrade --install $RELEASE_NAME charts/conviction-ai-pipeline \
-  --namespace $NAMESPACE \
-  --set runDate=$RUN_DATE \
-  --set chaos.enabled=false \
-  --set backfill.enabled=true \
-  --set resources.limits.cpu=8 \
-  --set resources.limits.memory=16Gi \
-  --set resources.limits.nvidia.com/gpu=1 \
-  --set persistence.data.size=200Gi \
-  --set persistence.models.size=50Gi \
-  --set persistence.metrics.size=10Gi \
-  --set lineage.enabled=true \
-  --set lineage.host="lineage.prod.conviction-ai.com" \
-  --wait --timeout=10m
+# Verify deployment
+echo "✅ Verifying deployment..."
+kubectl -n $NAMESPACE rollout status deployment/$RELEASE --timeout=300s
 
-echo "✅ Production deployment completed"
+# Check health
+echo "🏥 Health check..."
+kubectl -n $NAMESPACE get pods -l app.kubernetes.io/name=conviction-ai-pipeline
+
+echo "🎉 Production deployment complete!"

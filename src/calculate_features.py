@@ -6,8 +6,9 @@ Generates final feature matrix from daily and intraday master datasets.
 
 import argparse
 import concurrent.futures
-from datetime import datetime
+from datetime import datetime, date
 from pathlib import Path
+from typing import Tuple, List, Optional
 
 import polars as pl
 
@@ -15,7 +16,7 @@ from utils.lineage_utils import LineageTracker
 from gpu_utils import gpu_supported, gpu_rolling_mean, gpu_rolling_std, optimize_for_gpu
 
 
-def parse_date_range(date_str):
+def parse_date_range(date_str: str) -> Tuple[date, date]:
     """Parse date string - single date or range (YYYY-MM-DD,YYYY-MM-DD)"""
     if "," in date_str:
         start_str, end_str = date_str.split(",")
@@ -28,7 +29,7 @@ def parse_date_range(date_str):
         return single_date, single_date
 
 
-def calculate_rolling_features(df, window, use_gpu=False):
+def calculate_rolling_features(df: pl.DataFrame, window: int, use_gpu: bool = False) -> pl.DataFrame:
     """Calculate rolling features for a single ticker group with optional GPU acceleration"""
     df_sorted = df.sort("date")
     
@@ -104,6 +105,12 @@ def calculate_cross_sectional_features(features):
             ).alias("vol_zscore"),
             # IV percentile across tickers
             pl.col("optd_iv30").rank().over("date").alias("iv_rank"),
+            # IV rank 30d - percentile of current IV30 vs past 30 days per ticker
+            (
+                pl.col("optd_iv30")
+                .rolling_quantile(quantile=0.5, window_size=30)
+                .over("ticker")
+            ).alias("iv_rank_30d"),
             # Return relative to market
             (
                 pl.col("stockd_return_1d")

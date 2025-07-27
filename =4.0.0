@@ -1,0 +1,11 @@
+Collecting pytest-benchmark
+  Downloading pytest_benchmark-5.1.0-py3-none-any.whl.metadata (25 kB)
+Requirement already satisfied: pytest>=8.1 in /opt/anaconda3/lib/python3.12/site-packages (from pytest-benchmark) (8.4.1)
+Requirement already satisfied: py-cpuinfo in /opt/anaconda3/lib/python3.12/site-packages (from pytest-benchmark) (9.0.0)
+Requirement already satisfied: iniconfig>=1 in /opt/anaconda3/lib/python3.12/site-packages (from pytest>=8.1->pytest-benchmark) (1.1.1)
+Requirement already satisfied: packaging>=20 in /opt/anaconda3/lib/python3.12/site-packages (from pytest>=8.1->pytest-benchmark) (24.1)
+Requirement already satisfied: pluggy<2,>=1.5 in /opt/anaconda3/lib/python3.12/site-packages (from pytest>=8.1->pytest-benchmark) (1.6.0)
+Requirement already satisfied: pygments>=2.7.2 in /opt/anaconda3/lib/python3.12/site-packages (from pytest>=8.1->pytest-benchmark) (2.15.1)
+Downloading pytest_benchmark-5.1.0-py3-none-any.whl (44 kB)
+Installing collected packages: pytest-benchmark
+Successfully installed pytest-benchmark-5.1.0

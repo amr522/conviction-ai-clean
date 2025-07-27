@@ -1,9 +1,11 @@
 vix_value
-vix_contango
+vix_ma_divergence
 dxy_value
-news_count_lag1
-avg_sentiment_lag1
-gex_spx_lag1
+# BLOCKED - no news data
+# news_count_lag1
+# avg_sentiment_lag1
+# BLOCKED - no SPX GEX feed
+# gex_spx_lag1
 optd_iv30
 optd_hv30
 optd_iv30_lag1
@@ -17,6 +19,7 @@ optd_iv_skew_slope
 optd_vol_surprise
 optd_put_call_ratio
 optd_volume
+iv_rank_30d
 opt30_mid_price_return
 opt30_bid_ask_spread
 opt30_implied_volatility
