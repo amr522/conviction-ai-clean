@@ -360,33 +360,33 @@ jobs:
       - uses: actions/checkout@v3
       - name: Install test deps
         run: scripts/install-test-deps.sh
-      - name: Create test data
+      - name: Create test data for advanced validation
         run: |
           mkdir -p data/Parquet_data
           python -c "
           import polars as pl
+          import numpy as np
           from datetime import date
           
-          # Create test options data
+          # Create test data with advanced signal features
+          np.random.seed(42)
           df = pl.DataFrame({
+              'date': [str(date(2025, 1, 1))] * 100,
               'ticker': ['AAPL'] * 100,
-              'timestamp': list(range(100)),
-              'opt30_net_gamma': [1.0] * 90 + [None] * 10,
-              'opt30_flow_divergence': [1.0] * 50 + [-1.0] * 50,
-              'opt30_mid_price': list(range(100, 200)),
-              'opt30_volume': [100] * 100,
-              'opt30_vol_mean_5': [50] * 100,
-              'opt30_vol_std_5': [10] * 100,
-              'opt30_vol_spike': [True] * 20 + [False] * 80
+              'opt30_net_gamma': [0.05] * 90 + [None] * 10,  # 90% coverage
+              'opt30_flow_divergence': np.random.normal(0, 100, 100),
+              'opt30_close': np.random.normal(150, 10, 100),
+              'opt30_vol_spike': [True] * 10 + [False] * 90,
+              'true_spike': [True] * 8 + [False] * 92,  # 80% detection rate
+              'timestamp': range(100)
           })
-          df.write_parquet('data/Parquet_data/options_30min_clean_$(date +%F).parquet')
-          print('✅ Test data created')
+          df.write_parquet('data/Parquet_data/options_30min_advanced.parquet')
+          print('✅ Advanced test data created')
           "
       - name: Run advanced signal validation
         run: |
-          chmod +x src/validate_advanced_signals.py
           ./src/validate_advanced_signals.py \
-            --input data/Parquet_data/options_30min_clean_$(date +%F).parquet \
+            --input data/Parquet_data/options_30min_advanced.parquet \
             --threshold 0.8 \
             --output-json advanced_results.json
 
