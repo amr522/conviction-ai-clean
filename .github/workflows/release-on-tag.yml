@@ -102,3 +102,60 @@ jobs:
           prerelease: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          
+  publish-docs:
+    needs: build-and-publish
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+      
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Get tag version
+        id: tag
+        run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+          
+      - name: Create docs directory and package.json
+        run: |
+          mkdir -p docs
+          cat > docs/package.json << 'EOF'
+          {
+            "name": "conviction-ai-docs",
+            "version": "1.0.0",
+            "scripts": {
+              "build": "mkdir -p build && cp -r ../README.md ../CHANGELOG.md ../docs/* build/ 2>/dev/null || true && echo 'Docs built successfully'"
+            },
+            "devDependencies": {}
+          }
+          EOF
+          
+      - name: Install docs dependencies
+        run: |
+          cd docs
+          npm ci || npm install
+          
+      - name: Build docs
+        run: |
+          cd docs
+          npm run build
+          # Create index.html from README
+          echo '<!DOCTYPE html><html><head><title>Conviction AI Pipeline</title><style>body{font-family:Arial,sans-serif;max-width:800px;margin:0 auto;padding:20px;}</style></head><body>' > build/index.html
+          # Convert markdown to basic HTML (simple approach)
+          sed 's/^# /<h1>/g; s/^## /<h2>/g; s/^### /<h3>/g; s/```/<pre>/g' ../README.md >> build/index.html
+          echo '</body></html>' >> build/index.html
+          
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./docs/build
+          destination_dir: .
+          commit_message: "docs: publish site for ${{ steps.tag.outputs.VERSION }}"

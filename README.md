@@ -1207,6 +1207,7 @@ The CI/CD pipeline is implemented using GitHub Actions and defined in `.github/w
    - Build & push Docker image `conviction-ai-pipeline:v1.4.0`
    - Package Helm chart `conviction-ai-pipeline-1.4.0.tgz`
    - Create a GitHub Release with Docker and Helm installation instructions
+   - Build and publish documentation to GitHub Pages
 
 ### Pipeline Triggers
 
