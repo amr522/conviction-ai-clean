@@ -1052,6 +1052,40 @@ The `data-drift-check` job runs automatically:
 - **Pushgateway errors**: Check network connectivity and authentication
 - **High false positives**: Adjust threshold based on data characteristics
 
+## 📁 Schema Registry
+
+The pipeline includes AWS Glue Schema Registry integration for versioned schema management:
+
+### Register Schema
+
+You can register your feature schema in AWS Glue:
+
+```bash
+export AWS_ACCESS_KEY_ID=...
+export AWS_SECRET_ACCESS_KEY=...
+export AWS_REGION=us-east-1
+
+python src/register_schema.py \
+  --registry ConvictionAIPipelineRegistry \
+  --schema-name feature_schema \
+  --schema-path schemas/feature_schema.json \
+  --compat BACKWARD
+```
+
+### Schema Compatibility
+
+- **BACKWARD**: New schema can read data written with previous schema
+- **FORWARD**: Previous schema can read data written with new schema  
+- **FULL**: Both backward and forward compatibility
+- **NONE**: No compatibility checking
+
+### Versioning
+
+- Schemas are automatically versioned in AWS Glue
+- Updates create new schema versions
+- Compatibility rules prevent breaking changes
+- CI automatically registers schema changes
+
 ## 🔧 Signal Optimization & Risk Mitigation
 
 The pipeline includes advanced signal optimization utilities and risk mitigation features:
