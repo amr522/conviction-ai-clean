@@ -475,6 +475,45 @@ jobs:
       - name: Run extra performance utils tests
         run: pytest tests/test_performance_utils_extra.py -v
 
+  label-generation-test:
+    runs-on: ubuntu-latest
+    needs: [advanced-signal-validation]
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install test deps
+        run: scripts/install-test-deps.sh
+      - name: Run label generation tests
+        run: pytest tests/test_generate_labels.py -v
+      - name: Test label generation CLI
+        run: |
+          mkdir -p staged data/Parquet_data
+          # Create test daily master data
+          python -c "
+          import polars as pl
+          from datetime import date
+          
+          df = pl.DataFrame({
+              'date': [date(2025, 1, 1)] * 2,
+              'ticker': ['AAPL', 'MSFT'],
+              'stockd_close': [100.0, 110.0],
+              'optd_iv30': [0.25, 0.30],
+              'stockd_return_1d': [0.01, -0.01],
+              'vix_index': [20.0, 20.5]
+          })
+          df.write_parquet('staged/daily_master.parquet')
+          print('✅ Test daily master created')
+          "
+          # Test label generation
+          python src/generate_labels.py --date 2025-01-01
+          # Verify output
+          python -c "
+          import polars as pl
+          labels = pl.read_parquet('data/Parquet_data/labels_2025-01-01.parquet')
+          assert 'target' in labels.columns
+          assert 'iv_change_5d' in labels.columns
+          print(f'✅ Labels generated: {labels.height} rows')
+          "
+
   risk-assessment:
     runs-on: ubuntu-latest
     needs: [advanced-signal-validation]
@@ -528,7 +567,7 @@ jobs:
 
   canary-test:
     runs-on: ubuntu-latest
-    needs: [risk-assessment]
+    needs: [label-generation-test]
     steps:
       - uses: actions/checkout@v3
       - name: Setup kubectl & Argo Rollouts

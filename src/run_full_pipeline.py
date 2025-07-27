@@ -214,8 +214,72 @@ def run_full_pipeline(
             results["intraday"] = intraday_result
             print(f"✅ Intraday master: {intraday_result['rows_processed']} rows")
 
+            # Generate feature parquet after building masters
             print("\n" + "=" * 50)
-            print("STEP 6: Calculating features...")
+            print("STEP 6: Generating feature parquet...")
+            from calculate_features import calculate_all_features
+            import polars as pl
+            
+            # Load master datasets
+            daily_master_df = pl.read_parquet("staged/daily_master.parquet")
+            intraday_master_df = pl.read_parquet("datasets/intraday_master.parquet")
+            
+            # Calculate features
+            feats = calculate_all_features(daily_master_df, intraday_master_df)
+            feats_path = f"data/Parquet_data/features_{date}.parquet"
+            feats.write_parquet(feats_path)
+            print(f"✅ Features written to {feats_path}")
+            results["feature_parquet"] = {"status": "success", "rows": feats.shape[0]}
+            
+            # Generate labels automatically
+            print("\n" + "=" * 50)
+            print("STEP 6.3: Generating labels...")
+            
+            labels_path = f"data/Parquet_data/labels_{date}.parquet"
+            labels_cmd = [
+                sys.executable,
+                "src/generate_labels.py",
+                "--date", date,
+                "--output-path", labels_path
+            ]
+            
+            result = subprocess.run(labels_cmd, capture_output=True, text=True)
+            if result.returncode == 0:
+                print(f"✅ Labels generated: {labels_path}")
+                results["labels"] = {"status": "success", "output": result.stdout}
+            else:
+                print(f"❌ Label generation failed: {result.stderr}")
+                results["labels"] = {"status": "failed", "error": result.stderr}
+            
+            # Generate training dataset if labels exist
+            from pathlib import Path
+            train_path = f"data/Parquet_data/train_dataset_{date}.parquet"
+            
+            if Path(labels_path).exists():
+                print("\n" + "=" * 50)
+                print("STEP 6.5: Generating training dataset...")
+                
+                train_cmd = [
+                    sys.executable,
+                    "src/generate_training_dataset.py",
+                    "--feature-path", feats_path,
+                    "--label-path", labels_path,
+                    "--output-path", train_path
+                ]
+                
+                result = subprocess.run(train_cmd, capture_output=True, text=True)
+                if result.returncode == 0:
+                    print(f"✅ Training dataset created: {train_path}")
+                    results["training_dataset"] = {"status": "success", "output": result.stdout}
+                else:
+                    print(f"❌ Training dataset generation failed: {result.stderr}")
+                    results["training_dataset"] = {"status": "failed", "error": result.stderr}
+            else:
+                print(f"⚠️ Labels file not found: {labels_path}, skipping training dataset generation")
+                results["training_dataset"] = {"status": "skipped", "reason": "labels_not_found"}
+
+            print("\n" + "=" * 50)
+            print("STEP 7: Calculating features (legacy)...")
 
             window_days = int(os.getenv("WINDOW_DAYS", "30"))
             use_gpu = os.getenv("USE_GPU", "false").lower() == "true"
@@ -259,13 +323,25 @@ def run_full_pipeline(
             results["intraday"] = {"status": "skipped", "reason": "dry_run"}
 
             print("\n" + "=" * 50)
-            print("STEP 6: Skipping feature calculation (dry run)")
+            print("STEP 6: Skipping feature parquet generation (dry run)")
+            results["feature_parquet"] = {"status": "skipped", "reason": "dry_run"}
+            
+            print("\n" + "=" * 50)
+            print("STEP 6.3: Skipping label generation (dry run)")
+            results["labels"] = {"status": "skipped", "reason": "dry_run"}
+            
+            print("\n" + "=" * 50)
+            print("STEP 6.5: Skipping training dataset generation (dry run)")
+            results["training_dataset"] = {"status": "skipped", "reason": "dry_run"}
+            
+            print("\n" + "=" * 50)
+            print("STEP 7: Skipping feature calculation (dry run)")
             results["features"] = {"status": "skipped", "reason": "dry_run"}
 
-        # Step 7: Register tables in AWS Glue Data Catalog
+        # Step 8: Register tables in AWS Glue Data Catalog
         if not dry_run:
             print("\n" + "=" * 50)
-            print("STEP 7: Registering tables in AWS Glue Data Catalog...")
+            print("STEP 8: Registering tables in AWS Glue Data Catalog...")
             try:
                 from utils.glue_catalog import register_pipeline_tables
 
@@ -297,10 +373,10 @@ def run_full_pipeline(
                 print(f"⚠️ Glue catalog registration failed: {e}")
                 results["glue_catalog"] = {"error": str(e)}
 
-            # Step 8: Write Delta tables if requested
+            # Step 9: Write Delta tables if requested
             if use_delta:
                 print("\n" + "=" * 50)
-                print("STEP 8: Converting to Delta Lake format...")
+                print("STEP 9: Converting to Delta Lake format...")
                 try:
                     import pandas as pd
 
@@ -361,9 +437,9 @@ def run_full_pipeline(
                     "reason": "not_requested",
                 }
 
-            # Step 10: Materialize features to Feast
+            # Step 11: Materialize features to Feast
             print("\n" + "=" * 50)
-            print("STEP 10: Materializing features to Feast feature store...")
+            print("STEP 11: Materializing features to Feast feature store...")
             try:
                 from feast_materialize import materialize_features
 
@@ -383,10 +459,10 @@ def run_full_pipeline(
                 print(f"⚠️ Feast materialization failed: {e}")
                 results["feast_materialization"] = {"error": str(e)}
 
-        # Step 9: Data Quality Validation
+        # Step 10: Data Quality Validation
         if not dry_run:
             print("\n" + "=" * 50)
-            print("STEP 9: Running data quality validation...")
+            print("STEP 10: Running data quality validation...")
             try:
                 from validate_data_quality import validate_pipeline_outputs
 
@@ -430,16 +506,16 @@ def run_full_pipeline(
                 results["data_quality"] = {"error": str(e)}
         else:
             print("\n" + "=" * 50)
-            print("STEP 7: Skipping Glue catalog registration (dry run)")
+            print("STEP 8: Skipping Glue catalog registration (dry run)")
             results["glue_catalog"] = {"status": "skipped", "reason": "dry_run"}
             results["delta_tables"] = {"status": "skipped", "reason": "dry_run"}
 
             print("\n" + "=" * 50)
-            print("STEP 9: Skipping data quality validation (dry run)")
+            print("STEP 10: Skipping data quality validation (dry run)")
             results["data_quality"] = {"status": "skipped", "reason": "dry_run"}
 
             print("\n" + "=" * 50)
-            print("STEP 10: Skipping Feast materialization (dry run)")
+            print("STEP 11: Skipping Feast materialization (dry run)")
             results["feast_materialization"] = {
                 "status": "skipped",
                 "reason": "dry_run",
