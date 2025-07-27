@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+# Run full validations before any push
+echo "🛡️  Running full local validations before push..."
+./scripts/run-all-validations.sh

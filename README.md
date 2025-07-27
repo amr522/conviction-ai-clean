@@ -394,6 +394,10 @@ You can run every test locally with:
 
 This executes all CI jobs (schema, feature, performance, signal validation) in sequence and exits non-zero on any failure.
 
+### Enforce Validations on Push
+A Git pre-push hook will automatically run `./scripts/run-all-validations.sh`.
+If any validation fails, the push is aborted.
+
 ### Install test dependencies:
 
 ```bash
