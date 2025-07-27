@@ -1195,6 +1195,19 @@ The `explainability-test` validates:
 
 The CI/CD pipeline is implemented using GitHub Actions and defined in `.github/workflows/ci.yml`. It automates testing, code quality checks, and deployment to AWS.
 
+### Release-on-Tag Workflow
+
+1. **Push a new semver tag**:
+   ```bash
+   git tag v1.4.0 && git push origin v1.4.0
+   ```
+
+2. **GitHub Actions will automatically**:
+   - Run full validations & benchmarks
+   - Build & push Docker image `conviction-ai-pipeline:v1.4.0`
+   - Package Helm chart `conviction-ai-pipeline-1.4.0.tgz`
+   - Create a GitHub Release with Docker and Helm installation instructions
+
 ### Pipeline Triggers
 
 The pipeline runs automatically:
