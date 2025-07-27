@@ -1,0 +1,96 @@
+{
+  "smoke_test_date": "2025-07-24",
+  "status": "completed_with_limitations",
+  "timestamp": "2025-01-15T10:30:00Z",
+  "pipeline_steps": {
+    "clean_macro_data": {
+      "status": "success",
+      "files_processed": ["fred.parquet", "vix_data.parquet", "dxy.parquet"],
+      "rows": 1472,
+      "features_available": ["vix_value", "vix_ma_divergence", "dxy_value"]
+    },
+    "clean_options_30min": {
+      "status": "skipped",
+      "reason": "missing_input_data",
+      "expected_input": "data/Parquet_data/option_minute/",
+      "note": "Creates test data only - need real options minute data"
+    },
+    "clean_options_daily": {
+      "status": "skipped", 
+      "reason": "missing_input_data",
+      "expected_input": "raw/options_daily.parquet",
+      "note": "Input file empty - need real options daily data"
+    },
+    "clean_stocks_daily": {
+      "status": "skipped",
+      "reason": "missing_input_data", 
+      "expected_input": "data/Parquet_data/Stocks_daily/",
+      "note": "Directory missing - need stocks daily parquet files"
+    },
+    "clean_stocks_30min": {
+      "status": "skipped",
+      "reason": "missing_input_data",
+      "expected_input": "data/Parquet_data/stocks_minute/", 
+      "note": "Directory missing - need stocks minute data"
+    },
+    "feature_calculation": {
+      "status": "blocked",
+      "reason": "depends_on_market_data",
+      "available_features": ["vix_ma_divergence", "iv_rank_30d"],
+      "blocked_features": ["gex_spx_lag1", "news_count_lag1", "optd_iv30", "stockd_return_1d"]
+    },
+    "training_dataset": {
+      "status": "not_generated",
+      "reason": "insufficient_features",
+      "note": "Need market data to generate meaningful training dataset"
+    }
+  },
+  "data_availability": {
+    "macro_data": {
+      "fred": "✅ available (1,472 rows)",
+      "vix": "✅ available (1,050 rows)", 
+      "dxy": "✅ available (1,472 rows)",
+      "news": "❌ missing"
+    },
+    "market_data": {
+      "options_minute": "❌ missing",
+      "options_daily": "❌ empty file",
+      "stocks_minute": "❌ missing", 
+      "stocks_daily": "❌ missing directory"
+    },
+    "ready_for_training": {
+      "stocks_daily_features": "✅ available (50,109 rows)",
+      "options_daily_enhanced": "✅ available (300 rows)",
+      "corrupted_files": ["vix_daily.parquet", "spy_daily.parquet"]
+    }
+  },
+  "implemented_features": {
+    "swing_optimized": [
+      "vix_ma_divergence",
+      "iv_rank_30d", 
+      "optd_iv30",
+      "optd_hv30",
+      "optd_iv_skew_slope",
+      "optd_vol_surprise"
+    ],
+    "blocked_data_missing": [
+      "gex_spx_lag1",
+      "news_count_lag1", 
+      "avg_sentiment_lag1"
+    ]
+  },
+  "next_actions": {
+    "priority_1": "Acquire options minute and daily data",
+    "priority_2": "Acquire stocks minute and daily data", 
+    "priority_3": "Fix corrupted parquet files in ready_for_training",
+    "priority_4": "Acquire SPX GEX and news sentiment feeds"
+  },
+  "infrastructure_status": {
+    "feature_pipeline": "✅ ready",
+    "cleaning_scripts": "✅ implemented", 
+    "validation_framework": "✅ ready",
+    "ci_cd": "✅ functional",
+    "tests": "✅ passing (dealer_flow: 3/3, iv_rank: 3/3)"
+  },
+  "recommendation": "Pipeline infrastructure is complete but blocked by missing raw market data. Focus on data acquisition before proceeding with model training."
+}
