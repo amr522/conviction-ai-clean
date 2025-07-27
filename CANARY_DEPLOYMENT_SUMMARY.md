@@ -49,7 +49,7 @@ Successfully integrated Kubernetes canary deployments for the FastAPI inference 
          │
     ┌────────┬────────┐
     │  90%   │  10%   │
-    ▼        ▼        
+    ▼        ▼
 ┌─────────┐ ┌─────────┐
 │ Stable  │ │ Canary  │
 │ Service │ │ Service │
@@ -123,7 +123,7 @@ sum(rate(predictions_total{status_code!~"5.."}[2m])) /
 sum(rate(predictions_total[2m]))
 
 # 95th Percentile Latency
-histogram_quantile(0.95, 
+histogram_quantile(0.95,
   sum(rate(prediction_latency_seconds_bucket[2m])) by (le)
 )
 

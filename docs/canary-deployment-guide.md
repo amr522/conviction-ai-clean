@@ -52,7 +52,7 @@ helm upgrade --install conviction-ai-pipeline charts/conviction-ai-pipeline \
 The default configuration implements a 3-step canary deployment:
 
 1. **10% traffic** → pause 1 minute
-2. **50% traffic** → pause 2 minutes  
+2. **50% traffic** → pause 2 minutes
 3. **100% traffic** (full promotion)
 
 ### Custom Canary Steps
@@ -158,7 +158,7 @@ sum(rate(predictions_total{service="conviction-ai-pipeline-inference", status_co
 sum(rate(predictions_total{service="conviction-ai-pipeline-inference"}[2m]))
 
 # 95th percentile latency
-histogram_quantile(0.95, 
+histogram_quantile(0.95,
   sum(rate(prediction_latency_seconds_bucket{service="conviction-ai-pipeline-inference"}[2m])) by (le)
 )
 
@@ -295,7 +295,7 @@ In addition to technical metrics, monitor business-specific metrics:
     helm upgrade conviction-ai-pipeline charts/conviction-ai-pipeline \
       --set rollout.enabled=true \
       --set inference.image.tag=${{ github.sha }}
-    
+
     # Wait for rollout to complete
     kubectl argo rollouts status conviction-ai-pipeline-inference \
       --timeout=600s

@@ -17,7 +17,7 @@ export default function App() {
       <h1 style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '20px' }}>
         Pipeline Lineage Explorer
       </h1>
-      
+
       <div style={{ marginBottom: '20px' }}>
         <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>
           Select Run ID:
@@ -39,7 +39,7 @@ export default function App() {
             <option key={run} value={run}>{run}</option>
           ))}
         </select>
-        
+
         <span style={{ fontSize: '12px', color: '#666', marginLeft: '10px' }}>
           Or enter custom run ID:
         </span>
@@ -67,11 +67,11 @@ export default function App() {
           <LineageGraph runId={runId} />
         </div>
       )}
-      
+
       {!runId && (
-        <div style={{ 
-          padding: '40px', 
-          textAlign: 'center', 
+        <div style={{
+          padding: '40px',
+          textAlign: 'center',
           color: '#666',
           border: '2px dashed #ddd',
           borderRadius: '8px'

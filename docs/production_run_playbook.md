@@ -373,6 +373,6 @@ curl -X POST -H 'Content-type: application/json' \
 
 ---
 
-**Last Updated**: $(date)  
-**Version**: 1.0  
+**Last Updated**: $(date)
+**Version**: 1.0
 **Maintained By**: Conviction-AI Team

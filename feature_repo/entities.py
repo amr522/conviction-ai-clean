@@ -8,12 +8,12 @@ from feast import Entity, ValueType
 ticker = Entity(
     name="ticker",
     value_type=ValueType.STRING,
-    description="Stock or option symbol identifier"
+    description="Stock or option symbol identifier",
 )
 
 # Date entity for time-based features
 date_entity = Entity(
     name="date",
     value_type=ValueType.STRING,
-    description="Date identifier for daily features"
+    description="Date identifier for daily features",
 )

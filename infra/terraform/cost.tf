@@ -3,7 +3,7 @@
 # SNS Topic for budget alerts
 resource "aws_sns_topic" "budget_alerts" {
   count = var.enable_cost_management ? 1 : 0
-  
+
   name = "${var.project_name}-budget-alerts"
 
   tags = merge(var.tags, {
@@ -14,7 +14,7 @@ resource "aws_sns_topic" "budget_alerts" {
 # SNS Topic Policy
 resource "aws_sns_topic_policy" "budget_alerts" {
   count = var.enable_cost_management ? 1 : 0
-  
+
   arn = aws_sns_topic.budget_alerts[0].arn
 
   policy = jsonencode({
@@ -40,7 +40,7 @@ resource "aws_sns_topic_policy" "budget_alerts" {
 # Email subscription for budget alerts
 resource "aws_sns_topic_subscription" "budget_email" {
   count = var.enable_cost_management ? 1 : 0
-  
+
   topic_arn = aws_sns_topic.budget_alerts[0].arn
   protocol  = "email"
   endpoint  = var.budget_email
@@ -49,7 +49,7 @@ resource "aws_sns_topic_subscription" "budget_email" {
 # Slack webhook subscription (if provided)
 resource "aws_sns_topic_subscription" "budget_slack" {
   count = var.enable_cost_management && var.slack_budget_webhook_url != "" ? 1 : 0
-  
+
   topic_arn = aws_sns_topic.budget_alerts[0].arn
   protocol  = "https"
   endpoint  = var.slack_budget_webhook_url
@@ -58,7 +58,7 @@ resource "aws_sns_topic_subscription" "budget_slack" {
 # Monthly budget for the project
 resource "aws_budgets_budget" "monthly" {
   count = var.enable_cost_management ? 1 : 0
-  
+
   name         = "${var.project_name}-monthly-budget"
   budget_type  = "COST"
   limit_amount = var.monthly_budget_amount
@@ -126,7 +126,7 @@ resource "aws_budgets_budget" "monthly" {
 # Daily budget for fine-grained monitoring
 resource "aws_budgets_budget" "daily" {
   count = var.enable_cost_management ? 1 : 0
-  
+
   name         = "${var.project_name}-daily-budget"
   budget_type  = "COST"
   limit_amount = var.monthly_budget_amount / 30  # Approximate daily budget
@@ -162,7 +162,7 @@ resource "aws_budgets_budget" "daily" {
 # Cost anomaly detection
 resource "aws_ce_anomaly_detector" "service_monitor" {
   count = var.enable_cost_management ? 1 : 0
-  
+
   name         = "${var.project_name}-anomaly-detector"
   monitor_type = "DIMENSIONAL"
 
@@ -182,14 +182,14 @@ resource "aws_ce_anomaly_detector" "service_monitor" {
 # Cost anomaly subscription
 resource "aws_ce_anomaly_subscription" "service_monitor" {
   count = var.enable_cost_management ? 1 : 0
-  
+
   name      = "${var.project_name}-anomaly-subscription"
   frequency = "DAILY"
-  
+
   monitor_arn_list = [
     aws_ce_anomaly_detector.service_monitor[0].arn
   ]
-  
+
   subscriber {
     type    = "EMAIL"
     address = var.budget_email

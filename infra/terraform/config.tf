@@ -3,7 +3,7 @@
 # IAM role for AWS Config
 resource "aws_iam_role" "config" {
   count = var.enable_config ? 1 : 0
-  
+
   name = "${var.project_name}-config-role"
 
   assume_role_policy = jsonencode({
@@ -25,7 +25,7 @@ resource "aws_iam_role" "config" {
 # Attach AWS managed policy for Config
 resource "aws_iam_role_policy_attachment" "config" {
   count = var.enable_config ? 1 : 0
-  
+
   role       = aws_iam_role.config[0].name
   policy_arn = "arn:aws:iam::aws:policy/service-role/ConfigRole"
 }
@@ -33,7 +33,7 @@ resource "aws_iam_role_policy_attachment" "config" {
 # Additional policy for Config to access S3 bucket
 resource "aws_iam_role_policy" "config_s3" {
   count = var.enable_config ? 1 : 0
-  
+
   name = "${var.project_name}-config-s3-policy"
   role = aws_iam_role.config[0].id
 
@@ -64,7 +64,7 @@ resource "aws_iam_role_policy" "config_s3" {
 # AWS Config configuration recorder
 resource "aws_config_configuration_recorder" "main" {
   count = var.enable_config ? 1 : 0
-  
+
   name     = "${var.project_name}-recorder"
   role_arn = aws_iam_role.config[0].arn
 
@@ -79,7 +79,7 @@ resource "aws_config_configuration_recorder" "main" {
 # AWS Config delivery channel
 resource "aws_config_delivery_channel" "main" {
   count = var.enable_config ? 1 : 0
-  
+
   name           = "${var.project_name}-channel"
   s3_bucket_name = aws_s3_bucket.ml_artifacts.bucket
   s3_key_prefix  = "config"
@@ -92,7 +92,7 @@ resource "aws_config_delivery_channel" "main" {
 # Start the configuration recorder
 resource "aws_config_configuration_recorder_status" "main" {
   count = var.enable_config ? 1 : 0
-  
+
   name       = aws_config_configuration_recorder.main[0].name
   is_enabled = true
   depends_on = [aws_config_delivery_channel.main]
@@ -101,7 +101,7 @@ resource "aws_config_configuration_recorder_status" "main" {
 # Config rule: S3 bucket server-side encryption enabled
 resource "aws_config_config_rule" "s3_encryption" {
   count = var.enable_config ? 1 : 0
-  
+
   name = "${var.project_name}-s3-encryption-enabled"
 
   source {
@@ -117,7 +117,7 @@ resource "aws_config_config_rule" "s3_encryption" {
 # Config rule: S3 bucket public read prohibited
 resource "aws_config_config_rule" "s3_public_read" {
   count = var.enable_config ? 1 : 0
-  
+
   name = "${var.project_name}-s3-public-read-prohibited"
 
   source {
@@ -133,7 +133,7 @@ resource "aws_config_config_rule" "s3_public_read" {
 # Config rule: S3 bucket public write prohibited
 resource "aws_config_config_rule" "s3_public_write" {
   count = var.enable_config ? 1 : 0
-  
+
   name = "${var.project_name}-s3-public-write-prohibited"
 
   source {
@@ -149,7 +149,7 @@ resource "aws_config_config_rule" "s3_public_write" {
 # Config rule: EKS cluster version compliance
 resource "aws_config_config_rule" "eks_version" {
   count = var.enable_config ? 1 : 0
-  
+
   name = "${var.project_name}-eks-version-compliance"
 
   source {
@@ -169,7 +169,7 @@ resource "aws_config_config_rule" "eks_version" {
 # Config rule: EKS endpoint access public disabled
 resource "aws_config_config_rule" "eks_endpoint_access" {
   count = var.enable_config ? 1 : 0
-  
+
   name = "${var.project_name}-eks-endpoint-access-public-disabled"
 
   source {
@@ -185,7 +185,7 @@ resource "aws_config_config_rule" "eks_endpoint_access" {
 # Config rule: IAM password policy
 resource "aws_config_config_rule" "iam_password_policy" {
   count = var.enable_config ? 1 : 0
-  
+
   name = "${var.project_name}-iam-password-policy"
 
   source {
@@ -211,7 +211,7 @@ resource "aws_config_config_rule" "iam_password_policy" {
 # Config rule: Root access key check
 resource "aws_config_config_rule" "root_access_key" {
   count = var.enable_config ? 1 : 0
-  
+
   name = "${var.project_name}-root-access-key-check"
 
   source {
@@ -227,7 +227,7 @@ resource "aws_config_config_rule" "root_access_key" {
 # IAM role for Config remediation
 resource "aws_iam_role" "config_remediation" {
   count = var.enable_config ? 1 : 0
-  
+
   name = "${var.project_name}-config-remediation-role"
 
   assume_role_policy = jsonencode({
@@ -249,7 +249,7 @@ resource "aws_iam_role" "config_remediation" {
 # Policy for Config remediation
 resource "aws_iam_role_policy" "config_remediation" {
   count = var.enable_config ? 1 : 0
-  
+
   name = "${var.project_name}-config-remediation-policy"
   role = aws_iam_role.config_remediation[0].id
 
@@ -285,24 +285,24 @@ resource "aws_iam_role_policy" "config_remediation" {
 # Remediation configuration for S3 encryption
 resource "aws_config_remediation_configuration" "s3_encryption" {
   count = var.enable_config ? 1 : 0
-  
+
   config_rule_name = aws_config_config_rule.s3_encryption[0].name
 
   resource_type    = "AWS::S3::Bucket"
   target_type      = "SSM_DOCUMENT"
   target_id        = "AWS-PublishSNSNotification"
   target_version   = "1"
-  
+
   parameter {
     name           = "AutomationAssumeRole"
     static_value   = aws_iam_role.config_remediation[0].arn
   }
-  
+
   parameter {
     name           = "TopicArn"
     static_value   = var.enable_cost_management ? aws_sns_topic.budget_alerts[0].arn : ""
   }
-  
+
   parameter {
     name           = "Message"
     static_value   = "S3 bucket encryption compliance violation detected and remediation attempted"

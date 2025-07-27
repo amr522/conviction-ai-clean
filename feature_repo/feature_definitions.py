@@ -2,15 +2,16 @@
 """
 Feast feature view definitions
 """
-from feast import Feature, FeatureView, FileSource, ValueType
 from datetime import timedelta
+
 from entities import ticker
+from feast import Feature, FeatureView, FileSource, ValueType
 
 # Stocks 30-minute features
 stocks_30min_source = FileSource(
     path="staged/stocks_30min_clean.parquet",
     event_timestamp_column="timestamp",
-    created_timestamp_column="timestamp"
+    created_timestamp_column="timestamp",
 )
 
 stocks_30min_fv = FeatureView(
@@ -28,14 +29,14 @@ stocks_30min_fv = FeatureView(
         Feature(name="volatility", dtype=ValueType.FLOAT),
     ],
     batch_source=stocks_30min_source,
-    tags={"team": "conviction-ai", "type": "stocks"}
+    tags={"team": "conviction-ai", "type": "stocks"},
 )
 
 # Options 30-minute features
 options_30min_source = FileSource(
     path="staged/options_30min_clean.parquet",
     event_timestamp_column="timestamp",
-    created_timestamp_column="timestamp"
+    created_timestamp_column="timestamp",
 )
 
 options_30min_fv = FeatureView(
@@ -59,14 +60,14 @@ options_30min_fv = FeatureView(
         Feature(name="opt30_moneyness", dtype=ValueType.FLOAT),
     ],
     batch_source=options_30min_source,
-    tags={"team": "conviction-ai", "type": "options"}
+    tags={"team": "conviction-ai", "type": "options"},
 )
 
 # Stocks daily features
 stocks_daily_source = FileSource(
     path="staged/stocks_daily_clean.parquet",
     event_timestamp_column="timestamp",
-    created_timestamp_column="timestamp"
+    created_timestamp_column="timestamp",
 )
 
 stocks_daily_fv = FeatureView(
@@ -86,14 +87,14 @@ stocks_daily_fv = FeatureView(
         Feature(name="rsi_14", dtype=ValueType.FLOAT),
     ],
     batch_source=stocks_daily_source,
-    tags={"team": "conviction-ai", "type": "stocks"}
+    tags={"team": "conviction-ai", "type": "stocks"},
 )
 
 # Options daily features
 options_daily_source = FileSource(
     path="staged/options_daily_clean.parquet",
     event_timestamp_column="timestamp",
-    created_timestamp_column="timestamp"
+    created_timestamp_column="timestamp",
 )
 
 options_daily_fv = FeatureView(
@@ -112,5 +113,5 @@ options_daily_fv = FeatureView(
         Feature(name="optd_put_call_ratio", dtype=ValueType.FLOAT),
     ],
     batch_source=options_daily_source,
-    tags={"team": "conviction-ai", "type": "options"}
+    tags={"team": "conviction-ai", "type": "options"},
 )

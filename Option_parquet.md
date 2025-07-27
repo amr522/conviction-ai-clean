@@ -152,7 +152,7 @@ result = optimize_join_performance(stocks_df, options_df, on=["timestamp", "tick
 
 All join operations use:
 - **Broadcast hints** for smaller tables
-- **Streaming collection** for memory efficiency  
+- **Streaming collection** for memory efficiency
 - **Native Polars operations** for maximum performance
 
 ### Feature Validation

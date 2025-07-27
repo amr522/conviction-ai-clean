@@ -30,22 +30,22 @@ PYCODE
 if [ "$trading_dates" = "FALLBACK" ]; then
     echo "⚠ pandas_market_calendars not installed, using weekend fallback"
     echo "Install with: pip install pandas_market_calendars"
-    
+
     # Fallback: iterate through all dates and skip weekends
     start_seconds=$(date -j -f "%Y-%m-%d" "$START_DATE" "+%s")
     end_seconds=$(date -j -f "%Y-%m-%d" "$END_DATE" "+%s")
     current_seconds=$start_seconds
-    
+
     while [ $current_seconds -le $end_seconds ]; do
         current_date=$(date -j -f "%s" "$current_seconds" "+%Y-%m-%d")
         day_of_week=$(date -j -f "%s" "$current_seconds" "+%u")
-        
+
         # Skip weekends (6=Saturday, 7=Sunday)
         if [ "$day_of_week" -eq 6 ] || [ "$day_of_week" -eq 7 ]; then
             echo "⏭ Skipping weekend $current_date"
         else
             echo "▶ Processing $current_date"
-            
+
             # Run full pipeline with error handling
             if python src/run_full_pipeline.py --date "$current_date"; then
                 if python src/validate_pipeline.py --date "$current_date"; then
@@ -57,16 +57,16 @@ if [ "$trading_dates" = "FALLBACK" ]; then
                 echo "⚠ No data available for $current_date (skipping)"
             fi
         fi
-        
+
         current_seconds=$((current_seconds + 86400))
     done
 else
     echo "✅ Using NYSE trading calendar"
-    
+
     # Process only trading dates
     echo "$trading_dates" | while read -r current_date; do
         echo "▶ Processing $current_date (trading day)"
-        
+
         # Run full pipeline with error handling
         if python src/run_full_pipeline.py --date "$current_date"; then
             if python src/validate_pipeline.py --date "$current_date"; then

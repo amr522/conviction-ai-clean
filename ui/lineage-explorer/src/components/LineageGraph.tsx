@@ -2,8 +2,8 @@ import React, { useEffect, useRef } from 'react';
 import { Network } from 'vis-network';
 import { fetchRunLineage } from '../services/lineageService';
 
-interface Props { 
-  runId: string; 
+interface Props {
+  runId: string;
 }
 
 export default function LineageGraph({ runId }: Props) {
@@ -19,7 +19,7 @@ export default function LineageGraph({ runId }: Props) {
         color: n.type === 'job' ? '#4CAF50' : '#2196F3',
         shape: n.type === 'job' ? 'box' : 'ellipse'
       }));
-      
+
       const edges = graph.edges.map(e => ({
         from: e.from,
         to: e.to,
@@ -30,8 +30,8 @@ export default function LineageGraph({ runId }: Props) {
         containerRef.current!,
         { nodes, edges },
         {
-          layout: { 
-            hierarchical: { 
+          layout: {
+            hierarchical: {
               direction: 'LR',
               sortMethod: 'directed'
             }
@@ -50,14 +50,14 @@ export default function LineageGraph({ runId }: Props) {
   }, [runId]);
 
   return (
-    <div 
-      ref={containerRef} 
-      style={{ 
-        width: '100%', 
+    <div
+      ref={containerRef}
+      style={{
+        width: '100%',
         height: '600px',
         border: '1px solid #ddd',
         borderRadius: '4px'
-      }} 
+      }}
     />
   );
 }

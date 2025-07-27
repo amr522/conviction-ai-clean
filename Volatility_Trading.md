@@ -303,15 +303,15 @@ Edge = Blender output – transaction_cost
     def process_features(self, parquet_path):
         """
         Calculate GPU-accelerated forex features using exact formulas:
-        
+
         1. Historical Volatility (HV):
            - HVn = std(log_returns) * sqrt(252) * 100
            where n is the window size (10, 30, 60 days)
-           
+
         2. Average True Range (ATR14):
            - TR = max(high-low, |high-prev_close|, |low-prev_close|)
            - ATR14 = mean(TR) over 14 periods
-           
+
         3. Volume Z-Score:
            - z = (volume - rolling_mean(volume, 30)) / rolling_std(volume, 30)
         """
@@ -321,10 +321,10 @@ Edge = Blender output – transaction_cost
         high = torch.tensor(df['high'].values, dtype=torch.float32, device=self.device)
         low = torch.tensor(df['low'].values, dtype=torch.float32, device=self.device)
         volume = torch.tensor(df['volume'].values, dtype=torch.float32, device=self.device)
-        
+
         # Calculate log returns
         log_returns = torch.log(close[1:] / close[:-1])
-        
+
         # Historical Volatility Features
         vol_features = {}
         for window in self.windows:
@@ -337,20 +337,20 @@ Edge = Blender output – transaction_cost
                 vol = daily_vol * torch.sqrt(torch.tensor(self.trading_days)) * self.vol_scale * 0.01
                 rolling_vol[i-1] = torch.minimum(vol, torch.tensor(self.vol_cap, device=self.device))
             vol_features[f'HV{window}'] = rolling_vol.cpu().numpy()
-        
+
         # ATR Calculation
         high_low = high - low
         high_close_prev = torch.abs(high[1:] - close[:-1])
         low_close_prev = torch.abs(low[1:] - close[:-1])
-        
+
         tr = torch.zeros_like(close)
-        tr[1:] = torch.maximum(high_low[1:], 
+        tr[1:] = torch.maximum(high_low[1:],
                              torch.maximum(high_close_prev, low_close_prev))
-        
+
         atr14 = torch.zeros_like(close)
         for i in range(14, len(tr)):
             atr14[i] = torch.mean(tr[i-14:i])
-        
+
         # Volume Z-score (30-day window)
         vol_zscore = torch.zeros_like(volume)
         for i in range(30, len(volume)):
@@ -359,33 +359,33 @@ Edge = Blender output – transaction_cost
             std = torch.std(window)
             if std > 0:
                 vol_zscore[i] = (volume[i] - mean) / std
-        
+
         # Clamp volume z-scores to reasonable range
         vol_zscore = torch.clamp(vol_zscore, min=-10.0, max=10.0)
-        
+
         # Add features to DataFrame
         for name, values in vol_features.items():
             df[name] = values
-        
+
         df['atr14'] = atr14.cpu().numpy()
         df['volume_zscore'] = vol_zscore.cpu().numpy()
-        
+
         return df
 
     def add_regime_features(self, df):
         # Utilize cusignal for faster signal processing
         df['atr14'] = cusignal.atr(
-            df['high'].values, 
+            df['high'].values,
             df['low'].values,
             df['close'].values,
             14
         )
-        
+
         # Volatility regime detection
         df['vol_regime'] = (
             df['HV10'] - df['HV60']
         ).rolling(5).mean() / df['HV60']
-        
+
         return df
 
     def add_mean_reversion_features(self, df):
@@ -401,7 +401,7 @@ Edge = Blender output – transaction_cost
                 .rolling(window)
                 .std()
             )
-        
+
         return df
 
     def add_volume_features(self, df):
@@ -411,14 +411,14 @@ Edge = Blender output – transaction_cost
             .rolling(20)
             .mean()
         )
-        
+
         df['volume_zscore'] = (
             (df['volume'] - df['volume_ma20']) /
             df.groupby('currency_pair')['volume']
             .rolling(20)
             .std()
         )
-        
+
         return df
 ```
 
@@ -432,14 +432,14 @@ def validate_forex_features(df):
         'timestamp_continuity': df.index.is_monotonic_increasing,
         'value_ranges': {
             'HV_features': all(
-                df[f'HV{window}'].between(0, 500).all() 
+                df[f'HV{window}'].between(0, 500).all()
                 for window in [10, 30, 60]
             ),
             'zscore_features': df['volume_zscore'].between(-10, 10).all(),
             'regime_features': df['vol_regime'].between(-5, 5).all()
         }
     }
-    
+
     return checks
 ```
 

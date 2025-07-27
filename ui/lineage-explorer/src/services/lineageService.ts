@@ -46,10 +46,10 @@ export async function fetchRunLineage(runId: string): Promise<LineageGraph> {
   try {
     const response = await client.get(`/api/v1/runs/${runId}`);
     const runEvent: RunEvent = response.data;
-    
+
     const nodes: LineageNode[] = [];
     const edges: LineageEdge[] = [];
-    
+
     const jobId = `${runEvent.job.namespace}:${runEvent.job.name}`;
     nodes.push({
       id: jobId,
@@ -57,7 +57,7 @@ export async function fetchRunLineage(runId: string): Promise<LineageGraph> {
       type: 'job',
       namespace: runEvent.job.namespace
     });
-    
+
     runEvent.inputs.forEach(input => {
       const inputId = `${input.namespace}:${input.name}`;
       nodes.push({
@@ -68,7 +68,7 @@ export async function fetchRunLineage(runId: string): Promise<LineageGraph> {
       });
       edges.push({ from: inputId, to: jobId });
     });
-    
+
     runEvent.outputs.forEach(output => {
       const outputId = `${output.namespace}:${output.name}`;
       nodes.push({
@@ -79,7 +79,7 @@ export async function fetchRunLineage(runId: string): Promise<LineageGraph> {
       });
       edges.push({ from: jobId, to: outputId });
     });
-    
+
     return { nodes, edges };
   } catch (error) {
     return getMockLineage();

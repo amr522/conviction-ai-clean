@@ -33,7 +33,7 @@ receivers:
   - chat_id: '${TELEGRAM_CHAT_ID}'
     message: |
       🚨 *CRITICAL ALERT*
-      
+
       *Alert:* {{ .GroupLabels.alertname }}
       {{ range .Alerts }}
       *Summary:* {{ .Annotations.summary }}
@@ -48,7 +48,7 @@ receivers:
   - chat_id: '${TELEGRAM_CHAT_ID}'
     message: |
       ⚠️ *WARNING ALERT*
-      
+
       *Alert:* {{ .GroupLabels.alertname }}
       {{ range .Alerts }}
       *Summary:* {{ .Annotations.summary }}
