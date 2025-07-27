@@ -1,7 +1,7 @@
 # Conviction-AI Machine Learning Pipeline
 
 [![Version](https://img.shields.io/badge/version-2.1.0-blue.svg)](https://github.com/amr522/conviction-ai-clean/releases/tag/v2.1.0)
-[![Coverage Status](https://img.shields.io/badge/coverage-38%25-orange.svg)](htmlcov/index.html)
+[![Coverage Status](https://img.shields.io/badge/coverage-54%25-yellow.svg)](htmlcov/index.html)
 
 This repository contains the Conviction-AI machine learning pipeline, which automates data processing, model training, and deployment to AWS.
 
