@@ -9,136 +9,122 @@ image:
 nameOverride: ""
 fullnameOverride: ""
 
-serviceAccount:
-  create: true
-  annotations: {}
-  name: ""
-
-podAnnotations: {}
-
-podSecurityContext: {}
-
-securityContext: {}
-
 service:
   type: ClusterIP
-  port: 80
-
-ingress:
-  enabled: false
-  className: ""
-  annotations: {}
-  hosts:
-    - host: chart-example.local
-      paths:
-        - path: /
-          pathType: Prefix
-  tls: []
+  port: 8000
 
 resources:
   limits:
-    cpu: 2
-    memory: 4Gi
-  requests:
-    cpu: 1
+    cpu: 1000m
     memory: 2Gi
+  requests:
+    cpu: 500m
+    memory: 1Gi
 
+# Autoscaling configuration
 autoscaling:
-  enabled: false
-  minReplicas: 1
-  maxReplicas: 100
-  targetCPUUtilizationPercentage: 80
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 10
+  cpu:
+    targetAverageUtilization: 75
+  memory:
+    enabled: true
+    targetAverageUtilization: 80
+  vpa:
+    enabled: false
+    updateMode: "Auto"
+    minAllowed:
+      cpu: 100m
+      memory: 128Mi
+    maxAllowed:
+      cpu: 2000m
+      memory: 4Gi
 
+# Grafana dashboard configuration
+grafana:
+  dashboard:
+    costs:
+      enabled: true
+      cpuCostPerHour: 0.0464  # AWS m5.large CPU cost per hour
+      memoryCostPerGBHour: 0.0058  # AWS memory cost per GB hour
+    anomalies:
+      enabled: false
+
+# Node affinity and tolerations
 nodeSelector: {}
-
 tolerations: []
-
 affinity: {}
 
-# Pipeline configuration
-runDate: ""
-nTrials: 50
-nJobs: 4
+# Pod disruption budget
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 1
+
+# Lineage tracking
+lineage:
+  enabled: false
+  host: "lineage.conviction-ai.com"
+  servicePort: 80
+  authSecret: "lineage-auth-secret"
+  auth:
+    oidc:
+      enabled: true
+      issuerUrl: "https://keycloak.example.com/auth/realms/conviction-ai"
+      clientId: "lineage-explorer"
+      clientSecret: "changeme"
+      callbackPath: "/auth/callback"
+      scope: "openid profile email"
+      redirectUrl: "https://lineage.conviction-ai.com/auth/callback"
+
+# Prometheus monitoring
+prometheus:
+  enabled: false
+
+# Inference service
+inference:
+  enabled: false
+
+# Training jobs
+training:
+  enabled: false
 
 # Chaos engineering
 chaos:
   enabled: false
-  etl:
-    duration: 60
-    percentAffected: 20
-  inference:
-    duration: 60
-    percentAffected: 10
-  network:
-    enabled: true
-    duration: 60       # seconds
-    latency: 200       # ms
-    percentAffected: 20
-  cpu:
-    enabled: true
-    duration: 60       # seconds
-    load: 80           # percent CPU load per pod
-    percentAffected: 20
-  exporter:
-    enabled: true
-    image: litmuschaos/chaos-exporter:latest
-    port: 9110
 
-# Backfill configuration
-backfill:
+# Rollout configuration
+rollout:
   enabled: false
-  schedule: "0 2 * * *"
-  workers: 8
 
-# Persistence
-persistence:
+# Data drift detection
+drift:
+  enabled: false
+  threshold: 0.1
+  pushgateway:
+    url: "http://pushgateway:9091"
+    job: "data_drift"
+
+# Model explainability
+explainability:
+  enabled: false
+  threshold: 0.1
+  pushgateway:
+    url: "http://pushgateway:9091"
+    job: "model_explain"
+
+# Signal validation
+signalValidation:
   enabled: true
-  data:
-    size: 50Gi
-    storageClass: ""
-  models:
-    size: 10Gi
-    storageClass: ""
-  metrics:
-    size: 5Gi
-    storageClass: ""
+  threshold: 0.9
+  lowerThreshold: 0.1
+  enhancedThreshold: 1.5  # multiplier for enhanced gamma squeeze detection
 
-# Prometheus alerts
+# Anomaly testing cron job
+anomalyCron:
+  enabled: false
+  schedule: "0 */6 * * *"  # Every 6 hours
+
+# Alerts configuration
 alerts:
   enabled: true
-
-# Alertmanager configuration
-alertmanager:
-  slackApiUrl: ""        # e.g. https://hooks.slack.com/services/XXX
-  slackChannel: "#alerts"
-
-# Argo Rollouts configuration
-rollout:
-  enabled: true
-  canary:
-    initialWeight: 10
-    maxWeight: 100
-    analysis:
-      enabled: true
-
-# Lineage Explorer UI
-lineage:
-  enabled: true
-  host: "lineage.your-domain.com"
-  servicePort: 80
-  replicaCount: 1
-  image:
-    repository: your-registry/conviction-ai-lineage
-    tag: "latest"
-    pullPolicy: IfNotPresent
-  service:
-    type: ClusterIP
-  authSecret: "basic-auth-lineage"
-  openlineageUrl: "http://localhost:5000"
-  resources:
-    limits:
-      cpu: 500m
-      memory: 512Mi
-    requests:
-      cpu: 100m
-      memory: 128Mi
