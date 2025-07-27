@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Optional
 
 import pandas as pd
+from utils.raw_schema_validator import validate, SchemaMismatchError
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -134,18 +135,30 @@ def main():
     vix_df = load_data_source(
         "VIX", args.raw_vix_json, vix_out, args.use_raw_macro, is_json=True
     )
-    
+
     # Calculate VIX MA divergence if VIX data available
     if not vix_df.empty and "date" in vix_df.columns:
         vix_df = vix_df.sort_values("date")
         if "close" in vix_df.columns:
-            vix_df["vix_ma_10"] = vix_df["close"].rolling(window=10, min_periods=1).mean()
-            vix_df["vix_ma_20"] = vix_df["close"].rolling(window=20, min_periods=1).mean()
-            vix_df["vix_ma_divergence"] = (vix_df["close"] - vix_df["vix_ma_10"]) / vix_df["vix_ma_10"]
+            vix_df["vix_ma_10"] = (
+                vix_df["close"].rolling(window=10, min_periods=1).mean()
+            )
+            vix_df["vix_ma_20"] = (
+                vix_df["close"].rolling(window=20, min_periods=1).mean()
+            )
+            vix_df["vix_ma_divergence"] = (
+                vix_df["close"] - vix_df["vix_ma_10"]
+            ) / vix_df["vix_ma_10"]
         elif "value" in vix_df.columns:
-            vix_df["vix_ma_10"] = vix_df["value"].rolling(window=10, min_periods=1).mean()
-            vix_df["vix_ma_20"] = vix_df["value"].rolling(window=20, min_periods=1).mean()
-            vix_df["vix_ma_divergence"] = (vix_df["value"] - vix_df["vix_ma_10"]) / vix_df["vix_ma_10"]
+            vix_df["vix_ma_10"] = (
+                vix_df["value"].rolling(window=10, min_periods=1).mean()
+            )
+            vix_df["vix_ma_20"] = (
+                vix_df["value"].rolling(window=20, min_periods=1).mean()
+            )
+            vix_df["vix_ma_divergence"] = (
+                vix_df["value"] - vix_df["vix_ma_10"]
+            ) / vix_df["vix_ma_10"]
 
     # Load DXY data
     dxy_df = load_data_source("DXY", args.raw_dxy_csv, dxy_out, args.use_raw_macro)

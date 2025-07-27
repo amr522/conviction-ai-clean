@@ -9,6 +9,7 @@ from prefect import task
 from prefect.tasks import task_input_hash
 
 from utils.profiling import profile_memory_and_time, profile_time
+from utils.raw_schema_validator import validate, SchemaMismatchError
 
 
 @task(
@@ -36,37 +37,58 @@ def run(
     try:
         print(f"Starting daily options data cleaning for date: {date}")
 
-        # Input/output paths
+        # Input/output paths with fallback
         project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        input_path = os.path.join(project_root, "raw/options_daily.parquet")
+        primary_path = os.path.join(project_root, "raw/options_daily.parquet")
+        backup_dir = os.getenv("RAW_BACKUP_DIR", os.path.join(project_root, "data/Parquet_data/Raw"))
+        backup_path = os.path.join(backup_dir, f"options_daily_{date}.parquet")
+        schema_path = os.path.join(project_root, "schemas/options_daily_raw.json")
         output_dir = os.path.join(project_root, "staged")
         output_path = os.path.join(output_dir, "options_daily_clean.parquet")
 
-        print(f"Input path: {input_path}")
+        print(f"Primary path: {primary_path}")
+        print(f"Backup path: {backup_path}")
         print(f"Output path: {output_path}")
 
         if not dry_run:
             Path(output_dir).mkdir(parents=True, exist_ok=True)
 
-        # Verify input exists, else skip
-        if not os.path.exists(input_path):
-            import logging
-            logger = logging.getLogger(__name__)
-            logger.warning(f"Input path '{input_path}' not found, skipping options daily clean.")
-            return {
-                "status": "skipped",
-                "date": date,
-                "rows_processed": 0,
-                "output_path": None,
-                "reason": "input_path_missing",
-                "statistics": {
-                    "input_rows": 0,
-                    "output_rows": 0,
-                    "unique_tickers": 0,
-                    "target_date": date,
-                    "timestamp_range": [None, None],
-                },
-            }
+        # Try primary path with schema validation, fallback to backup
+        input_path = None
+        used_fallback = False
+        
+        try:
+            validate(primary_path, schema_path)
+            input_path = primary_path
+            print(f"✅ Using primary raw file: {primary_path}")
+        except (FileNotFoundError, SchemaMismatchError) as e:
+            print(f"⚠️ Primary raw file issue: {e}")
+            try:
+                validate(backup_path, schema_path)
+                input_path = backup_path
+                used_fallback = True
+                print(f"✅ Falling back to backup: {backup_path}")
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.warning(f"Primary raw file missing or invalid – falling back to backup: {backup_path}")
+            except (FileNotFoundError, SchemaMismatchError) as backup_e:
+                print(f"❌ Both primary and backup failed: {backup_e}")
+                return {
+                    "status": "skipped",
+                    "date": date,
+                    "rows_processed": 0,
+                    "output_path": None,
+                    "reason": "no_valid_input",
+                    "primary_error": str(e),
+                    "backup_error": str(backup_e),
+                    "statistics": {
+                        "input_rows": 0,
+                        "output_rows": 0,
+                        "unique_tickers": 0,
+                        "target_date": date,
+                        "timestamp_range": [None, None],
+                    },
+                }
 
         print("Loading data with flexible schema...")
         raw_df = pl.scan_parquet(input_path, extra_columns="ignore").collect()
@@ -105,7 +127,9 @@ def run(
                 print(f"Filtered to {len(df_pandas)} records for {date}")
 
                 if len(df_pandas) == 0:
-                    print(f"No data found for date {date}, skipping options daily clean.")
+                    print(
+                        f"No data found for date {date}, skipping options daily clean."
+                    )
                     return {
                         "status": "skipped",
                         "date": date,
@@ -239,13 +263,13 @@ def run(
                 .fill_null(0)
                 .alias("optd_volume_per_trade")
             )
-        
+
         # Add IV30 (implied volatility 30-day)
         if "close" in available_cols:
             transform_exprs.append(
                 (pl.col("close") * 0.25).clip(0.1, 2.0).alias("optd_iv30")
             )
-        
+
         # Add basic put/call ratio calculation
         if "option_type" in available_cols and "volume" in available_cols:
             transform_exprs.append(
@@ -299,22 +323,25 @@ def run(
                     .rolling_std(window_size=30)
                     .over("ticker")
                     .alias("optd_hv30"),
-                    
                     # Put/call ratio
-                    (pl.col("put_volume").sum().over(["date", "underlying"]) / 
-                     pl.col("call_volume").sum().over(["date", "underlying"]))
-                    .alias("optd_put_call_ratio")
+                    (
+                        pl.col("put_volume").sum().over(["date", "underlying"])
+                        / pl.col("call_volume").sum().over(["date", "underlying"])
+                    ).alias("optd_put_call_ratio"),
                 ]
             )
             .with_columns(
                 [
                     # IV skew slope (simplified as IV30 vs strike relationship)
-                    (pl.col("optd_iv30") - pl.col("optd_iv30").mean().over(["date", "underlying"]))
-                    .alias("optd_iv_skew_slope"),
-                    
+                    (
+                        pl.col("optd_iv30")
+                        - pl.col("optd_iv30").mean().over(["date", "underlying"])
+                    ).alias("optd_iv_skew_slope"),
                     # Volatility surprise (IV vs HV)
-                    ((pl.col("optd_iv30") - pl.col("optd_hv30")) / pl.col("optd_hv30"))
-                    .alias("optd_vol_surprise")
+                    (
+                        (pl.col("optd_iv30") - pl.col("optd_hv30"))
+                        / pl.col("optd_hv30")
+                    ).alias("optd_vol_surprise"),
                 ]
             )
             .drop(["put_volume", "call_volume"])  # Remove intermediate columns
