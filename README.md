@@ -169,6 +169,14 @@ pre-commit install
 
 This enables automatic code formatting, import sorting, type checking, and commit message validation on every commit.
 
+### Type Checking
+
+Run mypy locally for comprehensive type checking:
+
+```bash
+mypy --config-file=mypy.ini src/
+```
+
 ### Prerequisites
 
 - Python 3.9+

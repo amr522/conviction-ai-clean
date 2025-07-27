@@ -5,7 +5,7 @@ repos:
       - id: trailing-whitespace
       - id: end-of-file-fixer
       - id: check-yaml
-        exclude: "charts/.*\.yaml$"  # Skip Helm templates
+        exclude: "charts/.*\\.yaml$"  # Skip Helm templates
       - id: check-added-large-files
 
   - repo: https://github.com/psf/black
@@ -24,7 +24,9 @@ repos:
     rev: v1.5.1
     hooks:
       - id: mypy
-        args: [--strict]
+        args: [--config-file=mypy.ini, --cache-dir=.mypy_cache]
+        additional_dependencies: []
+        stages: [commit]
 
   - repo: https://github.com/jorisroovers/gitlint
     rev: v0.18.0
