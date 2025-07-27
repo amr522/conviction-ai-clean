@@ -48,6 +48,8 @@ grafana:
       enabled: true
       cpuCostPerHour: 0.0464  # AWS m5.large CPU cost per hour
       memoryCostPerGBHour: 0.0058  # AWS memory cost per GB hour
+    signals:
+      enabled: false
     anomalies:
       enabled: false
 
