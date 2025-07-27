@@ -133,6 +133,18 @@ The notebook provides:
 
 ## 🔧 Environment Setup
 
+### Local Development Setup
+
+```bash
+./scripts/setup-env.sh
+source .venv/bin/activate
+```
+
+Then you can run:
+```bash
+./scripts/evaluate_pipeline.sh 2025-07-27
+```
+
 ### Prerequisites
 
 - Python 3.9+
