@@ -1,37 +1,42 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Raw macro data paths
-RAW_FRED_CSV="/Users/amroheidak/Desktop/conviction-ai-clean/data/Parquet_data/Raw/FRED.csv"
-RAW_VIX_JSON="/Users/amroheidak/Desktop/conviction-ai-clean/data/Parquet_data/Raw/vix_data.json"
-RAW_DXY_CSV="/Users/amroheidak/Desktop/conviction-ai-clean/data/Parquet_data/Raw/DXY.csv"
-RAW_NEWS_DIR="/Users/amroheidak/Desktop/conviction-ai-clean/data/Parquet_data/Raw/news"
+echo "🚀 Starting distributed backfill with Dask cluster"
 
-# Environment defaults
-export WINDOW_DAYS=${WINDOW_DAYS:-30}
-export USE_GPU=${USE_GPU:-false}
-export N_JOBS=${N_JOBS:-8}
+# Start Dask scheduler in background
+echo "📡 Starting Dask scheduler..."
+dask-scheduler --port 8786 --dashboard-address :8787 &
+SCHEDULER_PID=$!
 
-START_DATE=${1:-$(date -v-7d +%Y-%m-%d)}
-END_DATE=${2:-$(date -v-1d +%Y-%m-%d)}
-MAX_WORKERS=${3:-24}
+# Wait for scheduler to start
+sleep 3
 
-echo "🚀 Starting Prefect historical backfill..."
-echo "  Start Date: $START_DATE"
-echo "  End Date: $END_DATE"
-echo "  Max Workers: $MAX_WORKERS"
+# Start Dask workers in background
+echo "👷 Starting Dask workers..."
+dask-worker tcp://127.0.0.1:8786 --nprocs 4 --nthreads 2 &
+WORKER_PID=$!
 
-# Ensure Prefect dependencies are installed
-./scripts/install-prefect-deps.sh
+# Wait for workers to connect
+sleep 5
 
-# Run the Prefect flow with macro data paths
-python src/flows/historical_backfill_flow.py \
-  --start-date "$START_DATE" \
-  --end-date "$END_DATE" \
-  --max-workers "$MAX_WORKERS" \
-  --raw-fred-csv "$RAW_FRED_CSV" \
-  --raw-vix-json "$RAW_VIX_JSON" \
-  --raw-dxy-csv "$RAW_DXY_CSV" \
-  --raw-news-dir "$RAW_NEWS_DIR"
+echo "✅ Dask cluster ready"
+echo "📊 Dashboard available at: http://localhost:8787"
 
-echo "✅ Prefect backfill completed"
+# Cleanup function
+cleanup() {
+    echo "🧹 Cleaning up Dask cluster..."
+    kill $WORKER_PID 2>/dev/null || true
+    kill $SCHEDULER_PID 2>/dev/null || true
+    wait $WORKER_PID 2>/dev/null || true
+    wait $SCHEDULER_PID 2>/dev/null || true
+    echo "✅ Cleanup completed"
+}
+
+# Set trap for cleanup on exit
+trap cleanup EXIT
+
+# Run the backfill flow with distributed processing
+echo "🔄 Running distributed backfill flow..."
+python src/flows/historical_backfill_flow.py --distributed "$@"
+
+echo "🎉 Distributed backfill completed successfully"

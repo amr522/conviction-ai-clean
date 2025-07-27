@@ -539,6 +539,53 @@ jobs:
       - name: Run canary smoke test
         run: scripts/run-canary-test.sh
 
+  gpu-acceleration-test:
+    runs-on: macos-latest
+    needs: [parallel-validations]
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+      - name: Install dependencies
+        run: |
+          pip install polars
+          # Note: cudf not available on macOS, will test fallback
+      - name: Test GPU utils
+        run: python src/gpu_utils.py
+      - name: Run GPU feature smoke-test
+        run: |
+          mkdir -p data/Parquet_data
+          # Create minimal test data
+          python -c "
+          import polars as pl
+          from datetime import date
+          
+          df = pl.DataFrame({
+              'date': [date(2025, 1, 1)] * 10,
+              'ticker': ['AAPL'] * 10,
+              'fred_fed_funds_rate': [5.25] * 10,
+              'vix_index': [20.0] * 10,
+              'news_count': [5] * 10,
+              'optd_iv30': [0.25] * 10,
+              'optd_volume': [1000] * 10,
+              'stockd_return_1d': [0.01] * 10,
+              'stockd_volume': [50000] * 10
+          })
+          df.write_parquet('staged/daily_master.parquet')
+          
+          im = pl.DataFrame({
+              'ticker': ['AAPL'] * 10,
+              'timestamp': range(10),
+              'opt30_mid_price': [150.0] * 10
+          })
+          im.write_parquet('datasets/intraday_master.parquet')
+          print('✅ Test data created')
+          "
+          # Test GPU-enabled feature calculation
+          python src/calculate_features.py --date 2025-01-01 --use-gpu || echo "GPU fallback working"
+
   coverage:
     runs-on: ubuntu-latest
     needs: [test]

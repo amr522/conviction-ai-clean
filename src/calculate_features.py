@@ -12,6 +12,7 @@ from pathlib import Path
 import polars as pl
 
 from utils.lineage_utils import LineageTracker
+from gpu_utils import gpu_supported, gpu_rolling_mean, gpu_rolling_std, optimize_for_gpu
 
 
 def parse_date_range(date_str):
@@ -27,22 +28,37 @@ def parse_date_range(date_str):
         return single_date, single_date
 
 
-def calculate_rolling_features(df, window):
-    """Calculate rolling features for a single ticker group"""
-    return df.sort("date").with_columns(
-        [
-            # Macro rolling features
-            pl.col("fred_fed_funds_rate").rolling_mean(window).alias("fred_rate_mean"),
-            pl.col("vix_index").rolling_std(window).alias("vix_std"),
-            pl.col("news_count").rolling_sum(window).alias("news_count_rolling"),
-            # Options rolling features
-            pl.col("optd_iv30").rolling_mean(window).alias("optd_iv30_mean"),
-            pl.col("optd_volume").rolling_std(window).alias("optd_volume_std"),
-            # Stock rolling features
-            pl.col("stockd_return_1d").rolling_std(window).alias("stockd_vol_rolling"),
-            pl.col("stockd_volume").rolling_mean(window).alias("stockd_volume_mean"),
-        ]
-    )
+def calculate_rolling_features(df, window, use_gpu=False):
+    """Calculate rolling features for a single ticker group with optional GPU acceleration"""
+    df_sorted = df.sort("date")
+    
+    if use_gpu and gpu_supported():
+        print("🚀 Using GPU acceleration for rolling features")
+        return df_sorted.with_columns(
+            [
+                # GPU-accelerated rolling features
+                gpu_rolling_mean(df_sorted, "fred_fed_funds_rate", window).alias("fred_rate_mean"),
+                gpu_rolling_std(df_sorted, "vix_index", window).alias("vix_std"),
+                pl.col("news_count").rolling_sum(window).alias("news_count_rolling"),
+                gpu_rolling_mean(df_sorted, "optd_iv30", window).alias("optd_iv30_mean"),
+                gpu_rolling_std(df_sorted, "optd_volume", window).alias("optd_volume_std"),
+                gpu_rolling_std(df_sorted, "stockd_return_1d", window).alias("stockd_vol_rolling"),
+                gpu_rolling_mean(df_sorted, "stockd_volume", window).alias("stockd_volume_mean"),
+            ]
+        )
+    else:
+        return df_sorted.with_columns(
+            [
+                # CPU rolling features
+                pl.col("fred_fed_funds_rate").rolling_mean(window).alias("fred_rate_mean"),
+                pl.col("vix_index").rolling_std(window).alias("vix_std"),
+                pl.col("news_count").rolling_sum(window).alias("news_count_rolling"),
+                pl.col("optd_iv30").rolling_mean(window).alias("optd_iv30_mean"),
+                pl.col("optd_volume").rolling_std(window).alias("optd_volume_std"),
+                pl.col("stockd_return_1d").rolling_std(window).alias("stockd_vol_rolling"),
+                pl.col("stockd_volume").rolling_mean(window).alias("stockd_volume_mean"),
+            ]
+        )
 
 
 def process_ticker_chunk(ticker_chunk, dm, window):
@@ -95,6 +111,29 @@ def calculate_cross_sectional_features(features):
             ).alias("ret_relative"),
         ]
     )
+
+
+def calculate_all_features(daily_master, intraday_master, window=30, use_gpu=False):
+    """Calculate all features from daily and intraday master datasets"""
+    # Optimize for GPU if requested
+    daily_master = optimize_for_gpu(daily_master, use_gpu)
+    intraday_master = optimize_for_gpu(intraday_master, use_gpu)
+    
+    # Calculate rolling features with GPU support
+    roll_features = daily_master.group_by("ticker").map_groups(
+        lambda df: calculate_rolling_features(df.sort("date"), window, use_gpu)
+    )
+    
+    # Calculate intraday features
+    intraday_features = calculate_intraday_features(intraday_master)
+    
+    # Join daily and intraday features
+    features = roll_features.join(intraday_features, on=["ticker"], how="left")
+    
+    # Calculate cross-sectional features
+    features = calculate_cross_sectional_features(features)
+    
+    return features
 
 
 def main():
@@ -158,58 +197,33 @@ def main():
         )
 
         # Calculate rolling features
-        print("Calculating rolling features...")
+        print("Calculating all features...")
         window = args.window_days
-
-        if args.n_jobs > 1:
-            # Parallel processing
-            tickers = dm_filtered["ticker"].unique().to_list()
-            chunk_size = len(tickers) // args.n_jobs + 1
-            ticker_chunks = [
-                tickers[i : i + chunk_size] for i in range(0, len(tickers), chunk_size)
-            ]
-
-            with concurrent.futures.ThreadPoolExecutor(
-                max_workers=args.n_jobs
-            ) as executor:
-                futures = [
-                    executor.submit(process_ticker_chunk, chunk, dm_filtered, window)
-                    for chunk in ticker_chunks
-                ]
-                results = [
-                    future.result()
-                    for future in concurrent.futures.as_completed(futures)
-                ]
-
-            # Combine results
-            roll_features = pl.concat(results)
-        else:
-            # Sequential processing
-            roll_features = dm_filtered.group_by("ticker").map_groups(
-                lambda df: calculate_rolling_features(df, window)
-            )
-
-        print("Calculating intraday features...")
-        # Calculate intraday features
-        intraday_features = calculate_intraday_features(im_filtered)
-
-        print("Joining features...")
-        # Join daily and intraday features
-        features = roll_features.join(intraday_features, on=["ticker"], how="left")
-
-        print("Calculating cross-sectional features...")
-        # Calculate cross-sectional features
-        features = calculate_cross_sectional_features(features)
+        
+        # Use the unified feature calculation function with GPU support
+        features = calculate_all_features(dm_filtered, im_filtered, window, args.use_gpu)
 
         # Ensure output directory exists
         Path(args.output_path).parent.mkdir(parents=True, exist_ok=True)
 
         print(f"Writing {len(features)} feature records to {args.output_path}")
-        # Write output
-        features.write_parquet(args.output_path)
+        # Write output with date suffix for tracking
+        date_suffix = start_date.strftime("%Y%m%d")
+        parquet_path = args.output_path
+        if not parquet_path.endswith('.parquet'):
+            parquet_path = f"{parquet_path}/features_{date_suffix}.parquet"
+        
+        features.write_parquet(parquet_path)
+        
+        # Also write to standard data directory for downstream processing
+        data_dir = Path("data/Parquet_data")
+        data_dir.mkdir(parents=True, exist_ok=True)
+        features.write_parquet(data_dir / f"features_{date_suffix}.parquet")
 
         print("Feature calculation completed successfully!")
         print(f"Output columns: {features.columns}")
+        print(f"Features written to: {parquet_path}")
+        print(f"Features also saved to: {data_dir / f'features_{date_suffix}.parquet'}")
 
         # Complete lineage tracking
         lineage.complete_run(success=True)
@@ -219,5 +233,39 @@ def main():
         raise e
 
 
+def get_master_dataframes(date: str):
+    """Load master dataframes for a given date"""
+    import polars as pl
+    
+    daily_master = pl.read_parquet("staged/daily_master.parquet")
+    intraday_master = pl.read_parquet("datasets/intraday_master.parquet")
+    
+    return daily_master, intraday_master
+
+
 if __name__ == "__main__":
-    main()
+    import sys
+    
+    # Check if running standalone feature calculation
+    if len(sys.argv) > 1 and "--date" in sys.argv:
+        parser = argparse.ArgumentParser(description="Calculate features standalone")
+        parser.add_argument("--date", required=True, help="Processing date (YYYY-MM-DD)")
+        parser.add_argument("--output-path", default="data/Parquet_data/features_{}.parquet", help="Output path template")
+        
+        args = parser.parse_args()
+        
+        try:
+            dm, im = get_master_dataframes(args.date)
+            feats = calculate_all_features(dm, im)
+            out = args.output_path.format(args.date)
+            
+            # Ensure output directory exists
+            Path(out).parent.mkdir(parents=True, exist_ok=True)
+            
+            feats.write_parquet(out)
+            print(f"✅ Features written to {out}")
+        except Exception as e:
+            print(f"❌ Feature calculation failed: {e}")
+            sys.exit(1)
+    else:
+        main()
