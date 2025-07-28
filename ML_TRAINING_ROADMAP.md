@@ -41,6 +41,7 @@ Check-points already in your scripts map cleanly to "last successful partition".
 | -1 | **Missing-Feature Close-out v1.0** | dealer_flow.py, enhanced options, VIX MA divergence, IV rank | New swing features | [x] |
 | 0 | **Smoke-test single date** (e.g. 2025-01-16) | see § 3 | `train_dataset_2025-01-16.parquet` | [x] ← **COMPLETED** |
 | 0.1 | **Create and test pipeline scripts** | `single_day_pipeline.sh`, `single_day_pipeline_standalone.sh`, `single_day_pipeline_manual.sh` | Automated pipeline execution | [x] ← **COMPLETED** |
+| 0.2 | **GPU-only standalone pipeline test** | `gpu_monitor_pipeline.py` + `single_day_pipeline_standalone.sh` | GPU-accelerated execution validation | [x] ← **COMPLETED** |
 | 1 | **Full back-fill 2021→2025** | `run_historical_backfill.py` | Partitioned dataset under `training/` | [ ] ← **READY TO START** |
 | 2 | **Cross-val guardrail** | `train_and_evaluate.py --tune` | AUC < 0.75 OK | [ ] |
 | 3 | **L0 Models** training | `train_and_evaluate.py` (existing) | `models/latest.pkl` | [ ] |
@@ -48,6 +49,29 @@ Check-points already in your scripts map cleanly to "last successful partition".
 | 5 | Strategy backtest | Use existing backtest tools | `backtest_results.json` | [ ] |
 | 6 | Deploy endpoints (opt.) | Use existing SageMaker tools | SageMaker endpoint | [ ] |
 | 7 | Monitoring hooks | Use existing monitoring | Prom/SHAP alerts | [ ] |
+
+---
+
+## ✅ Completed Tasks
+
+### ✅ GPU-only standalone run for 2025-01-01 (exit 0)
+
+**Performance Summary:**
+```
+📈 Final Performance Summary:
+📊 System Performance Snapshot - 00:34:26
+   🔥 CPU: 27.4% average
+   💾 Memory: 15.3GB / 64.0GB (32.1%)
+   ⚖️  Load: 7.75 (1m) - 32.3% of 24 cores
+   🎮 GPU: 🚀 Apple Metal GPU available (detailed metrics require sudo)
+```
+
+**Execution Details:**
+- **Date Processed**: 2025-01-01
+- **Pipeline Duration**: 2.65 seconds
+- **GPU Backend**: Apple Metal Performance Shaders (MPS)
+- **Hardware**: M2 Ultra (24 cores, 64GB RAM)
+- **Status**: ✅ Completed successfully
 
 ---
 

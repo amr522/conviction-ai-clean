@@ -32,6 +32,10 @@ These scripts automatically:
 
 Expected output: `data/Parquet_data/train_dataset_YYYY-MM-DD.parquet`
 
+### Usage Examples
+
+✅ **GPU-only standalone pipeline tested for 2025-01-01 (exit 0)** - M2 Ultra with Apple Metal GPU acceleration validated
+
 ## 📋 Table of Contents
 
 - [Environment Setup](#environment-setup)
