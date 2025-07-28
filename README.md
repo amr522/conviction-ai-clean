@@ -9,6 +9,29 @@ This repository contains the Conviction-AI machine learning pipeline, which auto
 
 **New to the project?** Get up and running in minutes with our [**Quickstart Guide**](QUICKSTART.md)!
 
+### Single-Day Pipeline Scripts
+
+For quick training dataset generation, use one of our automated pipeline scripts:
+
+```bash
+# Full pipeline (recommended) - runs complete validation → master datasets → features → labels → training dataset
+./scripts/single_day_pipeline.sh
+
+# Standalone mode - requires existing master datasets
+./scripts/single_day_pipeline_standalone.sh
+
+# Manual mode - specify date explicitly
+./scripts/single_day_pipeline_manual.sh 2025-07-27
+```
+
+These scripts automatically:
+1. Run schema validation to determine processing date
+2. Generate master datasets and features
+3. Create labels and training datasets
+4. Perform validation checks
+
+Expected output: `data/Parquet_data/train_dataset_YYYY-MM-DD.parquet`
+
 ## 📋 Table of Contents
 
 - [Environment Setup](#environment-setup)
