@@ -36,7 +36,7 @@ def run(date: str, dry_run: bool = False) -> dict:
 
         # Input/output paths
         project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        input_path = os.path.join(project_root, "data/Parquet_data/stocks_minute")
+        input_path = os.path.join(project_root, "data/Parquet_data/Raw/stocks_minute")
         output_dir = os.path.join(project_root, "staged")
         output_path = os.path.join(output_dir, "stocks_30min_clean.parquet")
 
@@ -158,8 +158,19 @@ def run(date: str, dry_run: bool = False) -> dict:
             print(f"Error during type conversion: {str(e)}")
             raise
 
+        # Ensure unique column names and reset index before converting to polars
+        df_pandas.columns = pd.Index(
+            [
+                f"{col}_{i}" if df_pandas.columns.duplicated()[i] else col
+                for i, col in enumerate(df_pandas.columns)
+            ]
+        )
+        df_pandas = df_pandas.reset_index(drop=True)
+
         # Convert back to polars and drop the original window_start column
-        data = pl.from_pandas(df_pandas).drop("window_start")
+        data = pl.from_pandas(df_pandas)
+        if "window_start" in data.columns:
+            data = data.drop("window_start")
 
         if data.shape[0] == 0:
             raise ValueError("Input data is empty")
@@ -237,6 +248,17 @@ def run(date: str, dry_run: bool = False) -> dict:
         for col, dtype in feature_dtypes.items():
             if col in cleaned_final.columns:
                 cleaned_final[col] = cleaned_final[col].astype(dtype)
+
+        # Ensure unique column names before converting to polars
+        cleaned_final.columns = pd.Index(
+            [
+                f"{col}_{i}" if cleaned_final.columns.duplicated()[i] else col
+                for i, col in enumerate(cleaned_final.columns)
+            ]
+        )
+
+        # Reset index to avoid index issues
+        cleaned_final = cleaned_final.reset_index(drop=True)
 
         # Convert back to polars
         cleaned = pl.from_pandas(cleaned_final)

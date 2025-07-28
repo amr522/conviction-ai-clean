@@ -7,7 +7,7 @@ const router = express.Router();
 router.get('/auth/callback', async (req, res) => {
   try {
     const { code, state } = req.query;
-    
+
     if (!code) {
       return res.status(400).json({ error: 'Authorization code missing' });
     }
@@ -33,7 +33,7 @@ router.get('/auth/callback', async (req, res) => {
 
     // Decode and validate ID token
     const decoded = jwt.decode(id_token);
-    
+
     if (!decoded) {
       return res.status(401).json({ error: 'Invalid ID token' });
     }
@@ -72,7 +72,7 @@ router.get('/auth/callback', async (req, res) => {
 router.post('/auth/logout', (req, res) => {
   res.clearCookie('auth_token');
   res.clearCookie('user_info');
-  
+
   const logoutUrl = `${process.env.OIDC_ISSUER_URL}/protocol/openid-connect/logout?redirect_uri=${encodeURIComponent(`${req.protocol}://${req.get('host')}/`)}`;
   res.json({ logoutUrl });
 });
@@ -80,11 +80,11 @@ router.post('/auth/logout', (req, res) => {
 // User info endpoint
 router.get('/auth/user', (req, res) => {
   const userInfo = req.cookies.user_info;
-  
+
   if (!userInfo) {
     return res.status(401).json({ error: 'Not authenticated' });
   }
-  
+
   try {
     res.json(JSON.parse(userInfo));
   } catch (error) {

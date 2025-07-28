@@ -1,7 +1,7 @@
 # 🔍 Training Dataset Audit Report - Conviction AI Pipeline
 
-**Audit Date**: January 15, 2025  
-**Status**: ❌ **TRAINING DATASET MISSING**  
+**Audit Date**: January 15, 2025
+**Status**: ❌ **TRAINING DATASET MISSING**
 **Action Required**: Generate fresh training dataset from available raw data
 
 ---
@@ -25,8 +25,8 @@
   - Rows: 300
   - Columns: 30 features
   - Key columns: symbol, date
-  
-- **`stocks_daily_features.parquet`**: ✅ Usable  
+
+- **`stocks_daily_features.parquet`**: ✅ Usable
   - Rows: 50,109
   - Columns: 31 features
   - Key columns: ticker
@@ -50,7 +50,7 @@
    ```bash
    # Follow the validated pipeline from roadmap
    python src/clean_options_daily.py --date 2025-01-15
-   python src/build_daily_master.py --date 2025-01-15  
+   python src/build_daily_master.py --date 2025-01-15
    python src/calculate_features.py --date 2025-01-15 --use-gpu
    python src/generate_training_dataset.py
    ```
@@ -76,7 +76,7 @@
 
 ### Required for Training Dataset Generation
 1. **Raw Data Sources** (from roadmap):
-   - `data/Parquet_data/Raw/options_daily/` 
+   - `data/Parquet_data/Raw/options_daily/`
    - `data/Parquet_data/Raw/Stocks_daily/`
    - `data/Parquet_data/Raw/FRED.csv`
    - `data/Parquet_data/Raw/news/`

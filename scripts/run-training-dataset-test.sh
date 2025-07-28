@@ -28,16 +28,16 @@ python src/run_full_pipeline.py --date $DATE --check-schema --dry-run
 # Test standalone training dataset generation
 if [[ -f "data/Parquet_data/features_${DATE}.parquet" && -f "data/Parquet_data/labels_${DATE}.parquet" ]]; then
     echo "📊 Testing standalone training dataset generation..."
-    
+
     python src/generate_training_dataset.py \
         --feature-path "data/Parquet_data/features_${DATE}.parquet" \
         --label-path "data/Parquet_data/labels_${DATE}.parquet" \
         --output-path "data/Parquet_data/train_dataset_${DATE}.parquet"
-    
+
     # Verify training dataset file exists
     if [[ -f "data/Parquet_data/train_dataset_${DATE}.parquet" ]]; then
         echo "✅ Training dataset file generated successfully"
-        
+
         # Verify dataset structure
         python -c "
 import polars as pl

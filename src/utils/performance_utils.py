@@ -190,28 +190,33 @@ def compute_gamma_signals_optimized(
 
 
 @profile_time
-def optimize_signal_generation(
-    df: pl.DataFrame, window_size: int = 5
-) -> pl.DataFrame:
+def optimize_signal_generation(df: pl.DataFrame, window_size: int = 5) -> pl.DataFrame:
     """
     Applies optimized rolling mean & std on volume and gamma.
     """
-    return df.with_columns([
-        pl.col("opt30_volume").rolling_mean(window_size).alias("rolling_vol_mean"),
-        pl.col("opt30_volume").rolling_std(window_size).alias("rolling_vol_std"),
-        pl.col("opt30_net_gamma").rolling_mean(window_size).alias("rolling_gamma_mean"),
-        pl.col("opt30_net_gamma").rolling_std(window_size).alias("rolling_gamma_std")
-    ])
+    return df.with_columns(
+        [
+            pl.col("opt30_volume").rolling_mean(window_size).alias("rolling_vol_mean"),
+            pl.col("opt30_volume").rolling_std(window_size).alias("rolling_vol_std"),
+            pl.col("opt30_net_gamma")
+            .rolling_mean(window_size)
+            .alias("rolling_gamma_mean"),
+            pl.col("opt30_net_gamma")
+            .rolling_std(window_size)
+            .alias("rolling_gamma_std"),
+        ]
+    )
 
 
 @profile_time
-def enhance_gamma_detection(
-    df: pl.DataFrame, multiplier: float = 2.0
-) -> pl.DataFrame:
+def enhance_gamma_detection(df: pl.DataFrame, multiplier: float = 2.0) -> pl.DataFrame:
     """
     Flags gamma squeezes where net_gamma > rolling_gamma_mean * multiplier.
     """
-    return df.with_columns([
-        (pl.col("opt30_net_gamma") > pl.col("rolling_gamma_mean") * multiplier)
-        .alias("gamma_squeeze_enhanced")
-    ])
+    return df.with_columns(
+        [
+            (
+                pl.col("opt30_net_gamma") > pl.col("rolling_gamma_mean") * multiplier
+            ).alias("gamma_squeeze_enhanced")
+        ]
+    )

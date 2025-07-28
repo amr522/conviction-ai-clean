@@ -57,15 +57,15 @@ try:
     model = load_model('models/latest.pkl')
     feats = pl.read_parquet('data/Parquet_data/features_${DATE}.parquet')
     shap_summary = explain_predictions(model, feats, None)
-    
+
     assert isinstance(shap_summary, dict), 'SHAP summary should be dict'
     assert len(shap_summary) > 0, 'SHAP summary should not be empty'
     assert all(isinstance(v, (float, int)) for v in shap_summary.values()), 'All SHAP values should be numeric'
-    
+
     print(f'✅ SHAP explanations computed for {len(shap_summary)} features')
     top_feature = max(shap_summary.items(), key=lambda x: x[1])
     print(f'Top feature: {top_feature[0]} = {top_feature[1]:.4f}')
-    
+
 except Exception as e:
     print(f'❌ SHAP test failed: {e}')
     import traceback
@@ -82,7 +82,7 @@ python src/inference.py \
 
 if [[ -f "test_predictions.parquet" ]]; then
     echo "✅ Inference script completed successfully"
-    
+
     # Verify predictions file
     python -c "
 import polars as pl

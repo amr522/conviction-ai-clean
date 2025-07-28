@@ -9,7 +9,8 @@ from pathlib import Path
 from typing import Optional
 
 import pandas as pd
-from utils.raw_schema_validator import validate, SchemaMismatchError
+
+from utils.raw_schema_validator import SchemaMismatchError, validate
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -66,11 +67,22 @@ def load_data_source(
     if os.path.exists(raw_path):
         try:
             if is_json:
-                raw_df = pd.read_json(raw_path)
+                import json
+
+                with open(raw_path, "r") as f:
+                    data = json.load(f)
+                # Handle nested VIX JSON structure
+                if "observations" in data:
+                    raw_df = pd.DataFrame(data["observations"])
+                else:
+                    raw_df = pd.read_json(raw_path)
                 if "date" in raw_df.columns:
                     raw_df["date"] = pd.to_datetime(raw_df["date"])
             else:
-                raw_df = pd.read_csv(raw_path, parse_dates=["date"])
+                if raw_path.endswith(".parquet"):
+                    raw_df = pd.read_parquet(raw_path)
+                else:
+                    raw_df = pd.read_csv(raw_path, parse_dates=["date"])
         except Exception as e:
             logger.warning(f"Failed to load raw {name}: {e}")
 
@@ -108,7 +120,7 @@ def main():
     )
     parser.add_argument(
         "--raw-vix-json",
-        default="/Users/amroheidak/Desktop/conviction-ai-clean/data/Parquet_data/Raw/vix_data.json",
+        default="/Users/amroheidak/Desktop/conviction-ai-clean/data/Parquet_data/vix_data.parquet",
     )
     parser.add_argument(
         "--raw-dxy-csv",
@@ -133,7 +145,7 @@ def main():
 
     # Load VIX data
     vix_df = load_data_source(
-        "VIX", args.raw_vix_json, vix_out, args.use_raw_macro, is_json=True
+        "VIX", args.raw_vix_json, vix_out, args.use_raw_macro, is_json=False
     )
 
     # Calculate VIX MA divergence if VIX data available
@@ -150,6 +162,8 @@ def main():
                 vix_df["close"] - vix_df["vix_ma_10"]
             ) / vix_df["vix_ma_10"]
         elif "value" in vix_df.columns:
+            # Convert value column to numeric, handling '.' as NaN
+            vix_df["value"] = pd.to_numeric(vix_df["value"], errors="coerce")
             vix_df["vix_ma_10"] = (
                 vix_df["value"].rolling(window=10, min_periods=1).mean()
             )

@@ -1,6 +1,16 @@
 #!/usr/bin/env bash
 set -e
 
+# M2 Ultra Optimization Settings
+export PYARROW_MEMORY_POOL=jemalloc  # Optimize memory allocation for large datasets
+export POLARS_MAX_THREADS=24         # Use all 24 cores for Polars operations
+export OMP_NUM_THREADS=24            # OpenMP threads for numerical operations
+export MKL_NUM_THREADS=24            # Intel MKL threads (if available)
+export NUMBA_NUM_THREADS=24          # Numba JIT compilation threads
+export N_JOBS=24                     # Parallel job count for ML operations
+
+echo "🚀 M2 Ultra Standalone Pipeline - 24 cores, 64GB RAM, GPU acceleration enabled"
+
 DATE=$(python scripts/dry_run_schema_validation.py 2>&1 \
   | awk '/validation successful for/ {print $NF}')
 
@@ -11,13 +21,15 @@ fi
 
 echo "✅ Schema validation passed for $DATE"
 
-echo "🔄 Calculating features in standalone mode..."
+echo "🔄 Calculating features in standalone mode with M2 Ultra optimization..."
 python src/calculate_features.py \
   --date "$DATE" \
   --daily-master-path staged/daily_master.parquet \
   --intraday-master-path datasets/intraday_master.parquet \
   --output-path data/Parquet_data/features_${DATE}.parquet \
-  --use-gpu
+  --use-gpu \
+  --n-jobs 24 \
+  --window-days 30
 
 echo "📊 Generating labels..."
 python src/generate_labels.py --date "$DATE"

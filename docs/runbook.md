@@ -20,7 +20,7 @@ Critical alert triggered when synthetic anomaly injection test fails in staging.
    ```bash
    # Query anomaly test status
    curl -s 'http://prometheus:9090/api/v1/query?query=signal_validation_passed{job="anomaly-test"}'
-   
+
    # Check detection rates
    curl -s 'http://prometheus:9090/api/v1/query?query=vol_spike_detection{job="anomaly-test"}'
    ```

@@ -21,7 +21,7 @@ import os
 import pickle
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, Tuple, Optional, List, Any
+from typing import Any, Dict, List, Optional, Tuple
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -412,7 +412,7 @@ def run(
     tune: bool = False,
     n_trials: int = 50,
     n_jobs: int = None,
-    **kwargs
+    **kwargs,
 ) -> int:
     """
     Main training and evaluation pipeline.
@@ -461,15 +461,18 @@ def run(
         Path(metrics_path).mkdir(parents=True, exist_ok=True)
 
         # Load data - use feature parquet if provided
-        feature_path = kwargs.get('feature_path')
+        feature_path = kwargs.get("feature_path")
         if feature_path:
             logger.info(f"Loading features from {feature_path}")
             import polars as pl
+
             feats = pl.read_parquet(feature_path)
             # Convert to pandas for compatibility
             features_df = feats.to_pandas()
             # Create dummy target for compatibility
-            target_series = features_df.get('target', pd.Series([0.02] * len(features_df)))
+            target_series = features_df.get(
+                "target", pd.Series([0.02] * len(features_df))
+            )
         else:
             # Load data
             logger.info("Loading intraday data...")
@@ -479,10 +482,12 @@ def run(
 
             logger.info("Loading daily data...")
             daily_df = load_partitioned_data("datasets/daily", start_date, end_date)
-            
+
             # Prepare features and target
             logger.info("Preparing features and target...")
-            features_df, target_series = prepare_features_and_target(intraday_df, daily_df)
+            features_df, target_series = prepare_features_and_target(
+                intraday_df, daily_df
+            )
 
         # Features and target already prepared above
         features, target = features_df, target_series

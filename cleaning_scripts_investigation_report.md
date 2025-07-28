@@ -1,6 +1,6 @@
 # 🔍 Cleaning Scripts Investigation Report
 
-**Investigation Date**: January 15, 2025  
+**Investigation Date**: January 15, 2025
 **Status**: ✅ **SCRIPTS ANALYZED** - Output files identified and assessed
 
 ---
@@ -53,7 +53,7 @@
 ### ⚠️ **Scripts with Missing Input Data**
 2. **`clean_options_30min.py`**: Cannot run - missing `option_minute` data
 3. **`clean_options_daily.py`**: Cannot run - empty `options_daily.parquet` input
-4. **`clean_stocks_30min.py`**: Cannot run - missing `stocks_minute` data  
+4. **`clean_stocks_30min.py`**: Cannot run - missing `stocks_minute` data
 5. **`clean_stocks_daily.py`**: Cannot run - missing `Stocks_daily` directory
 
 ### 📁 **Available Raw Data Sources**
@@ -75,7 +75,7 @@
 ### **Critical Gap**: Missing Core Market Data
 The cleaning scripts are designed to process:
 1. **Options data** (30min + daily) → Core volatility features
-2. **Stocks data** (30min + daily) → Underlying price features  
+2. **Stocks data** (30min + daily) → Underlying price features
 3. **Macro data** (✅ working) → Economic indicators
 
 **Without options and stocks data**, the training dataset cannot be generated with the expected feature set described in the ML_TRAINING_ROADMAP.md.
@@ -90,7 +90,7 @@ The cleaning scripts are designed to process:
 ## 🎯 Recommended Actions
 
 ### **Immediate Priority**: Acquire Missing Raw Data
-1. **Options Data**: 
+1. **Options Data**:
    - Obtain minute-level options data for `data/Parquet_data/option_minute/`
    - Obtain daily options data for `raw/options_daily.parquet`
 

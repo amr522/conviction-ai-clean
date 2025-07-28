@@ -39,13 +39,41 @@ python src/calculate_features.py \
 
 ## CLI Arguments
 
-- `--daily-master-path`: Path to daily master parquet file (required)
-- `--intraday-master-path`: Path to intraday master parquet file (required)
-- `--output-path`: Output path for final feature matrix (required)
+- `--daily-master-path`: Path to daily master parquet file (required in full mode)
+- `--intraday-master-path`: Path to intraday master parquet file (required in full mode)
+- `--output-path`: Output path for final feature matrix (required in full mode)
 - `--date`: Single date (YYYY-MM-DD) or date range (YYYY-MM-DD,YYYY-MM-DD) (required)
 - `--window-days`: Rolling window size in days (default: 30)
 - `--use-gpu`: Enable GPU acceleration for Polars operations
 - `--n-jobs`: Number of parallel jobs for ticker processing (default: 1)
+
+## Execution Modes
+
+### Standalone Mode (Recommended for existing pipelines)
+
+```bash
+# Simple call with auto-detected master file paths
+python src/calculate_features.py --date 2025-01-16 --use-gpu
+
+# With custom window size
+python src/calculate_features.py --date 2025-01-16 --window-days 20 --use-gpu
+```
+
+**Requirements**: Master datasets must exist at:
+- `staged/daily_master.parquet`
+- `datasets/intraday_master.parquet`
+
+### Full Mode (For custom paths)
+
+```bash
+# Explicit paths for all arguments
+python src/calculate_features.py \
+  --daily-master-path staged/daily_master.parquet \
+  --intraday-master-path datasets/intraday_master.parquet \
+  --output-path datasets/features.parquet \
+  --date 2025-01-16 \
+  --use-gpu
+```
 
 ## Generated Features
 
@@ -69,6 +97,29 @@ python src/calculate_features.py \
 - `vol_zscore`: Volume z-score across tickers per date
 - `iv_rank`: IV rank across tickers per date
 - `ret_relative`: Return relative to market average
+
+## Pipeline Scripts
+
+### Full Pipeline (Recommended)
+
+```bash
+# Runs complete pipeline: schema validation → master datasets → features → labels → training dataset
+./single_day_pipeline.sh
+```
+
+### Standalone Pipeline
+
+```bash
+# Uses existing master datasets to generate features, labels, and training dataset
+./single_day_pipeline_standalone.sh
+```
+
+### Manual Pipeline
+
+```bash
+# Uses explicit paths for all components
+./single_day_pipeline_manual.sh
+```
 
 ## Integration with Pipeline
 

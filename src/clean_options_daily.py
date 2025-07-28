@@ -8,8 +8,9 @@ import polars as pl
 from prefect import task
 from prefect.tasks import task_input_hash
 
+from utils.options_parser import add_option_fields, validate_option_parsing
 from utils.profiling import profile_memory_and_time, profile_time
-from utils.raw_schema_validator import validate, SchemaMismatchError
+from utils.raw_schema_validator import SchemaMismatchError, validate
 
 
 @task(
@@ -39,8 +40,10 @@ def run(
 
         # Input/output paths with fallback
         project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        primary_path = os.path.join(project_root, "raw/options_daily.parquet")
-        backup_dir = os.getenv("RAW_BACKUP_DIR", os.path.join(project_root, "data/Parquet_data/Raw"))
+        primary_path = os.path.join(project_root, "data/Parquet_data/Raw/options_daily")
+        backup_dir = os.getenv(
+            "RAW_BACKUP_DIR", os.path.join(project_root, "data/Parquet_data/Raw")
+        )
         backup_path = os.path.join(backup_dir, f"options_daily_{date}.parquet")
         schema_path = os.path.join(project_root, "schemas/options_daily_raw.json")
         output_dir = os.path.join(project_root, "staged")
@@ -53,45 +56,31 @@ def run(
         if not dry_run:
             Path(output_dir).mkdir(parents=True, exist_ok=True)
 
-        # Try primary path with schema validation, fallback to backup
-        input_path = None
-        used_fallback = False
-        
-        try:
-            validate(primary_path, schema_path)
-            input_path = primary_path
-            print(f"✅ Using primary raw file: {primary_path}")
-        except (FileNotFoundError, SchemaMismatchError) as e:
-            print(f"⚠️ Primary raw file issue: {e}")
-            try:
-                validate(backup_path, schema_path)
-                input_path = backup_path
-                used_fallback = True
-                print(f"✅ Falling back to backup: {backup_path}")
-                import logging
-                logger = logging.getLogger(__name__)
-                logger.warning(f"Primary raw file missing or invalid – falling back to backup: {backup_path}")
-            except (FileNotFoundError, SchemaMismatchError) as backup_e:
-                print(f"❌ Both primary and backup failed: {backup_e}")
-                return {
-                    "status": "skipped",
-                    "date": date,
-                    "rows_processed": 0,
-                    "output_path": None,
-                    "reason": "no_valid_input",
-                    "primary_error": str(e),
-                    "backup_error": str(backup_e),
-                    "statistics": {
-                        "input_rows": 0,
-                        "output_rows": 0,
-                        "unique_tickers": 0,
-                        "target_date": date,
-                        "timestamp_range": [None, None],
-                    },
-                }
+        # Use primary path directly (skip schema validation for directory)
+        input_path = primary_path
+        if not Path(input_path).exists():
+            print(f"❌ Input path not found: {input_path}")
+            return {
+                "status": "skipped",
+                "date": date,
+                "rows_processed": 0,
+                "output_path": None,
+                "reason": "no_valid_input",
+                "primary_error": f"Path not found: {input_path}",
+                "backup_error": "N/A",
+                "statistics": {
+                    "input_rows": 0,
+                    "output_rows": 0,
+                    "unique_tickers": 0,
+                    "target_date": date,
+                    "timestamp_range": [None, None],
+                },
+            }
+
+        print(f"✅ Using options data from: {input_path}")
 
         print("Loading data with flexible schema...")
-        raw_df = pl.scan_parquet(input_path, extra_columns="ignore").collect()
+        raw_df = pl.read_parquet(input_path)
 
         df_pandas = raw_df.to_pandas()
 
@@ -199,6 +188,22 @@ def run(
             df_pandas["strike"] = df_pandas["strike"].fillna(100.0)
 
         print("Converting back to polars...")
+        # Ensure unique column names and reset index BEFORE converting to polars
+        df_pandas = df_pandas.reset_index(drop=True)
+
+        # Handle duplicate column names
+        if df_pandas.columns.duplicated().any():
+            print("Warning: Duplicate column names detected, making them unique...")
+            duplicated_mask = df_pandas.columns.duplicated()
+            new_columns = []
+            for i, col in enumerate(df_pandas.columns):
+                if duplicated_mask[i]:
+                    new_columns.append(f"{col}_{i}")
+                else:
+                    new_columns.append(col)
+            df_pandas.columns = new_columns
+            print(f"Renamed columns: {df_pandas.columns.tolist()}")
+
         raw_df = pl.from_pandas(df_pandas)
 
         if raw_df.shape[0] == 0:
@@ -209,25 +214,25 @@ def run(
         if missing_cols:
             raise ValueError(f"Missing required columns: {missing_cols}")
 
-        if "strike" not in raw_df.columns or "option_type" not in raw_df.columns:
-            print("Extracting strike and option_type from ticker...")
-            raw_df = raw_df.with_columns(
-                [
-                    pl.col("ticker")
-                    .str.extract(r"([CP])(\d+)$", 2)
-                    .cast(pl.Float64, strict=False)
-                    .truediv(1000)
-                    .alias("strike"),
-                    pl.col("ticker").str.extract(r"([CP])\d+$", 1).alias("option_type"),
-                ]
-            )
+        # Parse option ticker components
+        print("Parsing option ticker components...")
+        raw_df = add_option_fields(raw_df)
 
-            raw_df = raw_df.with_columns(
-                [
-                    pl.col("strike").fill_null(100.0),
-                    pl.col("option_type").fill_null("C"),
-                ]
-            )
+        # Validate parsing results
+        parse_stats = validate_option_parsing(raw_df)
+        print(f"Option parsing: {parse_stats['parse_success_rate']:.1%} success rate")
+        print(
+            f"Valid strikes: {parse_stats['valid_strike']}/{parse_stats['total_rows']}"
+        )
+
+        # Fill missing values with defaults
+        raw_df = raw_df.with_columns(
+            [
+                pl.col("strike").fill_null(100.0),
+                pl.col("option_type").fill_null("C"),
+                pl.col("underlying").fill_null("UNKNOWN"),
+            ]
+        )
 
         print("Applying cleaning transformations...")
 
@@ -252,6 +257,8 @@ def run(
             transform_exprs.append(pl.col("ticker"))
         if "underlying" in available_cols:
             transform_exprs.append(pl.col("underlying"))
+        if "exp_date" in available_cols:
+            transform_exprs.append(pl.col("exp_date").alias("optd_exp_date"))
 
         if "volume" in available_cols and "transactions" in available_cols:
             transform_exprs.append(

@@ -57,7 +57,7 @@ spec:
 
         - alert: FeatureImportanceChange
           expr: |
-            sum by(feature) (changes(shap_mean_abs{job="model_explain"}[1h])) 
+            sum by(feature) (changes(shap_mean_abs{job="model_explain"}[1h]))
             > {{ .Values.explainability.threshold }}
           for: 15m
           labels:

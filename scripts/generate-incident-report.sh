@@ -8,8 +8,8 @@ OUT="reports/incident_$(date +%F_%H%M%S).md"
 cat <<EOF > $OUT
 # Incident Report: $EVENT
 
-**Timestamp:** $(date -u +"%Y-%m-%dT%H:%M:%SZ")  
-**Triggered Alert:** $EVENT  
+**Timestamp:** $(date -u +"%Y-%m-%dT%H:%M:%SZ")
+**Triggered Alert:** $EVENT
 
 ## 1. Context
 - Job: anomaly-test cronjob
@@ -38,9 +38,9 @@ PYCODE
 \`\`\`
 
 ## 4. Next Steps
-1. Investigate recent code changes in signal-generation  
-2. Re-run local smoke test: \`scripts/smoke-test-staging.sh\`  
-3. Rollback helm release if needed: \`helm rollback\`  
+1. Investigate recent code changes in signal-generation
+2. Re-run local smoke test: \`scripts/smoke-test-staging.sh\`
+3. Rollback helm release if needed: \`helm rollback\`
 
 EOF
 

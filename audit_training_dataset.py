@@ -3,13 +3,19 @@
 #
 # ────────────────  CONFIG  ────────────────
 LOCAL_TRAIN_PATH = "data/Parquet_data/training/train_dataset.parquet"
-S3_BUCKET       = "convictionai-data"
-S3_KEY          = "conviction-ai/training/train_dataset.parquet"
+S3_BUCKET = "convictionai-data"
+S3_KEY = "conviction-ai/training/train_dataset.parquet"
 # ───────────────────────────────────────────
 
-import os, sys, boto3, pyarrow.parquet as pq, pandas as pd
-from pathlib import Path
+import os
+import sys
 from datetime import datetime
+from pathlib import Path
+
+import boto3
+import pandas as pd
+import pyarrow.parquet as pq
+
 
 def s3_exists(bucket: str, key: str) -> bool:
     s3 = boto3.client("s3")
@@ -18,6 +24,7 @@ def s3_exists(bucket: str, key: str) -> bool:
         return True
     except s3.exceptions.ClientError:
         return False
+
 
 def audit_local(path: str):
     p = Path(path)
@@ -33,6 +40,7 @@ def audit_local(path: str):
     print(f"   • Date span     : {start}  →  {end}")
     return True
 
+
 def audit_s3(bucket: str, key: str):
     if not s3_exists(bucket, key):
         print(f"❌ S3 object **NOT** found: s3://{bucket}/{key}")
@@ -47,15 +55,17 @@ def audit_s3(bucket: str, key: str):
     print(f"   • Last modified : {mod_time}")
     return True
 
+
 def main():
     print("🔍 Auditing Conviction-AI training dataset readiness …")
     local_ok = audit_local(LOCAL_TRAIN_PATH)
-    s3_ok    = audit_s3(S3_BUCKET, S3_KEY)
+    s3_ok = audit_s3(S3_BUCKET, S3_KEY)
     if not (local_ok or s3_ok):
         print("\n⚠️  Training dataset is missing in **both** locations.")
         print("   Next step: decide whether to trigger full feature build.")
         sys.exit(1)
     print("\n🎯 Audit complete. Review stats above and decide next action.")
+
 
 if __name__ == "__main__":
     main()

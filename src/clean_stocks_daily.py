@@ -33,7 +33,7 @@ def run(date: str, dry_run: bool = False) -> dict:
         print(f"Starting daily stocks cleaning for date: {date}")
 
         # Input/output paths
-        input_pattern = "/Users/amroheidak/Desktop/conviction-ai-clean/data/Parquet_data/Stocks_daily/*.parquet"
+        input_pattern = "/Users/amroheidak/Desktop/conviction-ai-clean/data/Parquet_data/Raw/Stocks_daily/*.parquet"
         output_dir = "/Users/amroheidak/Desktop/conviction-ai-clean/staged"
         output_path = os.path.join(output_dir, "stocks_daily_clean.parquet")
 

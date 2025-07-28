@@ -6,23 +6,41 @@ import subprocess
 import sys
 
 # Optionally disable XRay if not configured
-if os.getenv("AWS_XRAY_DAEMON_ADDRESS") in (None, "none") or os.getenv("AWS_XRAY_SDK_ENABLED") == "false":
+if (
+    os.getenv("AWS_XRAY_DAEMON_ADDRESS") in (None, "none")
+    or os.getenv("AWS_XRAY_SDK_ENABLED") == "false"
+):
     os.environ["AWS_XRAY_SDK_ENABLED"] = "false"
+
     # Mock XRay components
     class MockXRayRecorder:
-        def configure(self, **kwargs): pass
-        def capture(self, name): return lambda f: f
-        def begin_subsegment(self, name): return self
-        def end_subsegment(self): pass
-        def put_annotation(self, key, value): pass
-        def put_metadata(self, key, value): pass
-    
+        def configure(self, **kwargs):
+            pass
+
+        def capture(self, name):
+            return lambda f: f
+
+        def begin_subsegment(self, name):
+            return self
+
+        def end_subsegment(self):
+            pass
+
+        def put_annotation(self, key, value):
+            pass
+
+        def put_metadata(self, key, value):
+            pass
+
     xray_recorder = MockXRayRecorder()
-    def patch_all(): pass
+
+    def patch_all():
+        pass
+
 else:
     # AWS X-Ray tracing setup
     from aws_xray_sdk.core import patch_all, xray_recorder
-    
+
     # Patch AWS services and HTTP libraries
     patch_all()
     xray_recorder.configure(
@@ -232,32 +250,35 @@ def run_full_pipeline(
             # Generate feature parquet after building masters
             print("\n" + "=" * 50)
             print("STEP 6: Generating feature parquet...")
-            from calculate_features import calculate_all_features
             import polars as pl
-            
+
+            from calculate_features import calculate_all_features
+
             # Load master datasets
             daily_master_df = pl.read_parquet("staged/daily_master.parquet")
             intraday_master_df = pl.read_parquet("datasets/intraday_master.parquet")
-            
+
             # Calculate features
             feats = calculate_all_features(daily_master_df, intraday_master_df)
             feats_path = f"data/Parquet_data/features_{date}.parquet"
             feats.write_parquet(feats_path)
             print(f"✅ Features written to {feats_path}")
             results["feature_parquet"] = {"status": "success", "rows": feats.shape[0]}
-            
+
             # Generate labels automatically
             print("\n" + "=" * 50)
             print("STEP 6.3: Generating labels...")
-            
+
             labels_path = f"data/Parquet_data/labels_{date}.parquet"
             labels_cmd = [
                 sys.executable,
                 "src/generate_labels.py",
-                "--date", date,
-                "--output-path", labels_path
+                "--date",
+                date,
+                "--output-path",
+                labels_path,
             ]
-            
+
             result = subprocess.run(labels_cmd, capture_output=True, text=True)
             if result.returncode == 0:
                 print(f"✅ Labels generated: {labels_path}")
@@ -265,33 +286,48 @@ def run_full_pipeline(
             else:
                 print(f"❌ Label generation failed: {result.stderr}")
                 results["labels"] = {"status": "failed", "error": result.stderr}
-            
+
             # Generate training dataset if labels exist
             from pathlib import Path
+
             train_path = f"data/Parquet_data/train_dataset_{date}.parquet"
-            
+
             if Path(labels_path).exists():
                 print("\n" + "=" * 50)
                 print("STEP 6.5: Generating training dataset...")
-                
+
                 train_cmd = [
                     sys.executable,
                     "src/generate_training_dataset.py",
-                    "--feature-path", feats_path,
-                    "--label-path", labels_path,
-                    "--output-path", train_path
+                    "--feature-path",
+                    feats_path,
+                    "--label-path",
+                    labels_path,
+                    "--output-path",
+                    train_path,
                 ]
-                
+
                 result = subprocess.run(train_cmd, capture_output=True, text=True)
                 if result.returncode == 0:
                     print(f"✅ Training dataset created: {train_path}")
-                    results["training_dataset"] = {"status": "success", "output": result.stdout}
+                    results["training_dataset"] = {
+                        "status": "success",
+                        "output": result.stdout,
+                    }
                 else:
                     print(f"❌ Training dataset generation failed: {result.stderr}")
-                    results["training_dataset"] = {"status": "failed", "error": result.stderr}
+                    results["training_dataset"] = {
+                        "status": "failed",
+                        "error": result.stderr,
+                    }
             else:
-                print(f"⚠️ Labels file not found: {labels_path}, skipping training dataset generation")
-                results["training_dataset"] = {"status": "skipped", "reason": "labels_not_found"}
+                print(
+                    f"⚠️ Labels file not found: {labels_path}, skipping training dataset generation"
+                )
+                results["training_dataset"] = {
+                    "status": "skipped",
+                    "reason": "labels_not_found",
+                }
 
             print("\n" + "=" * 50)
             print("STEP 7: Calculating features (legacy)...")
@@ -340,15 +376,15 @@ def run_full_pipeline(
             print("\n" + "=" * 50)
             print("STEP 6: Skipping feature parquet generation (dry run)")
             results["feature_parquet"] = {"status": "skipped", "reason": "dry_run"}
-            
+
             print("\n" + "=" * 50)
             print("STEP 6.3: Skipping label generation (dry run)")
             results["labels"] = {"status": "skipped", "reason": "dry_run"}
-            
+
             print("\n" + "=" * 50)
             print("STEP 6.5: Skipping training dataset generation (dry run)")
             results["training_dataset"] = {"status": "skipped", "reason": "dry_run"}
-            
+
             print("\n" + "=" * 50)
             print("STEP 7: Skipping feature calculation (dry run)")
             results["features"] = {"status": "skipped", "reason": "dry_run"}

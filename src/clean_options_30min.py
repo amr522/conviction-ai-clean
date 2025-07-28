@@ -3,6 +3,7 @@ import os
 from datetime import timedelta
 from pathlib import Path
 
+import pandas as pd
 import polars as pl
 from prefect import task
 from prefect.tasks import task_input_hash
@@ -47,13 +48,13 @@ def run(
 
         # Input/output paths
         project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        input_path = os.path.join(project_root, "data/Parquet_data/option_minute")
+        input_path = os.path.join(project_root, "data/Parquet_data/Raw/option_minute")
         output_dir = os.path.join(project_root, "staged")
         output_path = os.path.join(output_dir, "options_30min_clean.parquet")
 
         print(f"Input path: {input_path}")
         print(f"Output path: {output_path}")
-        
+
         # Verify input exists, else fallback or skip
         if not os.path.exists(input_path):
             print(f"Input path '{input_path}' not found, skipping options 30min clean.")

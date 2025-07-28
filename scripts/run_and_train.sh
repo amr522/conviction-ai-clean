@@ -47,11 +47,11 @@ if python src/run_full_pipeline.py --date "$DATE" \
         echo "❌ Feature parquet generation failed"
         exit 1
     fi
-    
+
     FEATURES_PATH="data/Parquet_data/features_${DATE}.parquet"
     LABELS_PATH="data/Parquet_data/labels_${DATE}.parquet"
     TRAIN_PATH="data/Parquet_data/train_dataset_${DATE}.parquet"
-    
+
     # Generate training dataset if labels exist
     if [[ -f "$LABELS_PATH" ]]; then
         echo "🔗 Generating training dataset..."
@@ -79,7 +79,7 @@ if python src/run_full_pipeline.py --date "$DATE" \
             --n-jobs "$N_JOBS" 2>&1 | tee logs/training_${DATE}.log; then
 
             echo "✅ Training completed successfully"
-            
+
             # Compute SHAP explanations
             echo "🔍 Computing SHAP explanations..."
             if [[ -f "models/latest.pkl" && -f "$FEATURES_PATH" ]]; then

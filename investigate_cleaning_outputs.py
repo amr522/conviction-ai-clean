@@ -4,14 +4,16 @@ Investigate output files created by cleaning scripts
 """
 import os
 from pathlib import Path
+
 import pyarrow.parquet as pq
+
 
 def check_file_exists(path: str, description: str):
     """Check if file exists and get basic info"""
     p = Path(path)
     if p.exists():
         try:
-            if p.suffix == '.parquet':
+            if p.suffix == ".parquet":
                 tbl = pq.read_table(p)
                 print(f"✅ {description}: {p}")
                 print(f"   • Rows: {len(tbl):,}")
@@ -25,26 +27,35 @@ def check_file_exists(path: str, description: str):
     else:
         print(f"❌ {description}: {p} (NOT FOUND)")
 
+
 def main():
     print("🔍 Investigating output files from cleaning scripts...\n")
-    
+
     # Base paths
     base_path = "/Users/amroheidak/Desktop/conviction-ai-clean"
     staged_dir = f"{base_path}/staged"
     data_dir = f"{base_path}/data/Parquet_data"
-    
+
     print("=== MACRO DATA OUTPUTS (clean_macro_data.py) ===")
     check_file_exists(f"{data_dir}/fred.parquet", "FRED data")
-    check_file_exists(f"{data_dir}/vix_data.parquet", "VIX data") 
+    check_file_exists(f"{data_dir}/vix_data.parquet", "VIX data")
     check_file_exists(f"{data_dir}/dxy.parquet", "DXY data")
     check_file_exists(f"{data_dir}/news_data.parquet", "News data")
-    
+
     print("\n=== STAGED OUTPUTS (cleaning scripts) ===")
-    check_file_exists(f"{staged_dir}/options_30min_clean.parquet", "Options 30min cleaned")
-    check_file_exists(f"{staged_dir}/options_daily_clean.parquet", "Options daily cleaned")
-    check_file_exists(f"{staged_dir}/stocks_30min_clean.parquet", "Stocks 30min cleaned")
-    check_file_exists(f"{staged_dir}/stocks_daily_clean.parquet", "Stocks daily cleaned")
-    
+    check_file_exists(
+        f"{staged_dir}/options_30min_clean.parquet", "Options 30min cleaned"
+    )
+    check_file_exists(
+        f"{staged_dir}/options_daily_clean.parquet", "Options daily cleaned"
+    )
+    check_file_exists(
+        f"{staged_dir}/stocks_30min_clean.parquet", "Stocks 30min cleaned"
+    )
+    check_file_exists(
+        f"{staged_dir}/stocks_daily_clean.parquet", "Stocks daily cleaned"
+    )
+
     print("\n=== STAGED DIRECTORY CONTENTS ===")
     staged_path = Path(staged_dir)
     if staged_path.exists():
@@ -54,7 +65,7 @@ def main():
                 print(f"📄 {file.name} ({size_mb:.2f} MB)")
     else:
         print("❌ Staged directory does not exist")
-    
+
     print("\n=== RAW INPUT SOURCES ===")
     # Check raw inputs that scripts expect
     raw_inputs = [
@@ -67,7 +78,7 @@ def main():
         (f"{base_path}/data/Parquet_data/Raw/vix_data.json", "VIX raw JSON"),
         (f"{base_path}/data/Parquet_data/Raw/news", "News raw directory"),
     ]
-    
+
     for path, desc in raw_inputs:
         p = Path(path)
         if p.exists():
@@ -79,6 +90,7 @@ def main():
                 print(f"✅ {desc}: {p} ({size_mb:.2f} MB)")
         else:
             print(f"❌ {desc}: {p} (NOT FOUND)")
+
 
 if __name__ == "__main__":
     main()

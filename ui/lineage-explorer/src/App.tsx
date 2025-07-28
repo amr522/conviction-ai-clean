@@ -22,8 +22,8 @@ export default function App() {
   });
 
   const toggleTag = (tag: string) => {
-    setSelectedTags(prev => 
-      prev.includes(tag) 
+    setSelectedTags(prev =>
+      prev.includes(tag)
         ? prev.filter(t => t !== tag)
         : [...prev, tag]
     );
@@ -51,7 +51,7 @@ export default function App() {
               minWidth: '200px'
             }}
           />
-          
+
           <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
             <span style={{ fontSize: '14px', color: '#666' }}>Tags:</span>
             {availableTags.map(tag => (

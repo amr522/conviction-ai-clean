@@ -53,18 +53,28 @@ Check-points already in your scripts map cleanly to "last successful partition".
 
 ## 3 | Smoke-Test Commands (copy-paste)
 
-### Option 1: Automated Pipeline Scripts
+### Option 1: Automated Pipeline Scripts (M2 Ultra Optimized)
 
 ```bash
 # Full pipeline (recommended) - runs complete validation → master datasets → features → labels → training dataset
+# Automatically uses all 24 cores and 64GB RAM optimizations
 ./scripts/single_day_pipeline.sh
 
 # Standalone mode - requires existing master datasets
+# Optimized for M2 Ultra with GPU acceleration
 ./scripts/single_day_pipeline_standalone.sh
 
 # Manual mode - specify date explicitly
+# Full hardware optimization enabled
 ./scripts/single_day_pipeline_manual.sh 2025-07-27
 ```
+
+**M2 Ultra Optimizations Enabled:**
+- ✅ **24 CPU Cores**: `POLARS_MAX_THREADS=24`
+- ✅ **64GB RAM**: Optimized memory allocation with jemalloc
+- ✅ **Apple Metal GPU**: MPS backend for GPU acceleration
+- ✅ **Parallel Processing**: `N_JOBS=24` for concurrent operations
+- ✅ **Large Chunks**: 50,000 row chunks optimized for 64GB RAM
 
 ### Option 2: Manual Step-by-Step
 
@@ -109,18 +119,21 @@ AUC < 0.75 ⇒ no leakage.
 
 ## 5 | Key Recommendations
 
-1. **Memory flags**: set `PYARROW_MEMORY_POOL=jemalloc` to avoid fragmentation on M2.
+1. **M2 Ultra Optimization**: Optimized for 24-core Apple Silicon with 64GB RAM
+   - `POLARS_MAX_THREADS=24` for maximum parallel processing
+   - `PYARROW_MEMORY_POOL=jemalloc` for efficient memory allocation
+   - Streaming chunk size optimized for 64GB RAM capacity
 2. **GPU LightGBM**: install `lightgbm --install-option="--gpu"` (works on Apple Metal via OpenCL).
 3. **Dataset versioning**: `aws s3 sync training/ s3://convictionai-data/training/ --delete` nightly; rely on S3 versioning for rollbacks.
 4. **Rapid iteration**: during L0 dev, train on 2023-2024 slice to cut runtime by 70% (2 years vs 4 years).
 5. **CI gates**: block merge if `train_and_evaluate.py` AUC > 0.75 or if `validate_feature_lagging` fails.
 6. **Training Universe**: 36 stocks with complete intraday + daily + options data.
-7. **GPU Acceleration**: Leverage M2 Ultra GPU for NVDA/AMD model training.
+7. **Apple Metal GPU**: Leverage M2 Ultra GPU for NVDA/AMD model training with MPS backend.
 8. **High IV Priority**: Weight TSLA, NVDA, PLTR higher in training (high volatility = more signal).
 9. **Multi-Target Models**: Single model for stock + options predictions.
 10. **Sector-Specific Models**: Separate TECH vs FINANCIAL vs HIGH_IV models.
 11. **Feature Store**: Cache sector/market features for all 36 stocks.
-12. **Incremental Training**: Daily updates vs full retraining for speed.
+12. **Parallel Processing**: Daily updates with 24-core parallel processing for speed.
 
 ---
 

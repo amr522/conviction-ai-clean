@@ -113,9 +113,9 @@ intraday_master = pl.read_parquet("data/intraday_master.parquet")
 
 # Calculate features
 features = calculate_all_features(
-    daily_master, 
-    intraday_master, 
-    window=30, 
+    daily_master,
+    intraday_master,
+    window=30,
     use_gpu=True
 )
 ```

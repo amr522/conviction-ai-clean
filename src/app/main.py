@@ -549,7 +549,7 @@ async def predict_internal(inference_request: InferenceRequest) -> InferenceResp
 
             if _model is None:
                 raise HTTPException(status_code=503, detail="Model not loaded")
-            
+
             prediction = _model.predict(df)
             pred_value = (
                 float(prediction[0])
