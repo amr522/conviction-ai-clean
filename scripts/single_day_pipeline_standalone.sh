@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -e
 
-# M2 Ultra Optimization Settings
+# M2 Ultra Optimization Settings with GPU Acceleration
 export PYARROW_MEMORY_POOL=jemalloc  # Optimize memory allocation for large datasets
 export POLARS_MAX_THREADS=24         # Use all 24 cores for Polars operations
 export OMP_NUM_THREADS=24            # OpenMP threads for numerical operations
@@ -9,7 +9,12 @@ export MKL_NUM_THREADS=24            # Intel MKL threads (if available)
 export NUMBA_NUM_THREADS=24          # Numba JIT compilation threads
 export N_JOBS=24                     # Parallel job count for ML operations
 
-echo "🚀 M2 Ultra Standalone Pipeline - 24 cores, 64GB RAM, GPU acceleration enabled"
+# GPU optimization flags
+export PYTORCH_ENABLE_MPS_FALLBACK=1  # Enable PyTorch MPS with fallback
+export PYTORCH_MPS_HIGH_WATERMARK_RATIO=0.0  # Use all available GPU memory
+
+echo "🚀 M2 Ultra Standalone Pipeline - 24 cores, 64GB RAM, Apple Metal GPU acceleration"
+echo "🎯 GPU Backend: Apple Metal Performance Shaders (MPS) enabled"
 
 DATE=$(python scripts/dry_run_schema_validation.py 2>&1 \
   | awk '/validation successful for/ {print $NF}')
@@ -21,7 +26,24 @@ fi
 
 echo "✅ Schema validation passed for $DATE"
 
-echo "🔄 Calculating features in standalone mode with M2 Ultra optimization..."
+# Check GPU availability
+echo "🔍 Checking GPU availability..."
+python -c "
+from src.gpu_utils import gpu_supported, optimize_for_apple_silicon
+optimize_for_apple_silicon()
+if gpu_supported():
+    print('✅ Apple Metal GPU acceleration available')
+    print('🚀 GPU-accelerated pipeline mode enabled')
+else:
+    print('⚠️  GPU not available, using optimized CPU (24 cores)')
+"
+
+echo "🔄 Calculating features in standalone mode with M2 Ultra + GPU optimization..."
+
+# Start performance monitoring
+echo "📊 Starting performance monitoring..."
+START_TIME=$(date +%s)
+
 python src/calculate_features.py \
   --date "$DATE" \
   --daily-master-path staged/daily_master.parquet \
@@ -30,6 +52,11 @@ python src/calculate_features.py \
   --use-gpu \
   --n-jobs 24 \
   --window-days 30
+
+# Calculate execution time
+END_TIME=$(date +%s)
+EXECUTION_TIME=$((END_TIME - START_TIME))
+echo "⏱️  Feature calculation completed in ${EXECUTION_TIME} seconds"
 
 echo "📊 Generating labels..."
 python src/generate_labels.py --date "$DATE"
