@@ -50,3 +50,9 @@ logs/
 .ipynb_checkpoints/
 */.ipynb_checkpoints/
 **/.ipynb_checkpoints/
+
+# Staged outputs and large files
+staged/bronze/*.parquet
+staged/silver/*.parquet
+staged/*.parquet
+*.ipynb

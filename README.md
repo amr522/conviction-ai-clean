@@ -25,6 +25,7 @@ For quick training dataset generation, use one of our automated pipeline scripts
 ```
 
 These scripts automatically:
+
 1. Run schema validation to determine processing date
 2. Generate master datasets and features
 3. Create labels and training datasets
@@ -64,9 +65,11 @@ Every `clean_*.py` script now includes automatic fallback to backup raw data wit
 4. **Logging**: Fallback events are logged as warnings for monitoring
 
 **Environment Variables:**
+
 - `RAW_BACKUP_DIR`: Override default backup directory (default: `data/Parquet_data/Raw`)
 
 **Example Usage:**
+
 ```bash
 # Set custom backup directory
 export RAW_BACKUP_DIR=/path/to/backup/data
@@ -99,11 +102,13 @@ The machine learning models can now be trained with multiple target columns simu
 To use the volatility targets in your training and prediction workflows:
 
 1. **Create holdout dataset with volatility targets**:
+
    ```bash
    python create_holdout_csv.py --include-volatility-targets
    ```
 
 2. **Train models with multiple volatility targets**:
+
    ```bash
    python train_patchtst_tail.py --target-columns "tail_event,sigma_forecast_5d,ivhv_spread_tplus1"
    ```
@@ -122,12 +127,14 @@ jupyter notebook volatility_targets_demo.ipynb
 ```
 
 The notebook provides:
+
 - Data loading and exploration of volatility features
 - Training workflows for multi-target models
 - Visualization of feature importance for volatility prediction
 - Performance evaluation across different volatility targets
 
 ## 📚 Additional Documentationtions)
+
 - [AWS Resources](#aws-resources)
 - [Data Validation Framework](#data-validation-framework)
 - [Volatility Prediction Features](#volatility-prediction-features)
@@ -151,11 +158,13 @@ The machine learning models can now be trained with multiple target columns simu
 To use the volatility targets in your training and prediction workflows:
 
 1. **Create holdout dataset with volatility targets**:
+
    ```bash
    python create_holdout_csv.py --include-volatility-targets
    ```
 
 2. **Train models with multiple volatility targets**:
+
    ```bash
    python train_patchtst_tail.py --target-columns "tail_event,sigma_forecast_5d,ivhv_spread_tplus1"
    ```
@@ -174,12 +183,14 @@ jupyter notebook volatility_targets_demo.ipynb
 ```
 
 The notebook provides:
+
 - Data loading and exploration of volatility features
 - Training workflows for multi-target models
 - Visualization of feature importance for volatility prediction
 - Performance evaluation across different volatility targets
 
 ## 📚 Additional Documentationicd-pipeline)
+
 - [Slack Notifications](#slack-notifications)
 - [AWS Resources](#aws-resources)
 - [Data Validation Framework](#data-validation-framework)
@@ -195,6 +206,7 @@ source .venv/bin/activate
 ```
 
 Then you can run:
+
 ```bash
 ./scripts/evaluate_pipeline.sh 2025-07-27
 ```
@@ -208,6 +220,7 @@ We provide a VS Code DevContainer with all dependencies installed.
 3. The `scripts/setup-env.sh` will run automatically to create a virtualenv and install dependencies.
 
 You'll have:
+
 - A consistent Python environment (`.venv`)
 - Recommended extensions installed automatically
 - AutoSave and FormatOnSave enabled
@@ -262,12 +275,14 @@ Tests must meet a minimum of 80% code coverage to pass.
 ### Setting Up the Project
 
 1. Clone the repository:
+
    ```bash
    git clone https://github.com/your-organization/conviction-ai-clean.git
    cd conviction-ai-clean
    ```
 
 2. Create a virtual environment and install dependencies:
+
    ```bash
    python -m venv venv
    source venv/bin/activate  # On Windows: venv\Scripts\activate
@@ -277,6 +292,7 @@ Tests must meet a minimum of 80% code coverage to pass.
 3. Configure environment variables:
 
    Create a `.env` file with the following required variables:
+
    ```
    # AWS credentials (or use IAM roles)
    AWS_ACCESS_KEY_ID=your_key_id
@@ -292,6 +308,7 @@ Tests must meet a minimum of 80% code coverage to pass.
    ```
 
 4. For Telegram notifications integration:
+
    - Create a Telegram bot via @BotFather
    - Get your bot token and chat ID
    - Add the bot token and chat ID to your `.env` file
@@ -302,6 +319,7 @@ Tests must meet a minimum of 80% code coverage to pass.
    ```
 
    **Testing Locally:**
+
    ```bash
    # Test with dummy credentials (dry-run mode)
    export TELEGRAM_BOT_TOKEN="dummy"
@@ -340,6 +358,7 @@ The `aws_pipeline` directory contains all components for the AWS SageMaker and d
 To set up the AWS environment:
 
 1. Navigate to the aws_pipeline directory:
+
    ```bash
    cd aws_pipeline
    ```
@@ -355,6 +374,7 @@ To set up the AWS environment:
 To execute the full AWS pipeline:
 
 1. Make the pipeline script executable:
+
    ```bash
    chmod +x run_aws_pipeline.sh
    ```
@@ -373,6 +393,7 @@ python aws_pipeline/model_analysis.py
 ```
 
 The script will:
+
 - Connect to your AWS account
 - Load data from S3
 - Evaluate model predictions
@@ -410,6 +431,7 @@ python evaluate_endpoint_rmse.py \
 ```
 
 This will:
+
 1. Load holdout data from the specified CSV file
 2. Send features to the SageMaker endpoint for prediction
 3. Calculate RMSE, MAE, and R² metrics for each target column
@@ -436,6 +458,7 @@ This will:
 ```
 
 The JSON report provides the following metrics for each target:
+
 - **RMSE (Root Mean Squared Error)**: Lower values indicate better fit
 - **MAE (Mean Absolute Error)**: Lower values indicate better fit
 - **R² (Coefficient of Determination)**: Values closer to 1.0 indicate better fit
@@ -457,6 +480,7 @@ You can run every test locally with:
 This executes all CI jobs (schema, feature, performance, signal validation) in sequence and exits non-zero on any failure.
 
 ### Enforce Validations on Push
+
 A Git pre-push hook will automatically run `./scripts/run-all-validations.sh`.
 If any validation fails, the push is aborted.
 
@@ -497,12 +521,14 @@ The validation suite performs the following checks:
 ### Validation Report
 
 The validation generates a comprehensive report with:
+
 - Individual validation results (PASS/FAIL)
 - Overall success rate
 - Detailed error messages for failed validations
 - Recommendations for fixing issues
 
 Example validation output:
+
 ```
 VALIDATION SUMMARY
 =====================================
@@ -529,14 +555,17 @@ To prevent forward-looking bias and ensure robust model performance:
 All potentially forward-looking features are automatically lagged by one period:
 
 **News Features** (lagged):
+
 - `news_count`, `avg_sentiment`, `sum_sentiment`
 - `news_volatility`, `news_ext_count`, `news_ext_avg_sentiment`
 
 **FRED Economic Features** (lagged):
+
 - `fed_event_flag`, `fed_surprise_mean`, `fed_surprise_sum`
 - `fed_actual_mean`, `fed_forecast_mean`
 
 **Treasury Auction Features** (lagged):
+
 - `auction_flag`, `auction_amount`, `auction_yield`
 
 ### 2. Time-Series Training Splits
@@ -550,6 +579,7 @@ All training scripts use proper time-series validation:
 ### 3. Great Expectations in ETL
 
 The ETL pipeline includes built-in validation that fails the job if:
+
 - Forward-looking features are detected
 - Future timestamps are present
 - Duplicate primary keys exist
@@ -559,11 +589,13 @@ The ETL pipeline includes built-in validation that fails the job if:
 ### 4. Testing Anti-Leakage
 
 Run the feature lagging validation:
+
 ```bash
 python validate_feature_lagging.py
 ```
 
 This verifies that:
+
 - Features are properly shifted by 1 period per symbol
 - First row per symbol has NaN for lagged features
 - Non-lagged features remain unchanged
@@ -581,17 +613,21 @@ This verifies that:
 The test suite is organized by functionality:
 
 #### Core ETL Module Tests
+
 - **`tests/test_clean_macro_data.py`**: Tests macro data loading, backshift detection, and raw source fallback
 - **`tests/test_build_daily_master.py`**: Tests daily master dataset creation and macro data joins
 - **`tests/test_load_news_dir.py`**: Tests news data loading and aggregation
 
 #### Feature Calculation Tests
+
 - **`tests/test_calculate_features.py`**: Tests rolling features, intraday returns, and cross-sectional z-scores
 
 #### Training Pipeline Tests
+
 - **`tests/test_train_and_evaluate_cli.py`**: Tests CLI functionality, dry-run mode, and hyperparameter tuning
 
 #### Performance Optimization Tests
+
 - **`tests/test_performance_utils.py`**: Tests join optimization, flow signals, and gamma signals
 
 ### Running Tests
@@ -617,6 +653,7 @@ coverage html  # Creates HTML report in htmlcov/
 ### Test Coverage Requirements
 
 Tests must meet a minimum of 80% code coverage to pass. The coverage report includes:
+
 - Line coverage for all source files
 - Branch coverage for conditional logic
 - Function coverage for all defined functions
@@ -627,6 +664,7 @@ Tests must meet a minimum of 80% code coverage to pass. The coverage report incl
 The pipeline automatically generates feature parquet files for machine learning training:
 
 ### Location
+
 - **Output Path**: `data/Parquet_data/features_{date}.parquet`
 - **Generated By**: `src/calculate_features.py` and `src/run_full_pipeline.py`
 
@@ -647,10 +685,12 @@ python src/train_and_evaluate.py \
 ```
 
 ### CLI Flags
+
 - **`--feature-path`**: Path to feature Parquet file (overrides data loading in training)
 - **`--output-path`**: Custom output path template for feature generation
 
 ### Integration
+
 - **Full Pipeline**: Features generated automatically after master dataset creation
 - **Training Scripts**: Can load features directly from parquet instead of raw data
 - **CI Testing**: `feature-parquet-test` validates generation process
@@ -660,6 +700,7 @@ python src/train_and_evaluate.py \
 The pipeline generates ready-to-train datasets by joining features with labels:
 
 ### Location
+
 - **Output Path**: `data/Parquet_data/train_dataset_{date}.parquet`
 - **Generated By**: `src/generate_training_dataset.py` and `src/run_full_pipeline.py`
 - **Label Source**: `data/Parquet_data/labels_{date}.parquet`
@@ -685,6 +726,7 @@ python src/run_full_pipeline.py --date 2025-01-15
 ### Dataset Structure
 
 The training dataset contains:
+
 - **All feature columns** from the features parquet
 - **Target columns** from the labels parquet (e.g., `target`, `iv_change_5d`)
 - **Join keys**: `date` and `ticker` columns
@@ -693,6 +735,7 @@ The training dataset contains:
 ### Label File Format
 
 Expected label file structure:
+
 ```python
 # data/Parquet_data/labels_{date}.parquet
 columns = [
@@ -705,6 +748,7 @@ columns = [
 ```
 
 ### Integration
+
 - **Full Pipeline**: Automatically generates training dataset if labels exist
 - **Training Scripts**: Can use training dataset directly for model training
 - **CI Testing**: `training-dataset-test` validates generation process
@@ -749,6 +793,7 @@ Benchmark baselines are stored in `benchmarks/.benchmarks.json` and automaticall
 - **Rounds**: Number of benchmark iterations performed
 
 Example output:
+
 ```
 ----------------------- benchmark 'macro_rolling': 1 tests -----------------------
 Name                          Min      Max     Mean  StdDev  Rounds  Iterations
@@ -767,6 +812,7 @@ Automated end-to-end testing against a lightweight local Kubernetes cluster:
 ```
 
 This script:
+
 1. **Provisions Kind cluster** with staging configuration
 2. **Builds and loads Docker image** into the cluster
 3. **Deploys services** to staging namespace
@@ -787,6 +833,7 @@ This script:
 ### CI Integration
 
 The smoke test runs automatically in CI after benchmarks complete:
+
 - **Isolated environment**: Each test gets a fresh Kind cluster
 - **No external dependencies**: Tests run without AWS/Slack/MLflow
 - **Fast execution**: Completes in ~3-5 minutes
@@ -824,6 +871,7 @@ Automated testing for Argo Rollouts canary deployment strategy:
 ```
 
 This script validates that your Argo Rollouts canary strategy:
+
 1. Progresses through the defined analysis steps
 2. Automatically aborts and rolls back when canary fails
 3. Restores the stable version successfully
@@ -831,6 +879,7 @@ This script validates that your Argo Rollouts canary strategy:
 ### CI Integration
 
 The `canary-test` job runs automatically in CI after staging deployment:
+
 - **Trigger**: After smoke-test-staging completes
 - **Validation**: Tests canary promotion and rollback logic
 - **Environment**: Uses staging Kubernetes cluster
@@ -875,12 +924,14 @@ helm upgrade conviction-ai-pipeline charts/conviction-ai-pipeline \
 ### Autoscaling Configuration
 
 **HPA Settings:**
+
 - **minReplicas**: Minimum number of pods (default: 2)
 - **maxReplicas**: Maximum number of pods (default: 10)
 - **cpu.targetAverageUtilization**: CPU threshold for scaling (default: 75%)
 - **memory.targetAverageUtilization**: Memory threshold for scaling (default: 80%)
 
 **VPA Settings:**
+
 - **updateMode**: Auto, Recreation, or Off (default: Auto)
 - **minAllowed**: Minimum resource limits
 - **maxAllowed**: Maximum resource limits
@@ -960,6 +1011,7 @@ helm upgrade conviction-ai-pipeline charts/conviction-ai-pipeline \
 ### OIDC Configuration
 
 **Required Settings:**
+
 - **issuerUrl**: Keycloak realm URL
 - **clientId**: OIDC client identifier
 - **clientSecret**: Client secret from Keycloak
@@ -1018,6 +1070,7 @@ The pipeline includes optional data drift detection with CI integration and Prom
 ### Configuration
 
 **Helm Values:**
+
 ```yaml
 drift:
   enabled: false
@@ -1057,6 +1110,7 @@ helm upgrade conviction-ai-pipeline charts/conviction-ai-pipeline \
 ### Drift Metrics
 
 **Prometheus Metrics:**
+
 - `data_drift_max_score`: Maximum feature drift score
 - `data_drift_detected`: Whether drift was detected (1=yes, 0=no)
 - `data_drift_threshold`: Configured drift threshold
@@ -1066,6 +1120,7 @@ helm upgrade conviction-ai-pipeline charts/conviction-ai-pipeline \
 ### Alerting
 
 **Alert Rules:**
+
 - **DataDriftHigh**: Triggers when `data_drift_max_score > threshold`
 - **Severity**: Warning
 - **Duration**: 10 minutes
@@ -1074,6 +1129,7 @@ helm upgrade conviction-ai-pipeline charts/conviction-ai-pipeline \
 ### CI Integration
 
 The `data-drift-check` job runs automatically:
+
 - **Trigger**: After parallel validations complete
 - **Baseline**: Uses `features_baseline.parquet` as reference
 - **Current**: Compares against latest feature dataset
@@ -1083,11 +1139,13 @@ The `data-drift-check` job runs automatically:
 ### Feature Flags
 
 **CLI Flags:**
+
 - `--drift-enabled`: Enable drift detection (fail on drift)
 - `--drift-threshold`: Drift threshold (default: 0.1)
 - `--drift-report-json`: Output path for drift report JSON
 
 **Environment Variables:**
+
 - `DRIFT_ENABLED`: Enable/disable drift detection
 - `DRIFT_THRESHOLD`: Global drift threshold
 - `PUSHGATEWAY_URL`: Prometheus Pushgateway URL
@@ -1095,12 +1153,14 @@ The `data-drift-check` job runs automatically:
 ### Drift Analysis
 
 **Detection Method:**
+
 - Uses Evidently AI for statistical drift detection
 - Analyzes numeric features only
 - Compares distributions between reference and current data
 - Generates per-feature drift scores
 
 **Thresholds:**
+
 - **Low**: 0.05 (minor distribution changes)
 - **Medium**: 0.1 (moderate drift, default)
 - **High**: 0.2 (significant drift)
@@ -1109,6 +1169,7 @@ The `data-drift-check` job runs automatically:
 ### Troubleshooting
 
 **Common Issues:**
+
 - **Missing baseline**: Ensure reference dataset exists
 - **Schema mismatch**: Verify column alignment between datasets
 - **Pushgateway errors**: Check network connectivity and authentication
@@ -1181,11 +1242,12 @@ df = enhance_gamma_detection(df, multiplier=2.0)
 ### Configuration
 
 **Helm Values:**
+
 ```yaml
 signalValidation:
   enabled: true
   threshold: 0.9
-  enhancedThreshold: 1.5  # multiplier for enhanced gamma squeeze detection
+  enhancedThreshold: 1.5 # multiplier for enhanced gamma squeeze detection
 ```
 
 ## 🔍 Model Explainability & Monitoring
@@ -1195,6 +1257,7 @@ The pipeline includes SHAP-based model explainability with Prometheus monitoring
 ### Configuration
 
 **Helm Values:**
+
 ```yaml
 explainability:
   enabled: false
@@ -1207,12 +1270,14 @@ explainability:
 ### SHAP Analysis
 
 **Automatic Computation:**
+
 - SHAP explanations computed after model training
 - Mean absolute SHAP values calculated per feature
 - Top feature importance rankings displayed
 - Metrics exported to Prometheus Pushgateway
 
 **Usage:**
+
 ```bash
 # Run inference with SHAP explanations
 python src/inference.py \
@@ -1234,6 +1299,7 @@ shap_summary = explain_predictions(model, feats, 'http://pushgateway:9091')
 ### Prometheus Metrics
 
 **SHAP Metrics:**
+
 - `shap_mean_abs{feature}`: Mean absolute SHAP value per feature
 - `shap_total_importance`: Total SHAP importance across all features
 - `shap_max_importance`: Maximum feature SHAP importance
@@ -1242,6 +1308,7 @@ shap_summary = explain_predictions(model, feats, 'http://pushgateway:9091')
 ### Feature Importance Drift Alerting
 
 **Alert Rule:**
+
 ```yaml
 - alert: FeatureImportanceChange
   expr: sum by(feature) (changes(shap_mean_abs{job="model_explain"}[1h])) > 0.1
@@ -1256,17 +1323,20 @@ shap_summary = explain_predictions(model, feats, 'http://pushgateway:9091')
 ### Integration
 
 **Training Pipeline:**
+
 - SHAP explanations computed automatically after training
 - Results logged and pushed to Pushgateway
 - Top 3 most important features displayed
 
 **Environment Variables:**
+
 - `PUSHGATEWAY_URL`: Prometheus Pushgateway endpoint
 - Configure in production deployment
 
 ### Model Support
 
 **Supported Models:**
+
 - **Tree-based**: RandomForest, XGBoost, LightGBM (TreeExplainer)
 - **Other models**: KernelExplainer fallback
 - **Multi-output**: Handles multi-target predictions
@@ -1274,6 +1344,7 @@ shap_summary = explain_predictions(model, feats, 'http://pushgateway:9091')
 ### CI Testing
 
 The `explainability-test` validates:
+
 - SHAP computation with mock models
 - Metrics export functionality
 - Inference script integration
@@ -1282,6 +1353,7 @@ The `explainability-test` validates:
 ### Troubleshooting
 
 **Common Issues:**
+
 - **SHAP installation**: Ensure `shap>=0.41.0` installed
 - **Model compatibility**: Check model type support
 - **Memory usage**: Large datasets may require sampling
@@ -1294,6 +1366,7 @@ The CI/CD pipeline is implemented using GitHub Actions and defined in `.github/w
 ### Release-on-Tag Workflow
 
 1. **Push a new semver tag**:
+
    ```bash
    git tag v1.4.0 && git push origin v1.4.0
    ```
@@ -1308,6 +1381,7 @@ The CI/CD pipeline is implemented using GitHub Actions and defined in `.github/w
 ### Pipeline Triggers
 
 The pipeline runs automatically:
+
 - On every push to the `main` branch
 - On pull requests to the `main` branch
 
@@ -1337,11 +1411,13 @@ graph TD
 The test suite is organized into parallel validation stages for faster CI execution:
 
 #### Core ETL Tests
+
 - **`schema-validation`**: Validates data schemas and structure
 - **`feature-smoke-test`**: Quick smoke tests for feature generation
 - **`feature-validation`**: Comprehensive feature validation tests
 
 #### New Test Suites
+
 - **`calculate-features-test`**: Tests rolling macro features, intraday returns, and cross-sectional z-scores
 - **`train-cli-test`**: Tests CLI functionality, dry-run mode, and hyperparameter tuning
 - **`performance-utils-test`**: Tests join optimization, flow signals, and gamma signals
@@ -1354,11 +1430,13 @@ The test suite is organized into parallel validation stages for faster CI execut
 ### Pipeline Workflow
 
 1. **Parallel Validations** (runs in matrix):
+
    - All 6 validation stages run simultaneously
    - Each stage focuses on specific functionality
    - Faster feedback on failures
 
 2. **Main Test Suite**:
+
    - Runs after all validations pass
    - Comprehensive test execution
    - Notebook execution validation
@@ -1403,6 +1481,7 @@ bash -c 'send_telegram_alert() { local status="$1"; local payload="$2"; python -
 ```
 
 **Sample Output (Dry Run):**
+
 ```
 📱 [DRY RUN] Would send Telegram message:
 Status: TEST STATUS
@@ -1410,6 +1489,7 @@ Payload: Test message payload
 ```
 
 **Sample Output (Production):**
+
 ```
 ✅ Alert sent successfully
 ```
@@ -1417,6 +1497,7 @@ Payload: Test message payload
 ### Notification Types
 
 1. **Test Results Notification**:
+
    - Sent immediately after tests complete
    - Indicates test success or failure
    - Includes repository and workflow details
@@ -1502,6 +1583,7 @@ For details, see [DATA_VALIDATION.md](DATA_VALIDATION.md).
 ## 🚀 Latest AutoML V2 Run
 
 **Job Details:**
+
 - **Job Name**: `conviction-automl-20250721153332`
 - **Best Candidate RMSE**: `0.0472`
 - **Deployed Endpoint**: `conviction-ai-endpoint-20250721153332`
@@ -1514,6 +1596,7 @@ For details, see [DATA_VALIDATION.md](DATA_VALIDATION.md).
 The AutoML V2 job successfully completed with excellent performance metrics. The best performing model achieved a validation RMSE of 0.0472, demonstrating strong predictive accuracy.
 
 **Metrics Artifact:**
+
 - S3 Location: `s3://sagemaker-us-east-1-773934887314/conviction-ai/automl-out/conviction-automl-20250721153332/`
 - Candidate metrics available in job output folder
 
@@ -1576,6 +1659,7 @@ gh workflow run dispatch_retrain.yml \
 ```
 
 **Manual Trigger Parameters:**
+
 - `execution_date`: Specific date for training data (YYYY-MM-DD, defaults to today)
 - `max_rmse`: RMSE threshold for deployment (defaults to 0.05)
 - `s3_bucket`: S3 bucket for artifacts (defaults to conviction-ai-bucket)
@@ -1583,11 +1667,13 @@ gh workflow run dispatch_retrain.yml \
 #### Setting Up Production Automation
 
 1. **Deploy SageMaker Pipeline:**
+
    ```bash
    python pipeline_retrain.py --role arn:aws:iam::ACCOUNT:role/SageMakerExecutionRole
    ```
 
 2. **Deploy Step Functions State Machine:**
+
    ```bash
    python create_state_machine.py \
      --lambda-role arn:aws:iam::ACCOUNT:role/LambdaExecutionRole \
@@ -1611,17 +1697,20 @@ gh workflow run dispatch_retrain.yml \
 Both nightly and weekly workflows automatically post run results to your Slack channel.
 
 **Setup Requirements:**
+
 - Ensure `SLACK_WEBHOOK_URL` is set in repository secrets (Settings → Secrets → Actions)
 - Create a Slack App with Incoming Webhooks enabled
 - Configure webhook for your desired channel
 
 **Notification Features:**
+
 - **Run Status**: Success/failure status with workflow details
 - **Artifacts**: Links to generated artifacts and logs
 - **Color Coding**: Green for success, red for failures
 - **Workflow Context**: Run number, trigger type, and execution details
 
 **Slack Webhook Setup:**
+
 1. Visit https://api.slack.com/apps
 2. Create a new app for your workspace
 3. Enable Incoming Webhooks
@@ -1643,6 +1732,7 @@ Configure automatic scaling for SageMaker endpoints based on traffic load:
 ```
 
 **Autoscaling Features:**
+
 - **Automatic scaling**: Scale between 1-3 instances based on traffic
 - **Cost optimization**: Scales down during low traffic periods
 - **Performance**: Scales up automatically during high traffic
@@ -1663,6 +1753,7 @@ Set up comprehensive monitoring and alerting for endpoints:
 ```
 
 **Monitoring Features:**
+
 - **Error tracking**: Alerts on high 4XX/5XX error rates
 - **Latency monitoring**: Detects performance degradation
 - **Cost alerts**: Identifies underutilized endpoints
@@ -1703,6 +1794,7 @@ streamlit run monitor_dashboard.py --server.port 8501
 ```
 
 **Dashboard Features:**
+
 - **Time Series Visualization**: Track validation RMSE and R² metrics over time
 - **Candidate Comparison**: Compare top performing model candidates for any run date
 - **Interactive Filtering**: Filter by date range and top-N results
@@ -1710,6 +1802,7 @@ streamlit run monitor_dashboard.py --server.port 8501
 - **Real-time Updates**: Refresh data directly from S3 with a button click
 
 **Dashboard Components:**
+
 - **Performance Metrics**: Display best RMSE, R², and run counts
 - **Line Charts**: Dual-axis time series for RMSE (red) and R² (blue) trends
 - **Bar Charts**: Top 5 model candidates comparison for selected dates
@@ -1717,11 +1810,13 @@ streamlit run monitor_dashboard.py --server.port 8501
 - **Sidebar Controls**: Date range picker, top-N selector, and refresh button
 
 **Setup Requirements:**
+
 - Ensure AWS credentials are configured (environment variables or .env file)
 - Metrics files must be stored in S3 at: `s3://convictionai-data/models/blender/metrics/`
 - Dashboard automatically discovers and loads all `candidate-metrics.csv` files
 
 **Access Dashboard:**
+
 - Open browser to `http://localhost:8501` after running the command
 - Dashboard updates automatically when new metrics files are added to S3
 
@@ -1741,11 +1836,13 @@ python detect_model_drift.py --threshold 0.05 --lookback 3 --verbose
 ```
 
 **Drift Detection Parameters:**
+
 - `--threshold`: Percentage increase threshold for drift detection (default: 0.10 = 10%)
 - `--lookback`: Number of previous runs to use as baseline (default: 5 runs)
 - `--verbose`: Enable detailed logging for troubleshooting
 
 **How Drift Detection Works:**
+
 1. **Metrics Collection**: Loads the last `lookback+1` candidate-metrics.csv files from S3
 2. **Baseline Calculation**: Computes average ValidationRMSE from previous `lookback` runs
 3. **Drift Analysis**: Compares most recent RMSE to baseline using threshold percentage
@@ -1753,22 +1850,26 @@ python detect_model_drift.py --threshold 0.05 --lookback 3 --verbose
 5. **Auto-Retrain**: Triggers GitHub Actions `dispatch_retrain.yml` workflow automatically
 
 **Automated Schedule:**
+
 - **Lambda Function**: `lambda_drift_monitor.py` runs daily at 02:00 UTC via EventBridge
 - **S3 Integration**: Automatically processes new metrics from `s3://convictionai-data/models/blender/metrics/`
 - **GitHub Integration**: Uses `gh` CLI to trigger retrain workflows when drift detected
 - **Slack Alerts**: Real-time notifications with drift percentage and threshold details
 
 **Setup Requirements:**
+
 - **Environment Variables**: `SLACK_WEBHOOK_URL`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`
 - **GitHub CLI**: Install `gh` CLI and authenticate for workflow dispatch
 - **AWS Permissions**: S3 read access to metrics bucket and Lambda execution role
 - **S3 Structure**: Metrics stored as `models/blender/metrics/YYYY-MM-DD/candidate-metrics.csv`
 
 **Exit Codes:**
+
 - `0`: No drift detected, model performance is stable
 - `1`: Drift detected, alerts sent and retraining triggered
 
 **Example Output:**
+
 ```
 2025-01-16 14:30:00 - INFO - Starting drift detection (threshold=10.0%, lookback=5)
 2025-01-16 14:30:01 - INFO - Found 8 metrics files in S3
@@ -1813,6 +1914,7 @@ python ibkr_execute_trades.py \
 ```
 
 **Required IBKR Environment Variables:**
+
 ```bash
 export IBKR_HOST=127.0.0.1           # IBKR TWS/Gateway host
 export IBKR_PORT=4002                # 4002 for paper, 4001 for live
@@ -1820,6 +1922,7 @@ export IBKR_CLIENT_ID=1              # Unique client ID
 ```
 
 **IBKR Setup Notes:**
+
 - Install Interactive Brokers TWS or Gateway
 - Enable API connections in TWS/Gateway settings
 - Use port 4002 for paper trading, 4001 for live trading

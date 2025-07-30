@@ -41,27 +41,32 @@ else:
     exit(1)
 "
 
-echo "🔄 Calculating features in GPU-ONLY mode with M2 Ultra optimization..."
+# Define master dataset paths
+DAILY_MASTER="staged/daily_master.parquet"
+INTRADAY_MASTER="datasets/intraday_master.parquet"
+
+# Check for master datasets
+if [ ! -f "$DAILY_MASTER" ] || [ ! -f "$INTRADAY_MASTER" ]; then
+  echo "❌ Master datasets missing: $DAILY_MASTER or $INTRADAY_MASTER"
+  echo "💡 Hint: Run full pipeline first to generate master datasets:"
+  echo "   python src/run_full_pipeline.py --date $DATE"
+  exit 1
+fi
+
+echo "🔄 Calculating features in standalone mode with M2 Ultra + GPU optimization..."
 
 # Start performance monitoring
 echo "📊 Starting performance monitoring..."
 START_TIME=$(date +%s)
 
-# Check if we have existing features for this date
-FEATURES_PATH="data/Parquet_data/features_${DATE}.parquet"
-if [ -f "$FEATURES_PATH" ]; then
-  echo "✅ Using existing features file: $FEATURES_PATH"
-else
-  echo "🔧 Generating features for $DATE on GPU..."
-  # Use available clean data files with GPU-only execution
-  python src/calculate_features.py \
-    --date "$DATE" \
-    --daily-master-path staged/stocks_daily_clean.parquet \
-    --intraday-master-path schemas/samples/stocks_30min.parquet \
-    --output-path "$FEATURES_PATH" \
-    --device mps \
-    --window-days 30 || echo "⚠️  Feature calculation completed with warnings"
-fi
+python src/calculate_features.py \
+  --date "$DATE" \
+  --daily-master-path "$DAILY_MASTER" \
+  --intraday-master-path "$INTRADAY_MASTER" \
+  --output-path "data/Parquet_data/features_${DATE}.parquet" \
+  --use-gpu \
+  --n-jobs 24 \
+  --window-days 30
 
 # Calculate execution time
 END_TIME=$(date +%s)
@@ -95,24 +100,9 @@ else
   [ ! -f "$LABELS_PATH" ] && echo "  - Labels: $LABELS_PATH"
 fi
 
-echo "🔍 Running GPU-ONLY validations..."
-if [ -f "$TRAIN_DATASET_PATH" ]; then
-  echo "✅ Training dataset available: $TRAIN_DATASET_PATH"
-
-  if [ -f "validate_option_features.py" ]; then
-    python validate_option_features.py --input-path "$TRAIN_DATASET_PATH" --device mps || echo "⚠️  Option features validation completed with warnings"
-  else
-    echo "⚠️  validate_option_features.py not found, skipping..."
-  fi
-
-  if [ -f "validate_feature_lagging.py" ]; then
-    python validate_feature_lagging.py --input-path "$TRAIN_DATASET_PATH" --device mps || echo "⚠️  Feature lagging validation completed with warnings"
-  else
-    echo "⚠️  validate_feature_lagging.py not found, skipping..."
-  fi
-else
-  echo "⚠️  No training dataset to validate"
-fi
+echo "🔍 Running validations..."
+python validate_option_features.py --input-path "$TRAIN_DATASET_PATH"
+python validate_feature_lagging.py --input-path "$TRAIN_DATASET_PATH"
 
 echo "🎉 single_day_pipeline_standalone.sh GPU-ONLY complete for $DATE"
 echo "📁 Generated files:"
