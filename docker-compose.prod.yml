@@ -1,0 +1,39 @@
+version: '3.8'
+
+services:
+  conviction-ai-pipeline:
+    image: ${DOCKER_REGISTRY:-docker.io}/conviction-ai-pipeline:${TAG:-latest}
+    environment:
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - AWS_REGION=${AWS_REGION:-us-east-1}
+      - S3_BUCKET=${S3_BUCKET}
+      - SLACK_WEBHOOK_URL=${SLACK_WEBHOOK_URL}
+      - MLFLOW_TRACKING_URI=${MLFLOW_TRACKING_URI}
+    volumes:
+      - ./data:/app/data
+      - ./models:/app/models
+      - ./metrics:/app/metrics
+      - ./logs:/app/logs
+    command: ["--date", "${PROCESS_DATE:-2025-01-01}", "--profile"]
+    restart: "no"
+
+  conviction-ai-training:
+    image: ${DOCKER_REGISTRY:-docker.io}/conviction-ai-pipeline:${TAG:-latest}
+    environment:
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - AWS_REGION=${AWS_REGION:-us-east-1}
+      - S3_BUCKET=${S3_BUCKET}
+      - MLFLOW_TRACKING_URI=${MLFLOW_TRACKING_URI}
+    volumes:
+      - ./data:/app/data
+      - ./models:/app/models
+      - ./metrics:/app/metrics
+    entrypoint: ["python", "src/train_and_evaluate.py"]
+    command: [
+      "--start-date", "${TRAIN_START_DATE:-2025-01-01}",
+      "--end-date", "${TRAIN_END_DATE:-2025-01-31}",
+      "--tune", "--n-trials", "${N_TRIALS:-50}"
+    ]
+    restart: "no"

@@ -1,0 +1,161 @@
+name: Release on Tag
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'  # semver tags
+
+env:
+  DOCKER_REGISTRY: ghcr.io
+  IMAGE_NAME: conviction-ai-pipeline
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Set up Python 3.10
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+          
+      - name: Install test dependencies
+        run: scripts/install-test-deps.sh
+        
+      - name: Run all validations
+        run: ./scripts/run-all-validations.sh
+        
+      - name: Run benchmarks
+        run: |
+          pytest tests/test_benchmarks.py --benchmark-only --benchmark-save=release
+        
+  build-and-publish:
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: write
+      
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Get tag version
+        id: tag
+        run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+        
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+        
+      - name: Log in to Container Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ${{ env.DOCKER_REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+          
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ env.DOCKER_REGISTRY }}/${{ github.repository }}/${{ env.IMAGE_NAME }}:${{ steps.tag.outputs.VERSION }}
+            ${{ env.DOCKER_REGISTRY }}/${{ github.repository }}/${{ env.IMAGE_NAME }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          
+      - name: Set up Helm
+        uses: azure/setup-helm@v3
+        with:
+          version: '3.10.0'
+          
+      - name: Package Helm chart
+        run: |
+          helm package charts/conviction-ai-pipeline \
+            --version ${{ steps.tag.outputs.VERSION }} \
+            --app-version ${{ steps.tag.outputs.VERSION }}
+            
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ steps.tag.outputs.VERSION }}
+          name: Release ${{ steps.tag.outputs.VERSION }}
+          body: |
+            ## Release ${{ steps.tag.outputs.VERSION }}
+            
+            ### Docker Image
+            ```bash
+            docker pull ${{ env.DOCKER_REGISTRY }}/${{ github.repository }}/${{ env.IMAGE_NAME }}:${{ steps.tag.outputs.VERSION }}
+            ```
+            
+            ### Helm Chart
+            ```bash
+            helm upgrade conviction-ai-pipeline ./conviction-ai-pipeline-${{ steps.tag.outputs.VERSION }}.tgz
+            ```
+            
+            ### Changes
+            See [CHANGELOG.md](CHANGELOG.md) for detailed changes.
+          files: |
+            conviction-ai-pipeline-${{ steps.tag.outputs.VERSION }}.tgz
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          
+  publish-docs:
+    needs: build-and-publish
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+      
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Get tag version
+        id: tag
+        run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+          
+      - name: Create docs directory and package.json
+        run: |
+          mkdir -p docs
+          cat > docs/package.json << 'EOF'
+          {
+            "name": "conviction-ai-docs",
+            "version": "1.0.0",
+            "scripts": {
+              "build": "mkdir -p build && cp -r ../README.md ../CHANGELOG.md ../docs/* build/ 2>/dev/null || true && echo 'Docs built successfully'"
+            },
+            "devDependencies": {}
+          }
+          EOF
+          
+      - name: Install docs dependencies
+        run: |
+          cd docs
+          npm ci || npm install
+          
+      - name: Build docs
+        run: |
+          cd docs
+          npm run build
+          # Create index.html from README
+          echo '<!DOCTYPE html><html><head><title>Conviction AI Pipeline</title><style>body{font-family:Arial,sans-serif;max-width:800px;margin:0 auto;padding:20px;}</style></head><body>' > build/index.html
+          # Convert markdown to basic HTML (simple approach)
+          sed 's/^# /<h1>/g; s/^## /<h2>/g; s/^### /<h3>/g; s/```/<pre>/g' ../README.md >> build/index.html
+          echo '</body></html>' >> build/index.html
+          
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./docs/build
+          destination_dir: .
+          commit_message: "docs: publish site for ${{ steps.tag.outputs.VERSION }}"

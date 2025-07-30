@@ -1,0 +1,24 @@
+{{- if .Values.lineage.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "conviction-ai-pipeline.fullname" . }}-lineage
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "conviction-ai-pipeline.labels" . | nindent 4 }}
+    component: lineage
+spec:
+  type: {{ .Values.lineage.service.type }}
+  ports:
+    - port: {{ .Values.lineage.servicePort }}
+      targetPort: http
+      protocol: TCP
+      name: http
+    - port: 9090
+      targetPort: metrics
+      protocol: TCP
+      name: metrics
+  selector:
+    {{- include "conviction-ai-pipeline.selectorLabels" . | nindent 4 }}
+    component: lineage
+{{- end }}

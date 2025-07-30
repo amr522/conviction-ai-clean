@@ -1,0 +1,59 @@
+global:
+  resolve_timeout: 5m
+  telegram_api_url: 'https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage'
+
+route:
+  group_by: ['alertname']
+  group_wait: 10s
+  group_interval: 10m
+  repeat_interval: 1h
+  receiver: 'null'
+  routes:
+  - match:
+      alertname: PipelineFailure
+    receiver: telegram-critical
+  - match:
+      alertname: MetricsExporterDown
+    receiver: telegram-critical
+  - match:
+      alertname: MissingOutput
+    receiver: telegram-warning
+  - match:
+      alertname: DataLag
+    receiver: telegram-warning
+  - match:
+      alertname: LongRuntime
+    receiver: telegram-warning
+
+receivers:
+- name: 'null'
+
+- name: 'telegram-critical'
+  telegram_configs:
+  - chat_id: '${TELEGRAM_CHAT_ID}'
+    message: |
+      🚨 *CRITICAL ALERT*
+
+      *Alert:* {{ .GroupLabels.alertname }}
+      {{ range .Alerts }}
+      *Summary:* {{ .Annotations.summary }}
+      *Description:* {{ .Annotations.description }}
+      *Status:* {{ .Status }}
+      *Time:* {{ .StartsAt }}
+      {{ end }}
+    parse_mode: 'Markdown'
+
+- name: 'telegram-warning'
+  telegram_configs:
+  - chat_id: '${TELEGRAM_CHAT_ID}'
+    message: |
+      ⚠️ *WARNING ALERT*
+
+      *Alert:* {{ .GroupLabels.alertname }}
+      {{ range .Alerts }}
+      *Summary:* {{ .Annotations.summary }}
+      *Description:* {{ .Annotations.description }}
+      *Status:* {{ .Status }}
+      *Time:* {{ .StartsAt }}
+      {{ end }}
+    parse_mode: 'Markdown'

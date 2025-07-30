@@ -1,0 +1,26 @@
+{
+  "name": "Conviction AI Dev",
+  "dockerFile": "../Dockerfile",
+  "context": "..",
+  "extensions": [
+    "ms-python.python",
+    "ms-azuretools.vscode-docker",
+    "esbenp.prettier-vscode",
+    "ms-vscode.cpptools",
+    "njpwerner.autodocstring"
+  ],
+  "settings": {
+    "python.pythonPath": "/workspaces/conviction-ai-clean/.venv/bin/python",
+    "editor.formatOnSave": true,
+    "files.autoSave": "afterDelay",
+    "files.autoSaveDelay": 500
+  },
+  "containerEnv": {
+    "OIDC_ISSUER_URL": "https://keycloak.local/auth/realms/conviction-ai",
+    "OIDC_CLIENT_ID": "lineage-explorer",
+    "OIDC_CLIENT_SECRET": "changeme",
+    "OIDC_REDIRECT_URL": "http://localhost:8000/auth/callback"
+  },
+  "postCreateCommand": "scripts/setup-env.sh",
+  "remoteUser": "vscode"
+}

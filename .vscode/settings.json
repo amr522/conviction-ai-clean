@@ -1,0 +1,9 @@
+{
+  "python.pythonPath": ".venv/bin/python",
+  "editor.tabSize": 2,
+  "editor.formatOnSave": true,
+  "files.exclude": {
+    "**/__pycache__": true,
+    "**/*.pyc": true
+  }
+}

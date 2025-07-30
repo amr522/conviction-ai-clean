@@ -1,0 +1,44 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: conviction-ai-pipeline-production
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: conviction-ai-pipeline
+    environment: production
+spec:
+  project: default
+  source:
+    repoURL: 'https://github.com/your-org/conviction-ai-clean'
+    targetRevision: main
+    path: charts/conviction-ai-pipeline
+    helm:
+      valueFiles:
+        - values.yaml
+      parameters:
+        - name: chaos.enabled
+          value: "false"
+        - name: backfill.enabled
+          value: "true"
+        - name: rollout.enabled
+          value: "true"
+        - name: rollout.canary.analysis.enabled
+          value: "true"
+        - name: alerts.enabled
+          value: "true"
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: production
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m

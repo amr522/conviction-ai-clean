@@ -1,0 +1,13 @@
+{
+  "name": "conviction-ai-docs",
+  "version": "1.0.0",
+  "description": "Documentation for Conviction AI Pipeline",
+  "scripts": {
+    "build": "mkdir -p build && cp -r ../README.md ../CHANGELOG.md ../docs/* build/ 2>/dev/null || true && echo 'Docs built successfully'",
+    "dev": "echo 'Development server not configured'"
+  },
+  "devDependencies": {},
+  "keywords": ["conviction-ai", "machine-learning", "documentation"],
+  "author": "Conviction AI Team",
+  "license": "MIT"
+}

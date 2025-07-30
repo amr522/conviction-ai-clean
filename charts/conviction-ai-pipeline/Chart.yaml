@@ -1,0 +1,13 @@
+apiVersion: v2
+name: conviction-ai-pipeline
+description: A Helm chart for Conviction AI Pipeline with autoscaling and cost optimization
+type: application
+version: 3.4.0
+appVersion: "2025.07.27"
+keywords:
+  - machine-learning
+  - pipeline
+  - autoscaling
+  - cost-optimization
+maintainers:
+  - name: Conviction AI Team

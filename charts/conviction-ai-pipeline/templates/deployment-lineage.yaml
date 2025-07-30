@@ -1,0 +1,48 @@
+{{- if .Values.lineage.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "conviction-ai-pipeline.fullname" . }}-lineage
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "conviction-ai-pipeline.labels" . | nindent 4 }}
+    component: lineage
+spec:
+  replicas: {{ .Values.lineage.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "conviction-ai-pipeline.selectorLabels" . | nindent 6 }}
+      component: lineage
+  template:
+    metadata:
+      labels:
+        {{- include "conviction-ai-pipeline.selectorLabels" . | nindent 8 }}
+        component: lineage
+    spec:
+      containers:
+      - name: lineage-explorer
+        image: "{{ .Values.lineage.image.repository }}:{{ .Values.lineage.image.tag }}"
+        imagePullPolicy: {{ .Values.lineage.image.pullPolicy }}
+        ports:
+        - containerPort: 80
+          name: http
+        - containerPort: 9090
+          name: metrics
+        env:
+        - name: OPENLINEAGE_URL
+          value: {{ .Values.lineage.openlineageUrl | quote }}
+        resources:
+          {{- toYaml .Values.lineage.resources | nindent 10 }}
+        livenessProbe:
+          httpGet:
+            path: /
+            port: http
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /
+            port: http
+          initialDelaySeconds: 5
+          periodSeconds: 5
+{{- end }}

@@ -1,0 +1,53 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: "{{ include "conviction-ai-pipeline.fullname" . }}-test-monitoring"
+  labels:
+    {{- include "conviction-ai-pipeline.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": test
+    "helm.sh/hook-weight": "3"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+spec:
+  restartPolicy: Never
+  containers:
+    - name: test-monitoring
+      image: bitnami/kubectl:latest
+      command: ["/bin/bash"]
+      args:
+        - -c
+        - |
+          echo "Testing monitoring configuration..."
+
+          {{- if .Values.prometheus.enabled }}
+          echo "Checking ServiceMonitor..."
+          kubectl get servicemonitor {{ include "conviction-ai-pipeline.fullname" . }}-sm
+          if [ $? -eq 0 ]; then
+            echo "✅ ServiceMonitor found"
+          else
+            echo "❌ ServiceMonitor not found"
+            exit 1
+          fi
+
+          echo "Checking metrics service port..."
+          kubectl get service {{ include "conviction-ai-pipeline.fullname" . }} -o jsonpath='{.spec.ports[?(@.name=="metrics")].port}'
+          if [ $? -eq 0 ]; then
+            echo "✅ Metrics port configured"
+          else
+            echo "❌ Metrics port not found"
+            exit 1
+          fi
+          {{- end }}
+
+          {{- if .Values.grafana.dashboard.enabled }}
+          echo "Checking GrafanaDashboard..."
+          kubectl get grafanadashboard {{ include "conviction-ai-pipeline.fullname" . }}-dashboard
+          if [ $? -eq 0 ]; then
+            echo "✅ GrafanaDashboard found"
+          else
+            echo "❌ GrafanaDashboard not found"
+            exit 1
+          fi
+          {{- end }}
+
+          echo "✅ Monitoring tests passed"

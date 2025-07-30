@@ -1,0 +1,96 @@
+{{- if .Values.grafana.dashboard.costs.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "conviction-ai.fullname" . }}-cost-dashboard
+  labels:
+    {{- include "conviction-ai.labels" . | nindent 4 }}
+    grafana_dashboard: "1"
+data:
+  cost-dashboard.json: |
+    {
+      "dashboard": {
+        "id": null,
+        "title": "Conviction AI - Cost Optimization",
+        "tags": ["conviction-ai", "costs"],
+        "timezone": "browser",
+        "panels": [
+          {
+            "id": 1,
+            "title": "Cluster CPU Cost ($)",
+            "type": "stat",
+            "targets": [
+              {
+                "expr": "sum(rate(container_cpu_usage_seconds_total{namespace=\"{{ .Release.Namespace }}\"}[5m])) * {{ .Values.grafana.dashboard.costs.cpuCostPerHour }}",
+                "legendFormat": "CPU Cost/Hour"
+              }
+            ],
+            "fieldConfig": {
+              "defaults": {
+                "unit": "currencyUSD",
+                "decimals": 4
+              }
+            },
+            "gridPos": {"h": 8, "w": 8, "x": 0, "y": 0}
+          },
+          {
+            "id": 2,
+            "title": "Cluster Memory Cost ($)",
+            "type": "stat",
+            "targets": [
+              {
+                "expr": "sum(container_memory_usage_bytes{namespace=\"{{ .Release.Namespace }}\"}) / 1024 / 1024 / 1024 * {{ .Values.grafana.dashboard.costs.memoryCostPerGBHour }}",
+                "legendFormat": "Memory Cost/Hour"
+              }
+            ],
+            "fieldConfig": {
+              "defaults": {
+                "unit": "currencyUSD",
+                "decimals": 4
+              }
+            },
+            "gridPos": {"h": 8, "w": 8, "x": 8, "y": 0}
+          },
+          {
+            "id": 3,
+            "title": "Pod-level Cost Breakdown",
+            "type": "piechart",
+            "targets": [
+              {
+                "expr": "sum by (pod) (rate(container_cpu_usage_seconds_total{namespace=\"{{ .Release.Namespace }}\"}[5m])) * {{ .Values.grafana.dashboard.costs.cpuCostPerHour }} + sum by (pod) (container_memory_usage_bytes{namespace=\"{{ .Release.Namespace }}\"}) / 1024 / 1024 / 1024 * {{ .Values.grafana.dashboard.costs.memoryCostPerGBHour }}",
+                "legendFormat": "{{`{{pod}}`}}"
+              }
+            ],
+            "fieldConfig": {
+              "defaults": {
+                "unit": "currencyUSD"
+              }
+            },
+            "gridPos": {"h": 8, "w": 8, "x": 16, "y": 0}
+          },
+          {
+            "id": 4,
+            "title": "Daily Cost Trend",
+            "type": "timeseries",
+            "targets": [
+              {
+                "expr": "sum(rate(container_cpu_usage_seconds_total{namespace=\"{{ .Release.Namespace }}\"}[5m])) * {{ .Values.grafana.dashboard.costs.cpuCostPerHour }} * 24 + sum(container_memory_usage_bytes{namespace=\"{{ .Release.Namespace }}\"}) / 1024 / 1024 / 1024 * {{ .Values.grafana.dashboard.costs.memoryCostPerGBHour }} * 24",
+                "legendFormat": "Daily Cost"
+              }
+            ],
+            "fieldConfig": {
+              "defaults": {
+                "unit": "currencyUSD"
+              }
+            },
+            "gridPos": {"h": 8, "w": 24, "x": 0, "y": 8}
+          }
+        ],
+        "time": {
+          "from": "now-24h",
+          "to": "now"
+        },
+        "refresh": "30s"
+      }
+    }
+{{- end }}

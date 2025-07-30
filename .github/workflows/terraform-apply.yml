@@ -1,0 +1,111 @@
+name: Terraform Apply
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'infra/terraform/**'
+      - '.github/workflows/terraform-*.yml'
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ vars.AWS_REGION || 'us-east-1' }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.6.0
+
+      - name: Terraform Init
+        run: |
+          terraform init \
+            -backend-config="bucket=${{ vars.TFSTATE_BUCKET }}" \
+            -backend-config="key=conviction-ai/terraform.tfstate" \
+            -backend-config="region=${{ vars.AWS_REGION || 'us-east-1' }}" \
+            -input=false
+        working-directory: infra/terraform
+
+      - name: Terraform Plan
+        id: plan
+        run: |
+          terraform plan \
+            -var="tfstate_bucket=${{ vars.TFSTATE_BUCKET }}" \
+            -var="s3_bucket_name=${{ vars.S3_BUCKET_NAME }}" \
+            -var="budget_email=${{ vars.BUDGET_EMAIL }}" \
+            -var="slack_budget_webhook_url=${{ secrets.SLACK_BUDGET_WEBHOOK_URL }}" \
+            -var="environment=prod" \
+            -input=false \
+            -out=tfplan
+        working-directory: infra/terraform
+
+      - name: Terraform Apply
+        id: apply
+        run: terraform apply -input=false tfplan
+        working-directory: infra/terraform
+
+      - name: Terraform Output
+        id: output
+        run: terraform output -json > terraform-outputs.json
+        working-directory: infra/terraform
+
+      - name: Upload Terraform Outputs
+        uses: actions/upload-artifact@v4
+        with:
+          name: terraform-outputs
+          path: infra/terraform/terraform-outputs.json
+          retention-days: 30
+
+      - name: Notify Slack on Success
+        if: success()
+        uses: 8398a7/action-slack@v3
+        with:
+          status: success
+          channel: '#infrastructure'
+          text: |
+            🏗️ *Terraform Apply Successful*
+
+            Infrastructure has been successfully deployed to production.
+
+            *Repository:* ${{ github.repository }}
+            *Branch:* ${{ github.ref_name }}
+            *Commit:* ${{ github.sha }}
+            *Actor:* ${{ github.actor }}
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+      - name: Notify Slack on Failure
+        if: failure()
+        uses: 8398a7/action-slack@v3
+        with:
+          status: failure
+          channel: '#infrastructure'
+          text: |
+            🚨 *Terraform Apply Failed*
+
+            Infrastructure deployment to production has failed.
+
+            *Repository:* ${{ github.repository }}
+            *Branch:* ${{ github.ref_name }}
+            *Commit:* ${{ github.sha }}
+            *Actor:* ${{ github.actor }}
+
+            Please check the workflow logs for details.
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}

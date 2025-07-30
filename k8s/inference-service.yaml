@@ -1,0 +1,99 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: conviction-ai-inference
+  namespace: default
+  labels:
+    app: conviction-ai-inference
+spec:
+  type: ClusterIP
+  ports:
+  - port: 80
+    targetPort: 8000
+    protocol: TCP
+    name: http
+  selector:
+    app: conviction-ai-inference
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: conviction-ai-inference-gpu
+  namespace: default
+  labels:
+    app: conviction-ai-inference-gpu
+spec:
+  type: ClusterIP
+  ports:
+  - port: 80
+    targetPort: 8000
+    protocol: TCP
+    name: http
+  selector:
+    app: conviction-ai-inference-gpu
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: conviction-ai-inference-ingress
+  namespace: default
+  annotations:
+    kubernetes.io/ingress.class: alb
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/healthcheck-path: /health
+    alb.ingress.kubernetes.io/healthcheck-interval-seconds: '30'
+    alb.ingress.kubernetes.io/healthcheck-timeout-seconds: '5'
+    alb.ingress.kubernetes.io/healthy-threshold-count: '2'
+    alb.ingress.kubernetes.io/unhealthy-threshold-count: '3'
+spec:
+  rules:
+  - host: api.conviction-ai.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: conviction-ai-inference
+            port:
+              number: 80
+  - host: gpu-api.conviction-ai.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: conviction-ai-inference-gpu
+            port:
+              number: 80
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: feast-config
+  namespace: default
+data:
+  feature_store.yaml: |
+    project: conviction_ai
+    registry: feature_repo/registry.db
+    provider: local
+    online_store:
+      type: sqlite
+      path: feature_repo/online_store.db
+    offline_store:
+      type: file
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: model-storage-pvc
+  namespace: default
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 10Gi
+  storageClassName: efs-sc

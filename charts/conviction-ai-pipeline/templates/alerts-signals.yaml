@@ -1,0 +1,50 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: {{ include "conviction-ai-pipeline.fullname" . }}-signal-rules
+  labels:
+    release: {{ .Release.Name }}
+spec:
+  groups:
+    - name: SignalQualityAlerts
+      rules:
+        - alert: GammaCoverageLow
+          expr: gamma_coverage{job="signal-validators"} < {{ .Values.signalValidation.threshold }}
+          for: 10m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Gamma coverage below {{ .Values.signalValidation.threshold }}"
+            description: "Only {{ printf \"%.2f\" gamma_coverage }} fraction of rows have valid net_gamma."
+        - alert: FlowAccuracyLow
+          expr: flow_accuracy{job="signal-validators"} < {{ .Values.signalValidation.threshold }}
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Flow divergence accuracy below {{ .Values.signalValidation.threshold }}"
+            description: "Flow accuracy is {{ printf \"%.2f\" flow_accuracy }}."
+        - alert: VolSpikeDetectionLow
+          expr: vol_spike_detection{job="signal-validators"} < {{ .Values.signalValidation.threshold }}
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Volume spike detection below {{ .Values.signalValidation.threshold }}"
+            description: "Spike detection rate is {{ printf \"%.2f\" vol_spike_detection }}."
+        - alert: AnomalyTestFailed
+          expr: signal_validation_passed{job="anomaly-test"} == 0
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Anomaly injection test failed"
+            description: "The anomaly injection or signal validation failed in the last 5m."
+        - alert: EnhancedGammaMissed
+          expr: gamma_squeeze_enhanced{job="signal-validators"} == 0
+          for: 15m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Enhanced gamma squeeze detection missing"
+            description: "No enhanced gamma squeezes detected in the last 15m—possible risk of false negatives."

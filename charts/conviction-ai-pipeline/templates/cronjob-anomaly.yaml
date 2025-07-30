@@ -1,0 +1,36 @@
+{{- if .Values.anomalyCron.enabled }}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ include "conviction-ai-pipeline.fullname" . }}-anomaly-test
+  labels:
+    {{- include "conviction-ai-pipeline.labels" . | nindent 4 }}
+spec:
+  schedule: "{{ .Values.anomalyCron.schedule | default "0 */6 * * *" }}"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          serviceAccountName: {{ include "conviction-ai-pipeline.serviceAccountName" . }}
+          containers:
+            - name: anomaly-test
+              image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+              command: ["/bin/bash", "-c"]
+              args:
+                - |
+                  scripts/inject-synthetic-anomalies.sh $(date +%Y-%m-%d)
+                  python src/validate_signals.py \
+                    --input data/Parquet_data/options_30min_clean_$(date +%Y-%m-%d).parquet \
+                    --output-json /tmp/anomaly_results.json \
+                    --threshold {{ .Values.signalValidation.lowerThreshold | default 0.1 }}
+              env:
+                {{- toYaml .Values.env | nindent 16 }}
+              volumeMounts:
+                - name: data-volume
+                  mountPath: /app/data
+          volumes:
+            - name: data-volume
+              persistentVolumeClaim:
+                claimName: {{ include "conviction-ai-pipeline.fullname" . }}-data
+          restartPolicy: OnFailure
+{{- end }}

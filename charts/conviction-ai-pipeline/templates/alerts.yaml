@@ -1,0 +1,68 @@
+{{- if .Values.alerts.enabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: {{ include "conviction-ai-pipeline.fullname" . }}-alerts
+  labels:
+    {{- include "conviction-ai-pipeline.labels" . | nindent 4 }}
+    release: prometheus
+spec:
+  groups:
+    - name: conviction-ai-pipeline.rules
+      rules:
+        - alert: PipelineETLFailure
+          expr: increase(pipeline_etl_errors_total[5m]) > 0
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: "ETL pipeline errors detected"
+            description: "pipeline_etl_errors_total increased in the last 5m."
+
+        - alert: ModelTrainingFailure
+          expr: increase(pipeline_training_errors_total[5m]) > 0
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Model training errors detected"
+            description: "pipeline_training_errors_total increased in the last 5m."
+
+        - alert: DataDriftDetected
+          expr: increase(data_drift_events_total[1h]) > 0
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Data drift detected"
+            description: "data_drift_events_total has increased in the last hour."
+
+        - alert: DataDriftHigh
+          expr: data_drift_max_score > {{ .Values.drift.threshold }}
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Data drift exceeded {{ .Values.drift.threshold }}"
+            description: "Max feature drift is {{`{{ $value }}`}}"
+
+        - alert: InferenceLatencyHigh
+          expr: histogram_quantile(0.95, sum(rate(prediction_latency_seconds_bucket[5m])) by (le)) > 1
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: "High inference latency"
+            description: "95th percentile of prediction latency > 1s."
+
+        - alert: FeatureImportanceChange
+          expr: |
+            sum by(feature) (changes(shap_mean_abs{job="model_explain"}[1h]))
+            > {{ .Values.explainability.threshold }}
+          for: 15m
+          labels:
+            severity: warning
+          annotations:
+            summary: "SHAP importance drift detected"
+            description: "Feature {{`{{ $labels.feature }}`}} importance changed significantly"
+{{- end }}

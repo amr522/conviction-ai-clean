@@ -1,0 +1,119 @@
+{{- if and .Values.backfill.enabled .Values.autoscaling.backfill.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "conviction-ai-pipeline.fullname" . }}-backfill-deployer
+  labels:
+    {{- include "conviction-ai-pipeline.labels" . | nindent 4 }}
+    component: backfill-deployer
+spec:
+  replicas: {{ .Values.autoscaling.backfill.minReplicas }}
+  selector:
+    matchLabels:
+      {{- include "conviction-ai-pipeline.selectorLabels" . | nindent 6 }}
+      component: backfill-deployer
+  template:
+    metadata:
+      labels:
+        {{- include "conviction-ai-pipeline.selectorLabels" . | nindent 8 }}
+        component: backfill-deployer
+    spec:
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: backfill-deployer
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: {{ include "conviction-ai-pipeline.image" . }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command: ["/bin/bash", "-c"]
+          args:
+            - |
+              echo "Backfill deployer waiting for trigger..."
+              while true; do
+                # Check if backfill should run (simple time-based trigger)
+                CURRENT_HOUR=$(date +%H)
+                if [[ "$CURRENT_HOUR" == "02" ]]; then
+                  echo "Starting backfill job..."
+                  /app/scripts/backfill_flow.sh {{ .Values.backfill.startDate }} {{ .Values.backfill.endDate }} {{ .Values.backfill.workers }}
+                  echo "Backfill completed, sleeping until next trigger..."
+                  sleep 3600  # Sleep 1 hour after completion
+                else
+                  sleep 300   # Check every 5 minutes
+                fi
+              done
+          env:
+            {{- include "conviction-ai-pipeline.env" . | nindent 12 }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          {{- if .Values.persistence.enabled }}
+          volumeMounts:
+            - name: data-storage
+              mountPath: {{ .Values.persistence.mountPath }}
+            - name: models-storage
+              mountPath: /app/models
+            - name: metrics-storage
+              mountPath: /app/metrics
+          {{- end }}
+      {{- if .Values.persistence.enabled }}
+      volumes:
+        - name: data-storage
+          persistentVolumeClaim:
+            claimName: {{ include "conviction-ai-pipeline.fullname" . }}-data
+        - name: models-storage
+          persistentVolumeClaim:
+            claimName: {{ include "conviction-ai-pipeline.fullname" . }}-models
+        - name: metrics-storage
+          persistentVolumeClaim:
+            claimName: {{ include "conviction-ai-pipeline.fullname" . }}-metrics
+      {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+---
+{{- if .Values.autoscaling.backfill.enabled }}
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ include "conviction-ai-pipeline.fullname" . }}-backfill-hpa
+  labels:
+    {{- include "conviction-ai-pipeline.labels" . | nindent 4 }}
+    component: backfill-autoscaling
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ include "conviction-ai-pipeline.fullname" . }}-backfill-deployer
+  minReplicas: {{ .Values.autoscaling.backfill.minReplicas }}
+  maxReplicas: {{ .Values.autoscaling.backfill.maxReplicas }}
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: {{ .Values.autoscaling.backfill.cpuUtilizationPercentage }}
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: 600
+      policies:
+      - type: Percent
+        value: 25
+        periodSeconds: 120
+    scaleUp:
+      stabilizationWindowSeconds: 120
+      policies:
+      - type: Percent
+        value: 50
+        periodSeconds: 60
+{{- end }}
+{{- end }}

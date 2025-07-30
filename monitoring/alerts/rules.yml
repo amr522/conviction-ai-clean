@@ -1,0 +1,47 @@
+groups:
+  - name: vol-pipeline-alerts
+    rules:
+      - alert: PipelineFailure
+        expr: vol_pipeline_last_run_status == 1
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Vol Pipeline Failed"
+          description: "The volatility pipeline last run failed with exit code 1"
+
+      - alert: MissingOutput
+        expr: vol_pipeline_files_total{directory="master"} == 0
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "No Master Output Files"
+          description: "No files found in master directory - pipeline may not be producing output"
+
+      - alert: DataLag
+        expr: vol_pipeline_data_age_hours > 25
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Data is Stale"
+          description: "Latest data is {{ $value }} hours old, expected < 25 hours"
+
+      - alert: MetricsExporterDown
+        expr: up{job="vol-pipeline"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Metrics Exporter Down"
+          description: "Vol pipeline metrics exporter is not responding"
+
+      - alert: LongRuntime
+        expr: vol_pipeline_runtime_seconds > 3600
+        for: 0m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Pipeline Runtime Excessive"
+          description: "Pipeline took {{ $value }} seconds to complete (>1 hour)"

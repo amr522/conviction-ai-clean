@@ -1,0 +1,27 @@
+{{- if and .Values.chaos.enabled .Values.chaos.cpu.enabled }}
+apiVersion: litmuschaos.io/v1alpha1
+kind: ChaosEngine
+metadata:
+  name: {{ include "conviction-ai-pipeline.fullname" . }}-chaos-cpu
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "conviction-ai-pipeline.labels" . | nindent 4 }}
+spec:
+  engineState: "active"
+  appinfo:
+    appns: "{{ .Release.Namespace }}"
+    applabel: "app.kubernetes.io/name=conviction-ai-pipeline-inference"
+    appkind: "Rollout"
+  chaosServiceAccount: litmus-admin
+  experiments:
+    - name: stress-cpu
+      spec:
+        components:
+          env:
+            - name: TOTAL_CHAOS_DURATION
+              value: "{{ .Values.chaos.cpu.duration }}"
+            - name: TARGET_PODS_PERCENTAGE
+              value: "{{ .Values.chaos.cpu.percentAffected }}"
+            - name: CPU_LOAD
+              value: "{{ .Values.chaos.cpu.load }}"
+{{- end }}

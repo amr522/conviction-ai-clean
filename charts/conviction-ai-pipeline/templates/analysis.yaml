@@ -1,0 +1,43 @@
+{{- if and .Values.rollout.enabled .Values.rollout.canary.analysis.enabled }}
+apiVersion: argoproj.io/v1alpha1
+kind: AnalysisTemplate
+metadata:
+  name: {{ include "conviction-ai-pipeline.fullname" . }}-success-rate
+  labels:
+    {{- include "conviction-ai-pipeline.labels" . | nindent 4 }}
+spec:
+  args:
+    - name: service-name
+  metrics:
+    - name: success-rate
+      interval: 30s
+      successCondition: result[0] >= 0.95
+      failureLimit: 3
+      provider:
+        prometheus:
+          address: {{ .Values.rollout.canary.analysis.prometheus.address }}
+          query: |
+            sum(rate(predictions_total{service="{{`{{.args.service-name}}`}}", status_code!~"5.."}[2m])) /
+            sum(rate(predictions_total{service="{{`{{.args.service-name}}`}}"}[2m]))
+    - name: avg-latency
+      interval: 30s
+      successCondition: result[0] <= 0.5
+      failureLimit: 3
+      provider:
+        prometheus:
+          address: {{ .Values.rollout.canary.analysis.prometheus.address }}
+          query: |
+            histogram_quantile(0.95,
+              sum(rate(prediction_latency_seconds_bucket{service="{{`{{.args.service-name}}`}}"}[2m])) by (le)
+            )
+    - name: error-rate
+      interval: 30s
+      successCondition: result[0] <= 0.05
+      failureLimit: 2
+      provider:
+        prometheus:
+          address: {{ .Values.rollout.canary.analysis.prometheus.address }}
+          query: |
+            sum(rate(errors_total{service="{{`{{.args.service-name}}`}}"}[2m])) /
+            sum(rate(predictions_total{service="{{`{{.args.service-name}}`}}"}[2m]))
+{{- end }}

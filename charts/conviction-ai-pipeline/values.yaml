@@ -1,0 +1,132 @@
+# Default values for conviction-ai-pipeline
+replicaCount: 1
+
+image:
+  repository: conviction-ai-pipeline
+  pullPolicy: IfNotPresent
+  tag: "latest"
+
+nameOverride: ""
+fullnameOverride: ""
+
+service:
+  type: ClusterIP
+  port: 8000
+
+resources:
+  limits:
+    cpu: 1000m
+    memory: 2Gi
+  requests:
+    cpu: 500m
+    memory: 1Gi
+
+# Autoscaling configuration
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 10
+  cpu:
+    targetAverageUtilization: 75
+  memory:
+    enabled: true
+    targetAverageUtilization: 80
+  vpa:
+    enabled: false
+    updateMode: "Auto"
+    minAllowed:
+      cpu: 100m
+      memory: 128Mi
+    maxAllowed:
+      cpu: 2000m
+      memory: 4Gi
+
+# Grafana dashboard configuration
+grafana:
+  dashboard:
+    costs:
+      enabled: true
+      cpuCostPerHour: 0.0464  # AWS m5.large CPU cost per hour
+      memoryCostPerGBHour: 0.0058  # AWS memory cost per GB hour
+    signals:
+      enabled: false
+    anomalies:
+      enabled: false
+
+# Node affinity and tolerations
+nodeSelector: {}
+tolerations: []
+affinity: {}
+
+# Pod disruption budget
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 1
+
+# Lineage tracking
+lineage:
+  enabled: false
+  host: "lineage.conviction-ai.com"
+  servicePort: 80
+  authSecret: "lineage-auth-secret"
+  auth:
+    oidc:
+      enabled: true
+      issuerUrl: "https://keycloak.example.com/auth/realms/conviction-ai"
+      clientId: "lineage-explorer"
+      clientSecret: "changeme"
+      callbackPath: "/auth/callback"
+      scope: "openid profile email"
+      redirectUrl: "https://lineage.conviction-ai.com/auth/callback"
+
+# Prometheus monitoring
+prometheus:
+  enabled: false
+
+# Inference service
+inference:
+  enabled: false
+
+# Training jobs
+training:
+  enabled: false
+
+# Chaos engineering
+chaos:
+  enabled: false
+
+# Rollout configuration
+rollout:
+  enabled: false
+
+# Data drift detection
+drift:
+  enabled: false
+  threshold: 0.1
+  pushgateway:
+    url: "http://pushgateway:9091"
+    job: "data_drift"
+
+# Model explainability
+explainability:
+  enabled: false
+  threshold: 0.1
+  pushgateway:
+    url: "http://pushgateway:9091"
+    job: "model_explain"
+
+# Signal validation
+signalValidation:
+  enabled: true
+  threshold: 0.9
+  lowerThreshold: 0.1
+  enhancedThreshold: 1.5  # multiplier for enhanced gamma squeeze detection
+
+# Anomaly testing cron job
+anomalyCron:
+  enabled: false
+  schedule: "0 */6 * * *"  # Every 6 hours
+
+# Alerts configuration
+alerts:
+  enabled: true

@@ -1,0 +1,8 @@
+project: conviction_ai
+registry: feature_repo/registry.db
+provider: local
+online_store:
+  type: sqlite
+  path: feature_repo/online_store.db
+offline_store:
+  type: file

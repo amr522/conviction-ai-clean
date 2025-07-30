@@ -1,0 +1,15 @@
+{
+  "type": "object",
+  "properties": {
+    "ticker": {"type": "string"},
+    "volume": {"type": ["string", "integer"]},
+    "open": {"type": "string"},
+    "close": {"type": ["string", "number"]},
+    "high": {"type": "string"},
+    "low": {"type": "string"},
+    "window_start": {"type": "string"},
+    "transactions": {"type": "string"},
+    "date": {"type": "string"}
+  },
+  "required": ["close", "volume"]
+}

@@ -1,0 +1,12 @@
+# Global code owners
+* @conviction-ai-team
+
+# Infrastructure requires additional review
+infra/terraform/ @conviction-ai-team @infrastructure-team
+
+# CI/CD workflows require additional review
+.github/workflows/ @conviction-ai-team @devops-team
+
+# Security-related files require security team review
+scripts/security-scan.sh @conviction-ai-team @security-team
+src/validate_data_quality.py @conviction-ai-team @data-team

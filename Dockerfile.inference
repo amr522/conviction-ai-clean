@@ -1,0 +1,97 @@
+# Multi-stage Dockerfile for FastAPI inference service
+FROM python:3.9-slim as base
+
+# Set environment variables
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV MODEL_PATH=/app/models/latest.pkl
+ENV FEAST_REPO_PATH=/app/feature_repo
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    gcc \
+    g++ \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create app directory
+WORKDIR /app
+
+# Copy requirements first for better caching
+COPY requirements.txt .
+
+# Install Python dependencies
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy application code
+COPY src/ ./src/
+COPY feature_repo/ ./feature_repo/
+COPY models/ ./models/
+
+# Create non-root user
+RUN useradd --create-home --shell /bin/bash app
+RUN chown -R app:app /app
+USER app
+
+# Expose port
+EXPOSE 8000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:8000/health || exit 1
+
+# Run the application
+CMD ["uvicorn", "src.app.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "4"]
+
+# GPU-enabled stage
+FROM nvidia/cuda:11.8-runtime-ubuntu20.04 as gpu
+
+# Set environment variables
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV MODEL_PATH=/app/models/latest.pkl
+ENV FEAST_REPO_PATH=/app/feature_repo
+
+# Install Python and system dependencies
+RUN apt-get update && apt-get install -y \
+    python3.9 \
+    python3.9-dev \
+    python3-pip \
+    gcc \
+    g++ \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create symlinks for python
+RUN ln -s /usr/bin/python3.9 /usr/bin/python
+RUN ln -s /usr/bin/pip3 /usr/bin/pip
+
+# Create app directory
+WORKDIR /app
+
+# Copy requirements and install dependencies
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Install PyTorch with CUDA support
+RUN pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
+
+# Copy application code
+COPY src/ ./src/
+COPY feature_repo/ ./feature_repo/
+COPY models/ ./models/
+
+# Create non-root user
+RUN useradd --create-home --shell /bin/bash app
+RUN chown -R app:app /app
+USER app
+
+# Expose port
+EXPOSE 8000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:8000/health || exit 1
+
+# Run the application with GPU support
+CMD ["uvicorn", "src.app.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "2"]

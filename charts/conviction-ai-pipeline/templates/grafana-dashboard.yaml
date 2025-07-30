@@ -1,0 +1,109 @@
+{{- if .Values.grafana.dashboard.enabled }}
+apiVersion: integreatly.org/v1alpha1
+kind: GrafanaDashboard
+metadata:
+  name: {{ include "conviction-ai-pipeline.fullname" . }}-dashboard
+  labels:
+    {{- include "conviction-ai-pipeline.labels" . | nindent 4 }}
+    grafana_dashboard: "1"
+    component: monitoring
+spec:
+  json: |
+    {
+      "dashboard": {
+        "id": null,
+        "title": "{{ .Values.grafana.dashboard.title }}",
+        "tags": ["conviction-ai", "etl", "ml"],
+        "timezone": "UTC",
+        "panels": [
+          {
+            "id": 1,
+            "title": "ETL Pipeline Duration",
+            "type": "graph",
+            "targets": [
+              {
+                "expr": "pipeline_etl_duration_seconds{job=\"{{ include "conviction-ai-pipeline.fullname" . }}\"}",
+                "legendFormat": "ETL Duration - {{`{{date}}`}}"
+              }
+            ],
+            "yAxes": [
+              {
+                "label": "Seconds",
+                "min": 0
+              }
+            ],
+            "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0}
+          },
+          {
+            "id": 2,
+            "title": "Training Trials Completed",
+            "type": "stat",
+            "targets": [
+              {
+                "expr": "pipeline_optuna_trials_total{job=\"{{ include "conviction-ai-pipeline.fullname" . }}\"}",
+                "legendFormat": "Total Trials"
+              }
+            ],
+            "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0}
+          },
+          {
+            "id": 3,
+            "title": "Model Performance (RMSE)",
+            "type": "graph",
+            "targets": [
+              {
+                "expr": "pipeline_model_rmse{job=\"{{ include "conviction-ai-pipeline.fullname" . }}\"}",
+                "legendFormat": "RMSE - {{`{{model_type}}`}}"
+              }
+            ],
+            "yAxes": [
+              {
+                "label": "RMSE",
+                "min": 0
+              }
+            ],
+            "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8}
+          },
+          {
+            "id": 4,
+            "title": "Data Processing Rate",
+            "type": "graph",
+            "targets": [
+              {
+                "expr": "rate(pipeline_rows_processed_total{job=\"{{ include "conviction-ai-pipeline.fullname" . }}\"}[5m])",
+                "legendFormat": "Rows/sec - {{`{{stage}}`}}"
+              }
+            ],
+            "yAxes": [
+              {
+                "label": "Rows/sec",
+                "min": 0
+              }
+            ],
+            "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8}
+          },
+          {
+            "id": 5,
+            "title": "Resource Utilization",
+            "type": "graph",
+            "targets": [
+              {
+                "expr": "rate(container_cpu_usage_seconds_total{pod=~\"{{ include "conviction-ai-pipeline.fullname" . }}.*\"}[5m]) * 100",
+                "legendFormat": "CPU % - {{`{{pod}}`}}"
+              },
+              {
+                "expr": "container_memory_usage_bytes{pod=~\"{{ include "conviction-ai-pipeline.fullname" . }}.*\"} / 1024 / 1024 / 1024",
+                "legendFormat": "Memory GB - {{`{{pod}}`}}"
+              }
+            ],
+            "gridPos": {"h": 8, "w": 24, "x": 0, "y": 16}
+          }
+        ],
+        "time": {
+          "from": "now-1h",
+          "to": "now"
+        },
+        "refresh": "30s"
+      }
+    }
+{{- end }}

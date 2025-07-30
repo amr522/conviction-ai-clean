@@ -1,0 +1,28 @@
+{{- if .Values.chaos.enabled }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "conviction-ai-pipeline.fullname" . }}-chaos-cleanup
+  namespace: {{ .Release.Namespace }}
+  annotations:
+    "helm.sh/hook": post-install,post-upgrade
+    "helm.sh/hook-weight": "10"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+spec:
+  template:
+    spec:
+      serviceAccountName: litmus-admin
+      containers:
+      - name: cleanup
+        image: bitnami/kubectl:latest
+        command:
+          - /bin/sh
+          - -c
+          - |
+            # Delete all ChaosEngine and related resources after experiments
+            kubectl delete chaosengine --all -n {{ .Release.Namespace }} --ignore-not-found=true
+            kubectl delete chaosexperiment --all -n {{ .Release.Namespace }} --ignore-not-found=true
+            kubectl delete chaosresult --all -n {{ .Release.Namespace }} --ignore-not-found=true
+      restartPolicy: OnFailure
+  backoffLimit: 1
+{{- end }}

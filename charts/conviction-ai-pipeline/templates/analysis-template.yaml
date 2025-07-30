@@ -1,0 +1,42 @@
+{{- if and .Values.rollout.enabled .Values.rollout.canary.analysis.enabled }}
+apiVersion: argoproj.io/v1alpha1
+kind: AnalysisTemplate
+metadata:
+  name: {{ include "conviction-ai-pipeline.fullname" . }}-autoscale-analysis
+  labels:
+    {{- include "conviction-ai-pipeline.labels" . | nindent 4 }}
+spec:
+  metrics:
+    - name: success-rate
+      interval: 1m
+      count: 5
+      successCondition: result > 0.99
+      failureLimit: 1
+      provider:
+        prometheus:
+          address: http://prometheus-operated.monitoring.svc:9090
+          query: |
+            sum(rate(prediction_success_total{job="{{ include "conviction-ai-pipeline.fullname" . }}-inference"}[1m]))
+            / sum(rate(prediction_total{job="{{ include "conviction-ai-pipeline.fullname" . }}-inference"}[1m]))
+    - name: error-rate
+      interval: 1m
+      count: 5
+      successCondition: result < 0.01
+      failureLimit: 1
+      provider:
+        prometheus:
+          address: http://prometheus-operated.monitoring.svc:9090
+          query: |
+            sum(rate(prediction_errors_total{job="{{ include "conviction-ai-pipeline.fullname" . }}-inference"}[1m]))
+            / sum(rate(prediction_total{job="{{ include "conviction-ai-pipeline.fullname" . }}-inference"}[1m]))
+    - name: latency-p95
+      interval: 1m
+      count: 5
+      successCondition: result < 1000
+      failureLimit: 1
+      provider:
+        prometheus:
+          address: http://prometheus-operated.monitoring.svc:9090
+          query: |
+            histogram_quantile(0.95, sum(rate(prediction_latency_seconds_bucket{job="{{ include "conviction-ai-pipeline.fullname" . }}-inference"}[1m])) by (le)) * 1000
+{{- end }}

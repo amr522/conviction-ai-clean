@@ -1,0 +1,86 @@
+{{- if not .Values.rollout.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "conviction-ai-pipeline.fullname" . }}-inference
+  labels:
+    {{- include "conviction-ai-pipeline.labels" . | nindent 4 }}
+    component: inference
+spec:
+  replicas: {{ .Values.inference.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "conviction-ai-pipeline.selectorLabels" . | nindent 6 }}
+      component: inference
+  template:
+    metadata:
+      labels:
+        {{- include "conviction-ai-pipeline.selectorLabels" . | nindent 8 }}
+        component: inference
+    spec:
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: inference
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: {{ include "conviction-ai-pipeline.inferenceImage" . }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 8000
+              protocol: TCP
+            - name: metrics
+              containerPort: 9090
+              protocol: TCP
+          env:
+            {{- include "conviction-ai-pipeline.env" . | nindent 12 }}
+            - name: MODEL_PATH
+              value: "/app/models/latest.pkl"
+            - name: FEAST_REPO_PATH
+              value: "/app/feature_repo"
+          resources:
+            {{- toYaml .Values.inference.resources | nindent 12 }}
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: 8000
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 3
+          volumeMounts:
+            - name: model-storage
+              mountPath: /app/models
+              readOnly: true
+            - name: feature-repo
+              mountPath: /app/feature_repo
+              readOnly: true
+      volumes:
+        - name: model-storage
+          persistentVolumeClaim:
+            claimName: {{ include "conviction-ai-pipeline.fullname" . }}-models
+        - name: feature-repo
+          configMap:
+            name: {{ include "conviction-ai-pipeline.fullname" . }}-feast-config
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}

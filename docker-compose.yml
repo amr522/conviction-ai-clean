@@ -1,0 +1,14 @@
+version: '3.8'
+services:
+  pipeline:
+    build: .
+    container_name: vol-pipeline
+    environment:
+      START_DATE: "${START_DATE:-2021-01-01}"
+      END_DATE: "${END_DATE:-2025-07-01}"
+    volumes:
+      - ./data/Parquet_data:/app/data/Parquet_data
+      - ./staged:/app/staged
+      - ./master:/app/master
+      - ./datasets:/app/datasets
+    command: []
